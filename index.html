@@ -469,6 +469,15 @@ body[data-view="table"] .wrap{height:auto;min-height:calc(100dvh - 42px)}
 .btn.allin{background:#713e35;color:#fff0df;border-color:#b17a5c;box-shadow:inset 0 1px 0 #ffffff10}
 .fills button:last-child:nth-child(3){grid-column:1/-1}
 @media(max-width:700px){.main.actions{gap:5px}.actions .btn{font-size:13px;min-height:50px}.actions .btn small{font-size:9px}}
+
+/* Dark player station, resting on the green table. */
+.hero,.hero.win{background:linear-gradient(155deg,#181c1b,#0b0e0d 80%);border:1px solid #ffffff16;border-top:1px solid #c8b38255;border-radius:24px;padding:18px 22px 16px;margin-top:18px;box-shadow:0 14px 32px #0005,inset 0 1px 0 #ffffff05}
+.hero.win{border-top-color:var(--win)}
+.hero .rail,.hero .rail.live{background:none}
+.hero .betzone{border-bottom-color:#ffffff20}
+.hero .fills button,.hero .cbtn{background:#202724;border-color:#ffffff20}
+.hero .controls{border-top-color:#ffffff12}
+@media(max-width:700px){.hero,.hero.win{padding:12px 12px 14px;border-radius:20px;margin-top:12px}}
 </style>
 </head>
 <body>
@@ -1070,33 +1079,103 @@ function botTurn(i){
   const p=S.seats[i];const d=botDecide(p,i);
   doAction(p,d.type,d.to);proceed();
 }
+// Estimates use only the acting bot's cards and publicly visible betting state.
+function startingStrength(hole){
+  const hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
+  if(hi===lo)return Math.min(.99,.50+(hi-2)*.041);
+  const suited=suitOf(hole[0])===suitOf(hole[1]),gap=hi-lo;
+  return Math.max(.05,Math.min(.95,(hi+lo-4)/30+(suited?.07:0)+(gap===1?.045:0)-Math.max(0,gap-2)*.025));
+}
+function rangeEquity(hole,board,opponents,iters){
+  if(!opponents.length)return 1;
+  const known=new Set(hole.concat(board)),deck=Array.from({length:52},(_,c)=>c).filter(c=>!known.has(c));
+  let wins=0;
+  for(let t=0;t<iters;t++){
+    const pool=deck.slice(),hands=[];
+    const draw=()=>pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+    for(const q of opponents){
+      // Larger public bets imply a stronger range, with room for bluffs.
+      const pressure=q.bet>BB?Math.min(1,q.bet/Math.max(BB,potTotal()-q.bet)):0;
+      const tight=.25+pressure*.45+Math.min(.18,Math.max(0,(S.raises||0)-1)*.06);
+      let h;
+      for(let attempt=0;attempt<8;attempt++){
+        h=[draw(),draw()];let strength=startingStrength(h);
+        if(board.length>=3){
+          const category=Math.floor(best7(h.concat(board))/Math.pow(16,5));
+          strength=Math.max(strength*.65,Math.min(.98,.23+category*.18));
+        }
+        if(attempt===7||Math.random()<Math.max(.08,Math.min(1,1.1+strength-tight*2)))break;
+        pool.push(...h);
+      }
+      hands.push(h);
+    }
+    const run=board.slice();while(run.length<5)run.push(draw());
+    const mine=best7(hole.concat(run));let ties=1,lost=false;
+    for(const h of hands){const score=best7(h.concat(run));if(score>mine){lost=true;break;}if(score===mine)ties++;}
+    if(!lost)wins+=1/ties;
+  }
+  return wins/iters;
+}
 function botDecide(p,i){
-  const opp=live().length-1,hole=H[i];
-  const eq=equity(hole,S.board,opp,Math.max(160,Math.round(1400/(opp+1))));
-  const rel=eq*(opp+1);
-  const toCall=Math.min(Math.max(0,S.currentBet-p.bet),p.stack);
-  const pot=potTotal(),{loose,aggr}=BOT_STYLE[p.name]||{loose:.5,aggr:.5},r=Math.random(),canR=canRaise(p);
+  const opponents=live().filter(q=>q!==p),opp=opponents.length,hole=H[i];
+  const {loose,aggr}=BOT_STYLE[p.name]||{loose:.5,aggr:.5};
+  const toCall=Math.min(Math.max(0,S.currentBet-p.bet),p.stack),pot=potTotal(),canR=canRaise(p);
+  // Exclude side-pot money this stack cannot win from its call price.
+  const eligible=S.seats.reduce((sum,q)=>sum+Math.min(q.total,p.total+toCall),0);
+  const odds=toCall/(eligible+toCall||1);
+  const active=S.seats.map((q,k)=>({q,k})).filter(({q})=>canAct(q));
+  const order=active.sort((a,b)=>((a.k-S.dealer-1+N())%N())-((b.k-S.dealer-1+N())%N()));
+  const position=order.length>1?order.findIndex(x=>x.k===i)/(order.length-1):1;
+  const pre=S.board.length===0,strength=startingStrength(hole);
+  // Aggressive profiles defend premium starting hands against a human shove.
+  // Match only the amount owed: a covering stack never commits extra chips here.
+  const humanShove=pre&&toCall>0&&opponents.some(q=>q.kind==='human'&&q.allIn&&q.bet===S.currentBet);
+  if(humanShove&&aggr>=.70){
+    const hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
+    const suited=suitOf(hole[0])===suitOf(hole[1]);
+    const committed=opponents.filter(q=>q.bet>=Math.min(S.currentBet,p.bet+p.stack)).length;
+    const raceHand=hi===lo?hi>=(committed>1?12:10)
+      :hi===14&&(committed>1?lo===13&&suited:lo===13||(lo===12&&suited));
+    if(raceHand)return {type:'call'};
+  }
+  const eq=rangeEquity(hole,S.board,opponents,Math.max(180,Math.floor(650/(opp+1))));
   const raise=frac=>{
-    const maxTo=maxRaiseTo(p),minTo=minRaiseTo(p);
-    let to=S.currentBet+Math.max(S.minRaise,(pot+toCall)*frac);
-    to=Math.round(to);to=Math.max(minTo,Math.min(maxTo,to));
-    if(to>=maxTo*0.8)to=maxTo;
+    let to=pre&&S.currentBet<=BB?BB*(2.5+(1-position)*.5)+S.seats.filter(q=>q!==p&&q.bet===BB).length*BB*.6
+      :S.currentBet+Math.max(S.minRaise,(pot+toCall)*frac);
+    to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(to)));
+    // Commit the last few chips only when already close to an all-in.
+    if(to>p.bet+p.stack*.90)to=maxRaiseTo(p);
     return {type:'raise',to};
   };
-  if(S.board.length===0){
-    const cost=toCall/BB,lg=Math.log2(1+cost/2);
-    const callT=0.85-loose*0.3+0.15*lg,raiseT=1.75-aggr*0.45+0.1*lg;
-    if(canR&&((rel>raiseT&&r<0.55+aggr*0.45)||r<0.025*aggr))return raise(0.7+Math.random()*0.3);
-    if(toCall===0)return {type:'check'};
-    return rel>callT?{type:'call'}:{type:'fold'};
+  if(pre){
+    const unopened=S.currentBet<=BB,depth=p.stack/BB;
+    const openThreshold=.64-position*.13-(loose-.5)*.08;
+    const premium=strength>=(S.raises>=3?.91:S.raises>=2?.82:.74);
+    if(canR&&((unopened&&strength>openThreshold)||(premium&&eq>odds+.10))){
+      if(depth<=12&&strength>.77)return {type:'raise',to:maxRaiseTo(p)};
+      return raise(.65+aggr*.25);
+    }
+    if(!toCall)return {type:'check'};
+    const realization=.74+position*.13+(suitOf(hole[0])===suitOf(hole[1])?.05:0);
+    const margin=.025+(S.raises>=3?.06:0)-(loose-.5)*.025;
+    return eq*realization>odds+margin?{type:'call'}:{type:'fold'};
   }
-  if(toCall===0){
-    if(canR&&((rel>1.45-aggr*0.3&&r<0.45+aggr*0.5)||r<(opp<=2?0.12:0.05)*aggr))return raise(0.45+Math.random()*0.35);
+  const cards=hole.concat(S.board),suits=[0,0,0,0];cards.forEach(c=>suits[suitOf(c)]++);
+  const ranks=new Set(cards.map(rankOf));if(ranks.has(14))ranks.add(1);
+  let straightDraw=false;for(let low=1;low<=10;low++){let count=0;for(let r=low;r<low+5;r++)if(ranks.has(r))count++;if(count===4)straightDraw=true;}
+  const draw=S.board.length<5&&(suits.includes(4)||straightDraw);
+  const value=eq>(opp===1?.62:opp===2?.49:.40);
+  const r=Math.random(),size=eq>.82?.85:.45+aggr*.22;
+  if(!toCall){
+    if(canR&&value&&r<.65+aggr*.3)return raise(size);
+    if(canR&&opp<=2&&draw&&eq>.22&&r<.12+aggr*.18)return raise(.55);
+    if(canR&&opp===1&&position>.7&&eq<.25&&r<.035+aggr*.035)return raise(.5);
     return {type:'check'};
   }
-  const odds=toCall/(pot+toCall),need=odds*(1.15-loose*0.35);
-  if(eq<need&&r>0.03+0.03*loose)return {type:'fold'};
-  if(canR&&rel>2.0-aggr*0.4&&eq>odds*1.5&&Math.random()<0.35+aggr*0.4)return raise(0.6+Math.random()*0.3);
+  const margin=(S.board.length===5?0:.025)+(opp>2?.025:0)-(loose-.5)*.025;
+  if(eq<odds+margin)return {type:'fold'};
+  if(canR&&eq>(opp===1?.75:.62)&&r<.55+aggr*.35)return raise(size);
+  if(canR&&opp===1&&draw&&eq>.35&&toCall<pot*.4&&r<aggr*.12)return raise(.65);
   return {type:'call'};
 }
 function onSeatDocs(snap){
