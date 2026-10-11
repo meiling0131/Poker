@@ -478,6 +478,65 @@ body[data-view="table"] .wrap{height:auto;min-height:calc(100dvh - 42px)}
 .hero .fills button,.hero .cbtn{background:#202724;border-color:#ffffff20}
 .hero .controls{border-top-color:#ffffff12}
 @media(max-width:700px){.hero,.hero.win{padding:12px 12px 14px;border-radius:20px;margin-top:12px}}
+
+/* Warm room lighting, woven geometry and a slate leather player station. */
+html{background:#1b2427}
+body{background:
+ radial-gradient(ellipse at 0% 0%,#bb94622b,transparent 48%),
+ radial-gradient(ellipse at 100% 65%,#53838b24,transparent 48%),
+ repeating-linear-gradient(45deg,transparent 0 39px,#d4c09c06 40px,transparent 41px 80px),
+ repeating-linear-gradient(-45deg,transparent 0 39px,#d4c09c06 40px,transparent 41px 80px),
+ linear-gradient(125deg,#222e30,#151f23 55%,#293331);background-attachment:fixed}
+.top{padding-block:5px 10px;border-bottom:1px solid #dbca9b18}
+#game::before{background:
+ repeating-linear-gradient(0deg,#ffffff02 0 1px,transparent 1px 3px),
+ radial-gradient(ellipse at 50% 34%,#366b5a,#245343 60%,#1c3f32);
+ border-color:#213b30;box-shadow:0 0 0 1px #b49d6659,0 22px 55px #07110c66,inset 0 0 65px #061c1945}
+.hero,.hero.win{background:
+ repeating-linear-gradient(115deg,#ffffff03 0 1px,transparent 1px 4px),
+ radial-gradient(ellipse at 10% 0%,#51656a80,transparent 70%),
+ linear-gradient(125deg,#34434b,#263039 65%,#303b41);
+ border:1px solid #bfcdd12b;border-top:1px solid #d1bd8b88;
+ box-shadow:0 14px 30px #04110c4d,inset 0 1px 0 #ffffff0d;border-radius:22px}
+.hero .rail,.hero .rail.live{padding-inline:16px}
+.hero .towers{gap:16px}.hero .tower{padding-bottom:6px}
+.hero .tower .den{color:#d5d9d6;font-size:11px;letter-spacing:.05em}
+.hero .tower .cnt{color:#fbf2df}.hero .info .sub,.hero .linkbtn{color:#bbc8cb}
+.hero .betzone{border-bottom-color:#d4dce330}.hero .bz-chips .hint{color:#c0ccd0}
+.hero .cbtn{background:#35454e;border-color:#d3dee52b}.hero .controls{border-top-color:#d4dce320}
+.btn.fold{background:#35434b;border-color:#a8bac238;color:#e5e9e9}
+.btn.call{background:linear-gradient(#507765,#3e6251);border-color:#b8d6bc40}
+.btn.raise,.btn.next{background:linear-gradient(#decc9f,#bea773);box-shadow:inset 0 1px 0 #ffffff2b}
+.btn.allin{background:linear-gradient(#925b4e,#704439);border-color:#c192765c}
+.card.faceup{position:relative;overflow:hidden;display:block;background:linear-gradient(145deg,#fffdf5,#ece5d5);border:1px solid #fff8e5;color:#22302e;box-shadow:0 3px 0 #c5beac,0 6px 9px #00180e38,inset 0 0 0 1px #ffffff80}
+.card.faceup.red{color:#aa3842}
+.card .corner{position:absolute;top:6%;left:10%;display:flex;flex-direction:column;align-items:center;gap:0;line-height:.95}
+.card .corner.lower{top:auto;left:auto;bottom:6%;right:10%;transform:rotate(180deg)}
+.card .rank{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:calc(var(--w)*.30);letter-spacing:-.07em}
+.card .pip{font-family:Georgia,serif;font-size:calc(var(--w)*.23);margin-top:2px}
+.card .emblem{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:Georgia,serif;font-size:calc(var(--w)*.46);line-height:1;filter:drop-shadow(0 1px 0 #ffffff)}
+.card.back{position:relative;overflow:hidden;border:2px solid #e7d7b9;background:
+ repeating-linear-gradient(45deg,transparent 0 5px,#e6c79535 5px 6px,transparent 6px 11px),
+ repeating-linear-gradient(-45deg,transparent 0 5px,#e6c79535 5px 6px,transparent 6px 11px),linear-gradient(130deg,#86504c,#502e36);box-shadow:0 3px 5px #07180d45}
+.card.back::after{content:'◆';position:absolute;inset:3px;border:1px solid #e7d0a77a;border-radius:2px;display:grid;place-items:center;color:#e8d3a3;font-size:12px;text-shadow:0 1px 3px #301820}
+.card.empty{border:1px solid #c7d8ca2b;background:#123a2618;box-shadow:inset 0 1px 6px #09251e15}
+.mc .card .corner.lower{display:none}.mc .card .emblem{left:65%;top:65%;font-size:calc(var(--w)*.40)}
+@media(max-width:700px){.hero .towers{gap:8px}.hero .rail,.hero .rail.live{padding-inline:4px}}
+
+
+/* Mobile collision fix: seat rows never share the community-card band. */
+@media(max-width:700px){
+ .table,.table.big{height:540px;min-height:540px;flex:0 0 540px;max-height:none}
+ .table.big{height:600px;min-height:600px;flex-basis:600px}
+ .table .seat{left:var(--phone-x)!important;top:var(--phone-y)!important}
+ .table .center,.table .center.twice{top:59%;transform:translate(-50%,-50%);gap:8px;width:max-content;max-width:100%}
+ .table .result{top:74.5%;width:220px;max-width:75%;font-size:11px;line-height:14px;max-height:36px;overflow:auto}
+ .table .herobet{bottom:0}
+ .hero,.hero.win{margin-top:18px;flex-shrink:0}
+ #game{overflow:visible}
+ .top .row{flex-wrap:wrap;row-gap:8px}
+ .top h1{font-size:clamp(16px,4.5vw,20px)}
+}
 </style>
 </head>
 <body>
@@ -981,13 +1040,14 @@ function endStreet(){
   proceed();
 }
 let RT=null;
+function botRunoutVote(p){return (BOT_STYLE[p.name]?.aggr||0)>=.70?1:(Math.random()<.5?2:1);}
 function startRunout(){
   S.seats.forEach((p,i)=>{if(p.inHand&&!p.folded){p.shown=H[i].slice();p.handName='';}});
   const voters=S.seats.map((p,i)=>i).filter(i=>S.seats[i].inHand&&!S.seats[i].folded);
   S.turn++;
   S.runout={stage:'vote',turn:S.turn,votes:{},voters,deadline:Date.now()+12000,times:1,base:S.board.slice()};
   log('全下！亮牌，选择跑一次还是跑两次','h');
-  voters.forEach(i=>{if(S.seats[i].kind==='bot')S.runout.votes[i]=Math.random()<0.5?2:1;});
+  voters.forEach(i=>{if(S.seats[i].kind==='bot')S.runout.votes[i]=botRunoutVote(S.seats[i]);});
   S.actor=-1;S.deadline=S.runout.deadline;
   commit();
   checkVotes();
@@ -1127,18 +1187,19 @@ function botDecide(p,i){
   const order=active.sort((a,b)=>((a.k-S.dealer-1+N())%N())-((b.k-S.dealer-1+N())%N()));
   const position=order.length>1?order.findIndex(x=>x.k===i)/(order.length-1):1;
   const pre=S.board.length===0,strength=startingStrength(hole);
-  // Aggressive profiles defend premium starting hands against a human shove.
-  // Match only the amount owed: a covering stack never commits extra chips here.
-  const humanShove=pre&&toCall>0&&opponents.some(q=>q.kind==='human'&&q.allIn&&q.bet===S.currentBet);
-  if(humanShove&&aggr>=.70){
+  // Aggressive profiles accept races with medium-or-better starting hands.
+  // Calls are capped by the engine at this bot's remaining stack.
+  const humanShove=toCall>0&&opponents.some(q=>q.kind==='human'&&q.allIn&&q.bet===S.currentBet);
+  if(pre&&humanShove&&aggr>=.70){
     const hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
     const suited=suitOf(hole[0])===suitOf(hole[1]);
-    const committed=opponents.filter(q=>q.bet>=Math.min(S.currentBet,p.bet+p.stack)).length;
-    const raceHand=hi===lo?hi>=(committed>1?12:10)
-      :hi===14&&(committed>1?lo===13&&suited:lo===13||(lo===12&&suited));
+    const raceHand=(hi===lo&&hi>=6)||(hi===14&&lo>=9)
+      ||(hi===13&&lo>=10)||(hi===12&&lo===11)
+      ||(suited&&hi-lo===1&&lo>=8);
     if(raceHand)return {type:'call'};
   }
   const eq=rangeEquity(hole,S.board,opponents,Math.max(180,Math.floor(650/(opp+1))));
+  if(!pre&&humanShove&&aggr>=.70&&eq>=.40)return {type:'call'};
   const raise=frac=>{
     let to=pre&&S.currentBet<=BB?BB*(2.5+(1-position)*.5)+S.seats.filter(q=>q!==p&&q.bet===BB).length*BB*.6
       :S.currentBet+Math.max(S.minRaise,(pot+toCall)*frac);
@@ -1280,7 +1341,8 @@ function cardHTML(c,size){
   if(c===undefined)return `<div class="card ${size} empty"></div>`;
   if(c===null)return `<div class="card ${size} back"></div>`;
   const s=suitOf(c),red=s===1||s===2;
-  return `<div class="card ${size}${red?' red':''}" aria-label="${cardTxt(c)}"><span class="r">${rankStr(rankOf(c))}</span><span class="s">${SUITS[s]}</span></div>`;
+  const corner=`<span class="rank">${rankStr(rankOf(c))}</span><span class="pip">${SUITS[s]}</span>`;
+  return `<div class="card faceup ${size}${red?' red':''}" role="img" aria-label="${cardTxt(c)}"><span class="corner" aria-hidden="true">${corner}</span><span class="emblem" aria-hidden="true">${SUITS[s]}</span><span class="corner lower" aria-hidden="true">${corner}</span></div>`;
 }
 function myHoleCards(){
   const m=mySeat();if(m<0)return null;
@@ -1297,6 +1359,21 @@ function seatPositions(n,heroSeated){
     for(let k=1;k<n;k++){const t=m===1?Math.PI*1.5:start+span*(k-1)/(m-1);out[k]={x:50+39*Math.cos(t),y:49+38*Math.sin(t)};}
   }else{
     for(let k=0;k<n;k++){const t=Math.PI/2+2*Math.PI*k/n;out[k]={x:50+39*Math.cos(t),y:49+38*Math.sin(t)};}
+  }
+  // Phone layout reserves the middle band exclusively for community cards.
+  const count=heroSeated?n-1:n;
+  let rows=count<=6?[Math.ceil(count/3),Math.ceil((count-Math.ceil(count/3))/2),Math.floor((count-Math.ceil(count/3))/2)]
+    :count===7?[3,2,2]:count===8?[3,2,3]:count===9?[3,3,3]:[3,4,3];
+  if(count===1)rows=[1,0,0];
+  const mobile=[];
+  rows.forEach((total,row)=>{
+    const xs=total===1?[50]:total===2?[24,76]:total===3?[16,50,84]:[11,37,63,89];
+    xs.slice(0,total).forEach(x=>mobile.push({x,y:[10,30,91.4][row]}));
+  });
+  // Assign in perimeter order so neighbours stay neighbours across screen sizes.
+  mobile.sort((a,b)=>Math.atan2(a.y-50,a.x-50)-Math.atan2(b.y-50,b.x-50));
+  for(let k=heroSeated?1:0;k<n;k++){
+    const m=mobile[k-(heroSeated?1:0)];out[k].mx=m.x;out[k].my=m.y;
   }
   return out;
 }
@@ -1315,7 +1392,7 @@ function seatHTML(i,pos,compact){
   else if(S.actor===i&&S.deadline&&p.kind==='human')act=`<div class="act">思考中 <span class="cd" data-until="${S.deadline}"></span></div>`;
   else if(p.bet>0&&!p.shown)act=betHTML(p.bet,p.betChips);
   else act=`<div class="act">${esc((p.shown?p.handName:p.last)||(p.qBuy?'买入待生效':''))||'&nbsp;'}</div>`;
-  return `<div class="${cls.join(' ')}" style="left:${pos.x.toFixed(2)}%;top:${pos.y.toFixed(2)}%">
+  return `<div class="${cls.join(' ')}" style="left:${pos.x.toFixed(2)}%;top:${pos.y.toFixed(2)}%;--phone-x:${pos.mx}%;--phone-y:${pos.my}%">
     <div class="mc">${cards}</div>
     <div class="plate">${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}<div class="nm${p.kind==='human'?' human':''}">${esc(seatName(p))}${tag?`<i>${tag}</i>`:''}</div><div class="stk">${topChip(p.stack)}${fmt(p.stack)}</div></div>
     ${act}
@@ -1421,9 +1498,7 @@ function towerHTML(d,count,enabled,pushed){
 }
 function railHTML(p,enabled){
   const avail=Z();for(const d of DV)avail[d]=p.chips[d]-(enabled?PUSH[d]:0);
-  const canR=enabled&&canRaise(p);
-  const fills=canR?`<div class="fills"><button data-fill="min">最小</button><button data-fill="half">½池</button><button data-fill="pot">满池</button></div>`:'';
-  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div>${fills}</div>`;
+  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div></div>`;
 }
 function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
