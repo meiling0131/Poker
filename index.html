@@ -653,6 +653,13 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
 #menu .mode.online{grid-column:1/-1}#lobbyError:empty{display:none}
 @media(max-width:700px){.hero .info .hand{display:inline;font-size:9px;line-height:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lobby-options{gap:12px;padding:15px}.lobby-options>.hintToggle{flex-basis:100%}}
 
+
+/* Minimal card back: flat ink blue, ivory keyline, a single centre mark. */
+.card.back{background:#344e65;border:2px solid #f0ebdf;border-radius:5px;box-shadow:0 2px 4px #081b2433}
+.card.back::after{content:'◇';inset:3px;border:1px solid #ede8da60;border-radius:2px;color:#f0ebdf;font:500 calc(var(--w)*.52)/1 Georgia,serif;text-shadow:none}
+
+.actions .btn.raise{overflow-wrap:anywhere}
+@media(max-width:700px){.actions .btn.raise{font-size:11px;letter-spacing:-.02em}}
 </style>
 </head>
 <body>
@@ -945,7 +952,7 @@ function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false
 function freshBot(i){return Object.assign({kind:'bot',uid:null,name:BOTS[i-1][0],stack:0,chips:Z(),qBuy:0,qCash:0,seenB:0,seenC:0,leaving:false},handFields());}
 function freshHuman(uid,seenB,seenC){return Object.assign({kind:'human',uid,stack:0,chips:Z(),qBuy:0,qCash:0,seenB:seenB||0,seenC:seenC||0,leaving:false},handFields());}
 function put(p,amt,picked){amt=Math.max(0,Math.min(amt,p.stack));if(amt>0)cadd(p.betChips,payChips(p,amt,picked));p.stack-=amt;p.bet+=amt;p.total+=amt;if(p.stack===0)p.allIn=true;return amt;}
-function raiseWord(n,pre){if(pre)return n<=2?'加注':`${n}-bet`;return n<=1?'下注':n===2?'加注':`${n}-bet`;}
+function raiseWord(n,pre){if(pre)return n<=2?'Open-Raise':`${n}-bet`;return n<=1?'下注':n===2?'加注':`${n}-bet`;}
 const nextRaiseWord=()=>raiseWord((S.raises||0)+1,S.street==='preflop');
 function canRaise(p){
   if(!canAct(p))return false;
@@ -1761,8 +1768,8 @@ function railHTML(p,enabled){
 }
 function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
-  const level=Math.max(2,(S.raises||0)+1);
-  const word=S.street!=='preflop'&&S.currentBet===0?'Bet':level===2?'Raise':`${level}-bet`;
+  const pre=S.street==='preflop',level=Math.max(pre?2:1,(S.raises||0)+1);
+  const word=pre?(level===2?'Open-Raise':`${level}-bet`):(S.currentBet===0?'Bet':level===2?'Raise':`${level}-bet`);
   const to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
   const r={toCall,pushed,canR,minTo,word,to,allIn};
   r.callLbl=toCall===0?'Check':`Call<small>${fmt(Math.min(toCall,p.stack))}${toCall>=p.stack?' · All in':''}</small>`;
