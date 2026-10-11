@@ -1596,7 +1596,9 @@ function railHTML(p,enabled){
 }
 function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
-  const next=nextRaiseWord(),word=/^\d+-bet$/.test(next)?next:next==='下注'?'Bet':'Raise',to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
+  const level=Math.max(2,(S.raises||0)+1);
+  const word=S.street!=='preflop'&&S.currentBet===0?'Bet':level===2?'Raise':`${level}-bet`;
+  const to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
   const r={toCall,pushed,canR,minTo,word,to,allIn};
   r.callLbl=toCall===0?'Check':`Call<small>${fmt(Math.min(toCall,p.stack))}${toCall>=p.stack?' · All in':''}</small>`;
   r.canAllIn=p.stack>0&&(p.stack<=toCall||canR);
@@ -1650,7 +1652,7 @@ function renderHero(){
     ctl+=`<div class="main actions">
       <button class="btn fold" data-a="fold"${dis}>Fold</button>
       <button class="btn call" data-a="call"${dis}>${L.callLbl}</button>
-      ${L.raise?`<button class="btn raise${L.raise.mode==='off'?' off':''}" data-a="raise" data-rmode="${L.raise.mode}"${dis||(L.raise.mode==='off'?' disabled':'')}>${L.raise.lbl}</button>`:`<button class="btn raise" disabled>Raise</button>`}
+      ${L.raise?`<button class="btn raise${L.raise.mode==='off'?' off':''}" data-a="raise" data-rmode="${L.raise.mode}"${dis||(L.raise.mode==='off'?' disabled':'')}>${L.raise.lbl}</button>`:`<button class="btn raise" disabled>${L.word}</button>`}
       <button class="btn allin" data-a="allin"${dis||(!L.canAllIn?' disabled':'')}>All in<small>${fmt(p.stack)}</small></button>
     </div>`;
     if(S.deadline&&!M.host)ctl+=`<div class="wait">剩余 <span class="cd" data-until="${S.deadline}"></span>${waiting?' · 已提交，等房主确认…':''}</div>`;
