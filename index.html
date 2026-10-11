@@ -383,6 +383,92 @@ html,body{margin:0}
 .invite{display:flex;gap:8px;align-items:center;min-width:0}
 .invite code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font:500 12px var(--num);color:var(--cream);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;user-select:all;-webkit-user-select:all}
 .roomcode{font:600 12px var(--num);color:var(--brass);letter-spacing:.1em}
+
+/* Immersive room: one continuous felt surface for every seat. */
+:root{
+ --page:#101413;--panel:#1b2220;--panel2:#141d19;--line:#34443c;--line2:#465c50;
+ --felt:#245348;--felt-hi:#306456;--rail:#142b25;
+ --brass:#c8b382;--brass-ink:#231f15;--win:#e5d5aa;
+ --text:#f1ede4;--mute:#acbeb2;--cream:#f1ede4;
+}
+body{background:radial-gradient(ellipse at 50% 40%,#202e27 0%,var(--page) 72%);padding:18px 28px 24px}
+.wrap{max-width:1280px;gap:18px}
+.top{padding:0 18px;gap:8px;flex:none}
+h1{font-size:23px;letter-spacing:.015em}
+.top .pills{gap:12px}
+.pill{border:0;padding:0;color:var(--mute);font-size:11px}
+.nav{border-color:#ffffff14;background:#ffffff04}
+.nav button{min-height:36px;padding:5px 17px}
+.nav button.on{background:#35483d}
+.ghost.icon{border-color:#ffffff18;min-height:36px}
+body[data-view="table"] .wrap{height:auto;min-height:calc(100dvh - 42px)}
+#game{position:relative;isolation:isolate;flex:none;min-height:calc(100dvh - 140px);gap:0;padding:34px 36px 22px}
+#game::before{content:"";position:absolute;inset:8px 0 0;z-index:-1;border-radius:43% / 32%;
+ background:radial-gradient(ellipse at 50% 38%,#306456 0%,#245348 48%,#193e33 100%);
+ border:12px solid #152b23;box-shadow:0 0 0 1px #51634a,0 24px 65px #0007,inset 0 0 70px #071d2255;pointer-events:none}
+#game::after{content:"";position:absolute;inset:32px 24px 24px;border:1px solid #d5dcbb19;border-radius:43% / 32%;z-index:-1;pointer-events:none}
+.table,.table.big{flex:1 0 340px;min-height:340px;max-height:none;height:clamp(340px,43vh,510px);width:100%;margin:0 auto}
+.felt{display:none}
+.center{top:43%;gap:13px}
+.center.twice{top:29%;gap:8px}
+.pot{gap:10px;font-size:13px}.pot b{font-size:23px;color:var(--cream)}
+.board{gap:7px}.card.bd{--w:58px;--h:80px;border-radius:8px}.card.bd .r{font-size:27px}.card.bd .s{font-size:21px}
+.card.empty{border-color:#f1ede429;background:#0b302213}
+.result{top:78%;width:280px;color:#e3dac0}
+.herobet{bottom:0}
+.seat{width:100px}.plate{width:100px;padding:6px 7px;border-radius:11px;background:#10271feb;border-color:#ffffff24}
+.nm{font-size:12px}.stk{font-size:15px;margin-top:2px}.mc{height:42px;margin-bottom:-9px}.mc .card{--w:30px;--h:42px}
+.seat.turn .plate{border-color:var(--brass);box-shadow:0 0 0 2px #c8b38233}
+.seat.win .plate{box-shadow:0 0 20px #c8b38245}
+.bet{background:#0d2d225c;border:0;padding:4px 8px;font-size:12px}
+.hero,.hero.win{position:relative;flex:none;align-self:center;width:min(640px,100%);padding:12px 18px 0;gap:10px;border:0;border-radius:0;background:none;box-shadow:none;display:flex;flex-direction:column}
+.hero .me{order:2;justify-content:center;gap:18px;align-self:center;width:max-content;max-width:100%}
+.hero .me .hc{gap:6px;filter:drop-shadow(0 7px 6px #0003)}
+.hero .me .hc .card:first-child{transform:rotate(-6deg)}
+.hero .me .hc .card:last-child{transform:rotate(5deg)}
+.hero .me .card.big{--w:54px;--h:75px;border-radius:8px}.hero .me .card.big .r{font-size:25px}.hero .me .card.big .s{font-size:20px}
+.info{flex:0 1 auto;min-width:120px}.info .money b{font-size:24px}.info .sub{font-size:11px}
+.betzone{order:0;align-self:center;width:min(380px,100%);min-height:44px;padding:4px 12px;border:0;border-radius:0;background:none;border-bottom:1px solid #d9dfbd35}
+.betzone.has{border-color:#c8b38288;background:none}
+.bz-chips .hint{font-size:11px;color:#b5c8b9}.bz-sum .need{color:#d4dfd2}
+.rail,.rail.live{order:1;background:none;border:0;border-radius:0;padding:0 20px;gap:26px;width:100%;}
+.tw{height:64px}.tower{transition:transform .16s}.tower:not(:disabled):hover{transform:translateY(-4px);background:#ffffff06}
+.tower .den{font-size:11px;color:#c4d2c7}.tower .cnt{font-size:12px}
+.fills{width:110px;gap:5px}.fills button{background:#123a2e80;border-color:#dbe6ca30;min-height:30px}.fills .allin{color:#e3c6ae;border-color:#d4ae8c55}
+.controls{order:3;gap:8px;margin-top:4px;width:100%;padding:12px 0 0;border-top:1px solid #e0e6d51a}
+.btn{min-height:50px;border-radius:12px;font-size:15px;transition:filter .15s,transform .15s}.btn:not(:disabled):hover{filter:brightness(1.1)}.btn:not(:disabled):active{transform:translateY(1px)}
+.btn.fold{background:#142b24cc;border-color:#d2ddd02b;color:#d4ddd5}.btn.call{background:#436a56;border-color:#ffffff24}.btn.raise,.btn.next{background:var(--brass)}
+.cashier{border:0;padding-top:0}.cashier .lbl{text-align:center}.cbtn{background:#12362880;border-color:#dce4cb2b}
+#records{width:min(800px,100%);align-self:center;padding:20px 0}
+#menu{width:min(820px,100%);align-self:center;padding:40px 0;gap:18px;grid-template-columns:1fr 1fr}
+.lobby-intro{grid-column:1/-1;text-align:center;padding:12px 0 28px}.lobby-intro .eyebrow{font:500 11px var(--num);letter-spacing:.28em;color:var(--brass)}
+.lobby-intro h2{font-size:clamp(30px,5vw,48px);font-weight:500;letter-spacing:.06em;margin:18px 0 12px}.lobby-intro p{color:var(--mute);font-size:14px;margin:0}
+.lobby-chips{display:flex;justify-content:center;gap:12px;margin:28px 0 0}.lobby-chips .chip-d{--cs:30px;box-shadow:0 5px 0 #0004,0 10px 15px #0003}
+.mode{padding:26px;border:1px solid #c8b38230;border-radius:20px;background:linear-gradient(145deg,#26392f,#17251e);grid-template-areas:"k" "t" "d" "go";grid-template-columns:1fr;gap:12px;align-content:start}
+.mode .mk{font-family:var(--body);font-size:25px;font-weight:600}.mode .md{font-size:13px;line-height:1.8;margin:0}.mode .go{text-align:center;margin-top:14px;padding:13px}
+.mode.online{background:linear-gradient(145deg,#26362d,#1b241f)}.mode .form{grid-template-columns:1fr;gap:8px}.mode .form input{min-height:46px}.formbtns{margin-top:8px}.why{grid-column:1/-1}
+@media(min-width:1500px){.wrap{max-width:1400px}}
+@media(max-width:700px){
+ body{padding:12px 10px 16px}.wrap{gap:8px}.top{padding:0 6px}h1{font-size:18px}.nav button{padding:4px 10px;min-height:32px}.ghost.icon{min-height:32px}.top .pills{gap:10px}
+ #game{padding:24px 4px 16px;min-height:calc(100dvh - 108px)}
+ #game::before{inset:4px -20px 0;border-radius:160px 160px 70px 70px;border-width:9px}#game::after{inset:22px -3px 16px;border-radius:148px 148px 62px 62px}
+ .table,.table.big{min-height:305px;flex-basis:305px;height:clamp(305px,42vh,420px)}
+ .seat,.plate{width:72px}.plate{padding:4px 3px;border-radius:8px}.nm{font-size:11px}.stk{font-size:12px}.mc{height:34px}.mc .card{--w:25px;--h:34px}.seat.compact,.seat.compact .plate{width:62px}
+ .center{top:43%;gap:9px}.pot{font-size:11px}.pot b{font-size:19px}.board{gap:4px}.card.bd{--w:clamp(34px,10vw,46px);--h:calc(var(--w)*1.38)}.card.bd .r{font-size:21px}.card.bd .s{font-size:16px}.card.bd.sm{--w:32px;--h:44px}
+ .result{top:77%;font-size:11px;width:200px}.hero{padding:6px 12px 0;gap:8px}.rail,.rail.live{padding:0;gap:10px}.fills{width:92px}.tw{height:56px}
+ .hero .me .card.big{--w:45px;--h:62px}.hero .me .card.big .r{font-size:22px}.hero .me .card.big .s{font-size:17px}.info .money b{font-size:21px}.btn{min-height:48px}
+ #menu{grid-template-columns:1fr;padding:20px 8px}.lobby-intro{padding:12px 0 18px}.mode{padding:22px}.mode .form{grid-template-columns:auto 1fr}.mode .mk{font-size:22px}
+}
+@media(max-width:380px){.top .row{flex-wrap:wrap}.table,.table.big{min-height:300px}.hero{padding-inline:6px}.rail,.rail.live{gap:4px}.fills{width:82px}}
+@media(prefers-reduced-motion:reduce){.tower,.btn{transition:none}}
+
+
+/* Four stable action positions, including when raising is unavailable. */
+.main.actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.actions .btn{min-width:0;padding:8px 4px}
+.btn.allin{background:#713e35;color:#fff0df;border-color:#b17a5c;box-shadow:inset 0 1px 0 #ffffff10}
+.fills button:last-child:nth-child(3){grid-column:1/-1}
+@media(max-width:700px){.main.actions{gap:5px}.actions .btn{font-size:13px;min-height:50px}.actions .btn small{font-size:9px}}
 </style>
 </head>
 <body>
@@ -1194,20 +1280,21 @@ function renderMenu(){
   else if(!crypto.subtle)why='这个浏览器环境不支持加密功能，请用 https 网址打开。';
   const prevNick=esc(M.nick||''),pre=esc(M.prefill||store.get('poker.room')||'');
   $('menu').innerHTML=`
+    <div class="lobby-intro"><span class="eyebrow">THE PRIVATE TABLE</span><h2>好朋友，开一桌。</h2><p>坐下来，从这一手开始。</p><div class="lobby-chips" aria-hidden="true"><i class="chip-d w"></i><i class="chip-d r"></i><i class="chip-d b"></i><i class="chip-d g"></i></div></div>
     <button class="mode" data-mode="bots">
-      <span class="mk">人机局</span>
+      <span class="mk">先练一手</span>
       <span class="mt">7 人 · 你 + 6 个电脑</span>
-      <span class="md">只在你的浏览器里打，不联网。电脑玩家风格各异，输光会自动买一手。</span>
+      <span class="md">随时入座，与 6 位不同风格的电脑玩家练习。</span>
       <span class="go">开始</span>
     </button>
     <div class="mode online${canOnline?'':' disabled'}">
-      <span class="mk">联机局</span>
+      <span class="mk">和朋友玩</span>
       <span class="mt">5–10 人 · 全是真人</span>
-      <span class="md">一个人开房当房主（发牌在房主的页面上进行），把房间链接发给朋友。每人买一手 200 入座，满 5 人自动开局。</span>
+      <span class="md">创建房间，邀请朋友入座。每次买入 200，满 5 人开局。房主需保持页面开启。</span>
       <div class="form">
         <label for="nick">昵称</label><input id="nick" maxlength="16" placeholder="朋友们看到的名字" value="${prevNick}" autocomplete="nickname"${canOnline?'':' disabled'}>
         <label for="roomIn">房间号</label><input id="roomIn" maxlength="8" placeholder="比如 K7Q2M" value="${pre}" autocapitalize="characters" autocomplete="off"${canOnline?'':' disabled'}>
-        <div class="formbtns"><button class="btn call" data-room="join"${canOnline?'':' disabled'}>加入房间</button><button class="btn raise" data-room="create"${canOnline?'':' disabled'}>新开一个房间</button></div>
+        <div class="formbtns"><button class="btn call" data-room="join"${canOnline?'':' disabled'}>加入房间</button><button class="btn raise" data-room="create"${canOnline?'':' disabled'}>创建房间</button></div>
       </div>
     </div>
     ${why||FLASH?`<p class="why">${why||esc(FLASH)}</p>`:''}`;
@@ -1256,22 +1343,30 @@ function towerHTML(d,count,enabled,pushed){
 function railHTML(p,enabled){
   const avail=Z();for(const d of DV)avail[d]=p.chips[d]-(enabled?PUSH[d]:0);
   const canR=enabled&&canRaise(p);
-  const fills=enabled?`<div class="fills">${canR?`<button data-fill="min">最小</button><button data-fill="half">½池</button><button data-fill="pot">满池</button>`:''}<button data-fill="all" class="allin">全下</button></div>`:'';
+  const fills=canR?`<div class="fills"><button data-fill="min">最小</button><button data-fill="half">½池</button><button data-fill="pot">满池</button></div>`:'';
   return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div>${fills}</div>`;
 }
 function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
-  const word=nextRaiseWord(),to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
+  const next=nextRaiseWord(),word=/^\d+-bet$/.test(next)?next:'Raise',to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
   const r={toCall,pushed,canR,minTo,word,to,allIn};
-  r.callLbl=toCall===0?'过牌':(toCall>=p.stack?`全下 ${fmt(p.stack+p.bet)}`:`跟注 ${fmt(toCall)}`);
+  r.callLbl=toCall===0?'Check':`Call<small>${fmt(Math.min(toCall,p.stack))}${toCall>=p.stack?' · All in':''}</small>`;
+  r.canAllIn=p.stack>0&&(p.stack<=toCall||canR);
   r.callChange=pushed>toCall&&toCall>0&&!(to>=minTo||allIn)?pushed-toCall:0;
-  if(r.callChange)r.callLbl=`跟注 ${fmt(toCall)}<small>找零 ${fmt(r.callChange)}</small>`;
+  if(r.callChange)r.callLbl=`Call ${fmt(toCall)}<small>找零 ${fmt(r.callChange)}</small>`;
   if(!canR){r.raise=null;}
   else if(pushed===0){r.raise={lbl:`${word}<small>最少到 ${fmt(minTo)}</small>`,mode:'fill'};}
-  else if(allIn){r.raise={lbl:`全下 ${fmt(p.bet+p.stack)}${p.bet+p.stack>S.currentBet?`<small>${word}</small>`:''}`,mode:'go'};}
-  else if(to>=minTo){r.raise={lbl:word==='下注'?`下注 ${fmt(to)}`:`${word}<small>到 ${fmt(to)}</small>`,mode:'go'};}
+  else if(allIn){r.raise={lbl:`${word}<small>All in · ${fmt(p.bet+p.stack)}</small>`,mode:'go'};}
+  else if(to>=minTo){r.raise={lbl:`${word}<small>到 ${fmt(to)}</small>`,mode:'go'};}
   else{r.raise={lbl:`${word}<small>还差 ${fmt(minTo-to)}</small>`,mode:'off'};}
   return r;
+}
+function commitAllIn(p){
+  const L=actionLabels(p);
+  if(!L.canAllIn)return;
+  const chips=Object.assign(Z(),p.chips);
+  if(p.stack<=L.toCall)act('call',0,chips);
+  else act('raise',p.bet+p.stack,chips);
 }
 function renderHero(){
   const el=$('hero'),m=mySeat();
@@ -1304,10 +1399,11 @@ function renderHero(){
       <div class="bz-chips">${L.pushed?DV.filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join(''):'<span class="hint">点下面的筹码推到这里</span>'}</div>
       <div class="bz-sum">${L.pushed?`<b>${fmt(L.pushed)}</b><button class="mini" data-clear="1">撤回</button>`:`<span class="need">${L.toCall?`跟注 ${fmt(L.toCall)}`:'可过牌'}</span>`}</div>
     </div>`;
-    ctl+=`<div class="main">
-      <button class="btn fold" data-a="fold"${dis}>弃牌</button>
+    ctl+=`<div class="main actions">
+      <button class="btn fold" data-a="fold"${dis}>Fold</button>
       <button class="btn call" data-a="call"${dis}>${L.callLbl}</button>
-      ${L.raise?`<button class="btn raise${L.raise.mode==='off'?' off':''}" data-a="raise" data-rmode="${L.raise.mode}"${dis||(L.raise.mode==='off'?' disabled':'')}>${L.raise.lbl}</button>`:''}
+      ${L.raise?`<button class="btn raise${L.raise.mode==='off'?' off':''}" data-a="raise" data-rmode="${L.raise.mode}"${dis||(L.raise.mode==='off'?' disabled':'')}>${L.raise.lbl}</button>`:`<button class="btn raise" disabled>Raise</button>`}
+      <button class="btn allin" data-a="allin"${dis||(!L.canAllIn?' disabled':'')}>All in<small>${fmt(p.stack)}</small></button>
     </div>`;
     if(S.deadline&&!M.host)ctl+=`<div class="wait">剩余 <span class="cd" data-until="${S.deadline}"></span>${waiting?' · 已提交，等房主确认…':''}</div>`;
   }else if(R&&R.stage==='vote'&&R.voters.includes(m)){
@@ -1428,6 +1524,7 @@ document.addEventListener('click',e=>{
     else{const tgt=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),target));PUSH=pickChips(p.chips,tgt-p.bet);}
     renderHero();return;
   }
+  if(a==='allin'){commitAllIn(p);return;}
   if(a==='fold'){act('fold');return;}
   if(a==='call'){
     const L=actionLabels(p);
