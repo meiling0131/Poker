@@ -629,6 +629,30 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
   .hero .tag{font-size:10.5px}
   .actions .btn small{font-size:10px}
 }
+
+#actionConfirm{position:fixed;inset:0;margin:auto;width:min(380px,calc(100vw - 32px));max-height:calc(100dvh - 36px);overflow:auto;padding:22px;border:1px solid #c8b38280;border-radius:20px;color:#f1ede4;background:linear-gradient(140deg,#35454c,#222d33);box-shadow:0 24px 80px #0008}
+#actionConfirm::backdrop{background:#081410a6;backdrop-filter:blur(4px)}
+#confirmForm{display:flex;flex-direction:column;gap:14px}#confirmTitle{font-size:20px;margin:0}
+#confirmAmountRow{font-size:12px;color:#c2ced0;display:flex;flex-direction:column;gap:8px}
+#confirmAmount{width:100%;min-height:46px;border:1px solid #c8b38280;border-radius:10px;background:#152c29;color:#fff4dc;font:600 22px var(--num);padding:8px 12px}
+#confirmDetail{font-size:14px;line-height:1.7;margin:0}#confirmError{font-size:12px;line-height:1.5;color:#ffb6a7;margin:0}#confirmError:empty{display:none}
+.confirmButtons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.confirmButtons button{min-height:46px;border-radius:10px;font:600 15px var(--body);cursor:pointer}
+#cancelAction{background:#384951;color:#e3eaeb;border:1px solid #c5d4dc40}#submitAction{background:#d5bf8c;color:#272116;border:0}#submitAction:disabled{opacity:.4;cursor:default}
+.confirmHint{font-size:11px;color:#aebdc0;text-align:center;margin:0}@media(pointer:coarse){.confirmHint{display:none}}
+
+/* Face values sit inside the original coloured chip artwork. */
+.chip-d::before{position:absolute;inset:18%;display:grid;place-items:center;z-index:2;font:800 calc(var(--cs)*.32)/1 var(--num);font-style:normal;color:#fff5e4;text-shadow:0 1px 1px #0006;pointer-events:none}
+.chip-d.w::before{content:'1';color:#204d80;text-shadow:none}.chip-d.r::before{content:'5'}.chip-d.b::before{content:'10'}.chip-d.g::before{content:'25'}
+.face{height:20px}.face .chip-d{transform:scaleY(.60)}.face .chip-d::before{transform:scaleY(1.45)}
+.hintToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--text)}
+.hintToggle input{width:36px;height:20px;accent-color:var(--brass);cursor:pointer}
+.lobby-options{grid-column:1/-1;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#263630;border:1px solid #c8b38230;padding:18px;border-radius:16px}
+.lobby-options>div{flex:1 1 220px}.lobby-options strong{font-size:14px}.lobby-options>div span{display:block;font-size:11px;color:var(--mute);margin-top:5px}
+.lobby-options>label:not(.hintToggle){display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
+.lobby-options input[type=number]{width:64px;font:600 16px var(--num);color:var(--cream);background:#172820;border:1px solid #627568;border-radius:8px;padding:8px}
+#menu .mode.online{grid-column:1/-1}#lobbyError:empty{display:none}
+@media(max-width:700px){.hero .info .hand{display:inline;font-size:9px;line-height:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lobby-options{gap:12px;padding:15px}.lobby-options>.hintToggle{flex-basis:100%}}
+
 </style>
 </head>
 <body>
@@ -641,6 +665,7 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
       <div class="morewrap">
         <button class="ghost icon" id="moreBtn" hidden aria-label="设置" aria-expanded="false">设置</button>
         <div class="more" id="more" hidden>
+          <label class="hintToggle"><span>牌型提示</span><input id="handHints" type="checkbox" role="switch"></label>
           <div class="seg" id="speed" hidden>
             <button data-speed="1100">慢</button><button data-speed="650" class="on">中</button><button data-speed="250">快</button>
           </div>
@@ -661,8 +686,21 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
   <section id="records"></section>
 </div>
 
+<dialog id="actionConfirm" aria-labelledby="confirmTitle">
+  <form id="confirmForm" novalidate>
+    <h2 id="confirmTitle">确认操作</h2>
+    <label id="confirmAmountRow" for="confirmAmount">本次投入（不含本轮已下注）
+      <input id="confirmAmount" type="number" inputmode="numeric" step="1" autocomplete="off">
+    </label>
+    <p id="confirmDetail" aria-live="polite"></p>
+    <p id="confirmError" role="alert"></p>
+    <div class="confirmButtons"><button type="button" id="cancelAction">返回修改</button><button type="submit" id="submitAction">确认</button></div>
+    <p class="confirmHint">Enter 确认 · Esc 返回</p>
+  </form>
+</dialog>
 <script>
 (function(){
+const $=id=>document.getElementById(id);
 /* ============================================================
    Firebase 配置：把 Firebase 控制台「项目设置 → 你的应用 → SDK 设置和配置」
    里给你的 firebaseConfig 整段贴在这里（替换下面这几个空字符串）。
@@ -682,7 +720,8 @@ const fmt=n=>Number(n).toLocaleString('en-US');
 const sgn=n=>(n>0?'+':n<0?'−':'')+fmt(Math.abs(n));
 const STREET_CN={idle:'等待',dealing:'发牌',preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',done:'结算'};
 const BETTING=['preflop','flop','turn','river'];
-const BUY=200,SB=1,BB=2,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=5,ONLINE_MAX=10;
+let SB=1,BB=2;
+const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=5,ONLINE_MAX=10;
 const BUY_SET=[[25,4],[10,6],[5,6],[1,10]];
 const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 const BOTS=[['阿杰',{loose:.30,aggr:.70}],['小雨',{loose:.65,aggr:.30}],['老周',{loose:.15,aggr:.25}],
@@ -691,6 +730,39 @@ const BOT_STYLE=Object.fromEntries(BOTS);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+
+const DAILY_LIMIT=1000;
+let PLAY_MODE=store.get('poker.playMode')==='practice'?'practice':'normal';
+let SHOW_HAND=store.get('poker.showHand')!=='off';
+function localDay(){const d=new Date();return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;}
+function dailyAllowance(){
+  const day=localDay();let entry=null;
+  try{entry=JSON.parse(localStorage.getItem('poker.daily.v1')||'null');}catch(e){}
+  const used=entry&&entry.day===day&&Number.isSafeInteger(entry.used)&&entry.used>=0?entry.used:0;
+  return {day,used,remaining:Math.max(0,DAILY_LIMIT-used)};
+}
+async function reserveDailyBuy(valid){
+  const spend=()=>{
+    if(!valid())return false;
+    const daily=dailyAllowance();
+    if(daily.remaining<BUY){FLASH='今日买入额度已用完，明天恢复。练习模式可不限次数买入。';return false;}
+    try{localStorage.setItem('poker.daily.v1',JSON.stringify({day:daily.day,used:daily.used+BUY}));}
+    catch(e){FLASH='浏览器无法保存每日额度，请启用本地存储或使用练习模式。';return false;}
+    return true;
+  };
+  return navigator.locks?navigator.locks.request('poker.daily-buy',spend):spend();
+}
+function loadStake(){
+  try{const v=JSON.parse(store.get('poker.stake')||'null');if(v&&validStake(v.sb,v.bb)){SB=v.sb;BB=v.bb;}}catch(e){}
+}
+function validStake(sb,bb){return Number.isSafeInteger(sb)&&Number.isSafeInteger(bb)&&sb>=1&&bb>sb&&bb<=100;}
+function readStakeForm(){
+  const sb=Number($('stakeSB').value),bb=Number($('stakeBB').value);
+  if(!validStake(sb,bb)){FLASH='盲注需为整数：小盲至少 1，大盲大于小盲且不超过 100。';$('lobbyError').textContent=FLASH;return false;}
+  SB=sb;BB=bb;store.set('poker.stake',JSON.stringify({sb,bb}));return true;
+}
+function adoptStake(){if(S&&S.stakes&&validStake(S.stakes.sb,S.stakes.bb)){SB=S.stakes.sb;BB=S.stakes.bb;}else if(S&&S.mode==='online'){SB=1;BB=2;}}
+loadStake();
 
 /* ---------- chips ---------- */
 function chipBreakdown(a){
@@ -939,7 +1011,7 @@ function commit(){S.updated=Date.now();render();if(M.online&&M.host&&M.mode==='o
 
 /* ---------- host engine ---------- */
 function baseTable(mode){
-  return {v:6,mode,raises:0,potChips:Z(),board2:null,runout:null,hand:0,started:false,street:'idle',dealer:-1,dealerKey:null,sbPos:-1,bbPos:-1,board:[],currentBet:0,minRaise:BB,fullRaiseId:0,
+  return {v:6,mode,stakes:{sb:SB,bb:BB},raises:0,potChips:Z(),board2:null,runout:null,hand:0,started:false,street:'idle',dealer:-1,dealerKey:null,sbPos:-1,bbPos:-1,board:[],currentBet:0,minRaise:BB,fullRaiseId:0,
     actor:-1,turn:(S&&S.turn||0)+1,deadline:0,nextAt:0,updated:0,msg:[],log:[],enc:{},pending:[],book:{},ledger:[],
     ownerUid:M.mode==='online'?M.uid:null,hostUid:M.mode==='online'?M.uid:null,room:M.room,names:{},hostPub:M.keys?M.keys.pub:null,seats:[]};
 }
@@ -1360,6 +1432,76 @@ function onSeatDocs(snap){
 /* ---------- player actions ---------- */
 const mySeat=()=>S?S.seats.findIndex(p=>p.uid===M.me):-1;
 function myTurn(){const m=mySeat();return m>=0&&S.actor===m&&BETTING.includes(S.street)&&canAct(S.seats[m]);}
+let PENDING_ACTION=null;
+function cancelAction(){
+  PENDING_ACTION=null;
+  const dialog=$('actionConfirm');if(dialog.open)dialog.close();
+}
+function pendingIsCurrent(){
+  return PENDING_ACTION&&S&&PENDING_ACTION.session===SESSION&&PENDING_ACTION.hand===S.hand
+    &&PENDING_ACTION.turn===S.turn&&myTurn()&&(M.host||SUBMITTED!==S.turn);
+}
+function confirmationPlan(){
+  if(!pendingIsCurrent())return {error:'牌局已变化，请重新选择操作。'};
+  const p=S.seats[mySeat()],a=PENDING_ACTION;
+  const call=Math.min(p.stack,Math.max(0,S.currentBet-p.bet));
+  let amount=0,to=0;
+  if(a.type==='raise'){
+    amount=Number($('confirmAmount').value);
+    if(!Number.isSafeInteger(amount)||amount<=0)return {error:'请输入有效的整数金额。'};
+    if(!canRaise(p))return {error:'当前不能再加注。'};
+    if(amount>p.stack)return {error:'金额超过剩余筹码。'};
+    to=p.bet+amount;
+    if(to<minRaiseTo(p))return {error:`本次至少投入 ${fmt(minRaiseTo(p)-p.bet)}，本轮加注到 ${fmt(minRaiseTo(p))}。`};
+  }else if(a.type==='call')amount=call;
+  else if(a.type==='check'&&call>0)return {error:'当前需要跟注，请重新选择。'};
+  const selected=a.chips;
+  const valid=selected&&DV.every(d=>Number.isInteger(selected[d])&&selected[d]>=0&&selected[d]<=p.chips[d]);
+  const chips=amount?(valid&&csum(selected)>=amount?Object.assign({},selected):pickChips(p.chips,amount)):null;
+  const change=chips?csum(chips)-amount:0;
+  return {type:a.type,to,amount,chips,change,total:p.bet+amount};
+}
+function updateConfirmation(){
+  const plan=confirmationPlan();
+  if(!plan.error){
+    const p=S.seats[mySeat()];
+    $('confirmTitle').textContent=plan.type==='fold'?'确认 Fold':plan.type==='check'?'确认 Check':plan.amount===p.stack?'确认 All in':`确认 ${plan.type==='raise'?actionLabels(p).word:'Call'}`;
+  }
+  $('confirmError').textContent=plan.error||'';
+  $('submitAction').disabled=!!plan.error;
+  $('confirmDetail').textContent=plan.error?'':plan.type==='fold'?'确认弃掉这一手牌？'
+    :plan.type==='check'?'本次过牌，不投入筹码。'
+    :`本次投入 ${fmt(plan.amount)} · 本轮合计 ${fmt(plan.total)}${plan.change?` · 自动找零 ${fmt(plan.change)}`:''}`;
+  return plan;
+}
+function requestAction(type,to=0,chips=null){
+  if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
+  const p=S.seats[mySeat()];
+  PENDING_ACTION={type,session:SESSION,hand:S.hand,turn:S.turn,chips:chips?Object.assign({},chips):null};
+  const amount=type==='raise'?to-p.bet:Math.min(p.stack,Math.max(0,S.currentBet-p.bet));
+  const allIn=amount===p.stack&&amount>0;
+  $('confirmTitle').textContent=type==='fold'?'确认 Fold':type==='check'?'确认 Check':allIn?'确认 All in':`确认 ${type==='raise'?actionLabels(p).word:'Call'}`;
+  $('confirmAmountRow').hidden=type!=='raise';
+  $('confirmAmount').value=String(amount);
+  $('confirmAmount').min=String(minRaiseTo(p)-p.bet);
+  $('confirmAmount').max=String(p.stack);
+  updateConfirmation();
+  const dialog=$('actionConfirm');if(!dialog.open)dialog.showModal();
+  // Keep the mobile keyboard closed until the amount is tapped explicitly.
+  $('submitAction').focus();
+}
+function confirmAction(){
+  const plan=updateConfirmation();if(plan.error)return;
+  cancelAction(); // Clear before dispatch so double clicks / held Enter cannot repeat.
+  act(plan.type,plan.to,plan.chips);
+}
+$('confirmForm').addEventListener('submit',e=>{e.preventDefault();confirmAction();});
+$('confirmAmount').addEventListener('input',updateConfirmation);
+$('cancelAction').addEventListener('click',cancelAction);
+$('actionConfirm').addEventListener('cancel',e=>{e.preventDefault();cancelAction();});
+$('actionConfirm').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing){e.preventDefault();if(!e.repeat)confirmAction();}
+});
 async function act(type,to,chips){
   if(!myTurn())return;
   to=to||0;chips=chips||null;
@@ -1381,6 +1523,11 @@ async function money(kind){
   if(kind==='cash'&&p.stack-p.qCash*BUY+p.qBuy*BUY<BUY){FLASH='筹码不足 200，不能退一手。';render();return;}
   FLASH='';
   if(S.mode==='bots'){
+    if(kind==='buy'&&PLAY_MODE==='normal'){
+      const session=SESSION,table=S;
+      const ok=await reserveDailyBuy(()=>SESSION===session&&S===table&&PLAY_MODE==='normal');
+      if(!ok){if(SESSION===session&&S===table)render();return;}
+    }
     if(kind==='buy')p.qBuy++;else p.qCash++;
     applyMoney(p);commit();maybeStart();return;
   }
@@ -1404,12 +1551,14 @@ async function leaveTable(){
 
 /* ---------- mode switching ---------- */
 function stopAll(){
+  cancelAction();
   GEN++;SESSION++;clearTimeout(TT);UNSUBS.forEach(f=>{try{f();}catch(e){}});UNSUBS=[];
   S=null;H=[];DECK=[];SEATDOCS={};MYHOLE={hand:-1,c:null};MYDOC=null;
   M.host=false;M.online=false;M.ready=false;M.mode=null;SUBMITTED=-1;FLASH='';VIEW='table';
 }
-function enterBots(){
-  stopAll();M.mode='bots';M.me='local';M.host=true;M.online=false;M.ready=true;store.set('poker.mode','bots');
+function enterBots(mode=PLAY_MODE){
+  PLAY_MODE=mode==='practice'?'practice':'normal';store.set('poker.playMode',PLAY_MODE);
+  stopAll();loadStake();M.mode='bots';M.me='local';M.host=true;M.online=false;M.ready=true;store.set('poker.mode','bots');
   newBotsTable();commit();maybeStart();
 }
 const ROOM_ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -1419,7 +1568,7 @@ function roomLink(){return location.origin&&location.origin!=='null'?`${location
 async function enterOnline(room,create){
   if(!M.db||!M.uid)return;
   room=normRoom(room);if(!room)return;
-  stopAll();M.mode='online';M.me=M.uid;M.online=true;M.room=room;M.creating=!!create;
+  stopAll();loadStake();M.mode='online';M.me=M.uid;M.online=true;M.room=room;M.creating=!!create;
   store.set('poker.mode','online');store.set('poker.room',room);store.set('poker.nick',M.nick);
   try{history.replaceState(null,'',`?room=${room}`);}catch(e){}
   render();
@@ -1428,7 +1577,6 @@ async function enterOnline(room,create){
 function toMenu(){stopAll();store.set('poker.mode','');try{history.replaceState(null,'',location.pathname);}catch(e){}render();}
 
 /* ---------- render ---------- */
-const $=id=>document.getElementById(id);
 function cardHTML(c,size){
   if(c===undefined)return `<div class="card ${size} empty"></div>`;
   if(c===null)return `<div class="card ${size} back"></div>`;
@@ -1493,6 +1641,8 @@ function seatHTML(i,pos,compact){
   </div>`;
 }
 function render(){
+  adoptStake();
+  if(PENDING_ACTION&&!pendingIsCurrent())cancelAction();
   const app=$('app');
   document.body.dataset.view=M.mode?VIEW:'menu';
   renderHeader();
@@ -1508,9 +1658,10 @@ function render(){
 }
 function renderHeader(){
   const online=M.mode==='online';
-  $('pills').innerHTML=!M.mode?'':`<span class="pill">${online?`房间 ${esc(M.room||'')}`:'人机 7 人'}</span><span class="pill">盲注 1/2</span>${S&&S.hand?`<span class="pill">第 ${S.hand} 手</span>`:''}`;
+  $('pills').innerHTML=!M.mode?'':`<span class="pill">${online?`房间 ${esc(M.room||'')}`:`${PLAY_MODE==='normal'?'正常':'练习'} · 7 人`}</span><span class="pill">盲注 ${SB}/${BB}</span>${S&&S.hand?`<span class="pill">第 ${S.hand} 手</span>`:''}`;
   $('nav').hidden=!M.mode;
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.view===VIEW));
+  $('handHints').checked=SHOW_HAND;
   $('speed').hidden=M.mode!=='bots';
   $('restart').hidden=!(M.mode==='bots'||(online&&M.host));
   $('restart').textContent=CONFIRM_RESET?'确认重置？':'重置牌桌';
@@ -1531,14 +1682,26 @@ function renderMenu(){
   const prevNick=esc(M.nick||''),pre=esc(M.prefill||store.get('poker.room')||'');
   $('menu').innerHTML=`
     <div class="lobby-intro"><span class="eyebrow">THE PRIVATE TABLE</span><h2>好朋友，开一桌。</h2><p>坐下来，从这一手开始。</p><div class="lobby-chips" aria-hidden="true"><i class="chip-d w"></i><i class="chip-d r"></i><i class="chip-d b"></i><i class="chip-d g"></i></div></div>
-    <button class="mode" data-mode="bots">
-      <span class="mk">先练一手</span>
+    <section class="lobby-options">
+      <div><strong>自定义盲注</strong><span>用于人机与新建好友房 · 每次买入 200</span></div>
+      <label>小盲<input id="stakeSB" type="number" inputmode="numeric" min="1" max="99" value="${SB}"></label>
+      <label>大盲<input id="stakeBB" type="number" inputmode="numeric" min="2" max="100" value="${BB}"></label>
+      <label class="hintToggle"><span>提示我的牌型</span><input data-hand-hints="1" type="checkbox" role="switch"${SHOW_HAND?' checked':''}></label>
+    </section>
+    <p id="lobbyError" class="why" role="alert"></p>
+    <button class="mode normal" data-mode="normal">
+      <span class="mk">正常模式</span><span class="mt">每日额度 ${fmt(DAILY_LIMIT)} · 剩余 ${fmt(dailyAllowance().remaining)}</span>
+      <span class="md">与 6 位电脑对局。买入累计计入额度，退出和重开不会返还；每天本地时间零点恢复。</span>
+      <span class="go">进入牌桌</span>
+    </button>
+    <button class="mode" data-mode="practice">
+      <span class="mk">练习模式</span>
       <span class="mt">7 人 · 你 + 6 个电脑</span>
-      <span class="md">随时入座，与 6 位不同风格的电脑玩家练习。</span>
+      <span class="md">不限次数买入，自由练习下注与策略。</span>
       <span class="go">开始</span>
     </button>
     <div class="mode online${canOnline?'':' disabled'}">
-      <span class="mk">和朋友玩</span>
+      <span class="mk">好友模式</span>
       <span class="mt">5–10 人 · 全是真人</span>
       <span class="md">创建房间，邀请朋友入座。每次买入 200，满 5 人开局。房主需保持页面开启。</span>
       <div class="form">
@@ -1580,8 +1743,10 @@ function cashierHTML(p){
   const canCash=p.stack-pendC*BUY+pendB*BUY>=BUY;
   let lbl=p.stack===0&&!pendB?'筹码为 0，买一手才能上牌':locked?'这一手结束后生效':'';
   if(pendB||pendC)lbl=`待生效：${pendB?`买 ${pendB} 手`:''}${pendB&&pendC?' · ':''}${pendC?`退 ${pendC} 手`:''}`;
+  const daily=S.mode==='bots'&&PLAY_MODE==='normal'?dailyAllowance():null;
+  if(daily)lbl+=(lbl?' · ':'')+`今日剩余买入 ${fmt(daily.remaining)}`;
   return `<div class="cashier">${lbl?`<span class="lbl">${lbl}</span>`:''}
-    <button class="cbtn${p.stack===0?' primary':''}" data-m="buy">${miniStack(BUY)}买一手 <b>+200</b></button>
+    <button class="cbtn${p.stack===0?' primary':''}" data-m="buy"${daily&&daily.remaining<BUY?' disabled':''}>${miniStack(BUY)}买一手 <b>+200</b></button>
     <button class="cbtn" data-m="cash"${canCash?'':' disabled'}>退一手 <b>−200</b></button></div>`;
 }
 function towerHTML(d,count,enabled,pushed){
@@ -1615,8 +1780,8 @@ function commitAllIn(p){
   const L=actionLabels(p);
   if(!L.canAllIn)return;
   const chips=Object.assign(Z(),p.chips);
-  if(p.stack<=L.toCall)act('call',0,chips);
-  else act('raise',p.bet+p.stack,chips);
+  if(p.stack<=L.toCall)requestAction('call',0,chips);
+  else requestAction('raise',p.bet+p.stack,chips);
 }
 function renderHero(){
   const el=$('hero'),m=mySeat();
@@ -1639,7 +1804,7 @@ function renderHero(){
   const hole=myHoleCards();
   const cards=hole?hole.map(c=>cardHTML(c,'big')).join(''):cardHTML(undefined,'big')+cardHTML(undefined,'big');
   const pos=[];if(S.street!=='idle'&&p.inHand){if(S.dealer===m)pos.push('庄');if(S.sbPos===m)pos.push('小盲');if(S.bbPos===m)pos.push('大盲');}
-  const handTxt=hole?describe(hole,S.board)+(S.board2&&S.board2.length>=3?' / '+describe(hole,S.board2):''):'';
+  const handTxt=SHOW_HAND&&hole?describe(hole,S.board)+(S.board2&&S.board2.length>=3?' / '+describe(hole,S.board2):''):'';
   const nb=netOf(bookKey(p));
   const mine=myTurn(),R=S.runout;
   let ctl='',zone='';
@@ -1716,7 +1881,9 @@ function renderRecords(){
 }
 let NAME_BUSY=false;
 function refreshNames(){}
+let DISPLAY_DAY=localDay();
 function tick(){
+  const day=localDay();if(day!==DISPLAY_DAY){DISPLAY_DAY=day;render();return;}
   document.querySelectorAll('[data-until]').forEach(e=>{const s=Math.max(0,Math.ceil((+e.dataset.until-Date.now())/1000));e.textContent=s+'s';});
   const away=$('away');
   if(S&&M.mode==='online'&&!M.host){
@@ -1726,15 +1893,21 @@ function tick(){
   }else away.hidden=true;
 }
 setInterval(tick,1000);
+document.addEventListener('change',e=>{
+  if(e.target.id==='handHints'||e.target.dataset.handHints){
+    SHOW_HAND=e.target.checked;store.set('poker.showHand',SHOW_HAND?'on':'off');
+    $('handHints').checked=SHOW_HAND;if(S)renderHero();
+  }
+});
 document.addEventListener('click',e=>{
   const mo=$('more');if(mo&&!mo.hidden&&!e.target.closest('.morewrap'))mo.hidden=true;
   const t=e.target.closest('button');if(!t)return;
-  if(t.dataset.mode){if(t.dataset.mode==='bots')enterBots();return;}
+  if(t.dataset.mode){if(readStakeForm())enterBots(t.dataset.mode);return;}
   if(t.dataset.room){
     const nick=($('nick')&&$('nick').value||'').replace(/\s+/g,' ').trim().slice(0,16);
     if(!nick){FLASH='先填一个昵称';renderMenu();$('nick')&&$('nick').focus();return;}
     M.nick=nick;store.set('poker.nick',nick);FLASH='';
-    if(t.dataset.room==='create'){enterOnline(newRoomCode(),true);return;}
+    if(t.dataset.room==='create'){if(!readStakeForm())return;enterOnline(newRoomCode(),true);return;}
     const code=normRoom($('roomIn')&&$('roomIn').value);
     if(!code){FLASH='填一下房间号，或者新开一个房间';renderMenu();return;}
     enterOnline(code,false);return;
@@ -1775,16 +1948,16 @@ document.addEventListener('click',e=>{
     renderHero();return;
   }
   if(a==='allin'){commitAllIn(p);return;}
-  if(a==='fold'){act('fold');return;}
+  if(a==='fold'){requestAction('fold');return;}
   if(a==='call'){
     const L=actionLabels(p);
     const picked=L.pushed>=L.toCall&&L.toCall>0&&(L.callChange||L.pushed===L.toCall)?Object.assign({},PUSH):null;
-    act(L.toCall===0?'check':'call',0,picked);return;
+    requestAction(L.toCall===0?'check':'call',0,picked);return;
   }
   if(a==='raise'){
     const L=actionLabels(p);if(!L.raise)return;
-    if(L.raise.mode==='fill'){PUSH=pickChips(p.chips,L.minTo-p.bet);renderHero();return;}
-    if(L.raise.mode==='go')act('raise',L.allIn?p.bet+p.stack:L.to,Object.assign({},PUSH));
+    if(L.raise.mode==='fill'){requestAction('raise',L.minTo);return;}
+    if(L.raise.mode==='go')requestAction('raise',L.allIn?p.bet+p.stack:L.to,Object.assign({},PUSH));
     return;
   }
 });
@@ -1829,7 +2002,7 @@ async function startOnline(){
     if(g!==SESSION)return;
     M.ready=true;
     if(t&&t.v===6&&t.mode==='online'&&Array.isArray(t.seats)&&t.ownerUid===M.uid){
-      S=t;S.log=S.log||[];S.pending=S.pending||[];S.book=S.book||{};S.ledger=S.ledger||[];
+      S=t;adoptStake();S.log=S.log||[];S.pending=S.pending||[];S.book=S.book||{};S.ledger=S.ledger||[];
       const resumable=sec&&sec.hand===S.hand&&Array.isArray(sec.holes)&&sec.holes.length===S.seats.length;
       if(resumable){DECK=sec.deck.slice();H=sec.holes.map(h=>h?String(h).split(',').map(Number):[]);}
       const oldPub=S.hostPub;S.hostPub=M.keys.pub;
