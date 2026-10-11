@@ -579,6 +579,56 @@ body{background:
 
 /* Heavier card indices for clear small-screen reading. */
 .card.faceup .r{font-family:Georgia,"Times New Roman",serif;font-weight:900;-webkit-text-stroke:.35px currentColor;letter-spacing:-.025em}
+
+/* ===== Comfort pass: calmer surfaces, readable sizes, no sideways drift ===== */
+html,body{overflow-x:clip;max-width:100%}
+:root{
+  --page:#141a19;--panel:#1c2422;--panel2:#18201e;--line:#2f3d38;--line2:#3d4e47;
+  --text:#e6e4dc;--mute:#a9b6ae;--cream:#ece8dc;--brass:#c9b685;--win:#e2d4a8;
+}
+html{background:#141a19}
+body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed;color:var(--text)}
+/* felt: lower saturation, no scan-line texture, soft vignette */
+#game::before{background:radial-gradient(ellipse at 50% 38%,#33584c 0%,#2a4c41 55%,#22403a 100%);
+  border-color:#1d322c;box-shadow:0 0 0 1px #8f8a6a40,0 18px 44px #0006,inset 0 0 60px #0a1a1640}
+#game::after{border-color:#e8e2c812}
+/* player station: matte slate instead of glossy streaks */
+.hero,.hero.win{background:linear-gradient(180deg,#26302f,#1f2827);border:1px solid #ffffff12;border-top:1px solid #c9b68566;box-shadow:0 10px 26px #0005}
+.hero.win{border-top-color:var(--win)}
+/* gentler buttons: less glare, still clearly coloured */
+.btn.fold{background:#2e3a39;border-color:#ffffff1a;color:#e2e5e1}
+.btn.call{background:#3f6656;border-color:#ffffff1c;color:#f1efe7}
+.btn.raise,.btn.next{background:#c3b07f;color:#22201a;box-shadow:none}
+.btn.allin{background:#7d4a40;border-color:#ffffff1c;color:#f6ebe0}
+.btn.raise.off{background:#2a3433;color:var(--mute)}
+/* seat plates: steady contrast, no pure white */
+.plate{background:#132420f0;border-color:#ffffff1f}
+.seat.turn .plate{border-color:var(--brass);box-shadow:0 0 0 2px #c9b68533,0 0 14px #c9b68530}
+.seat.win .plate{border-color:var(--win);box-shadow:0 0 16px #e2d4a838}
+.nm{color:#dfe3dc}.nm.human{color:var(--win)}
+.stk{color:var(--cream)}
+.act{color:#b9c5bd}
+.seat.dim{opacity:.5}
+.pot span{color:#b7c3bb}.pot b{color:var(--cream)}
+.result{color:#e6dcbd}
+.tower .den,.hero .tower .den{color:#c3ccc6}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== Phones: keep the felt inside the screen and stop tiny type ===== */
+@media(max-width:700px){
+  #game::before{inset:0 0 0;border-radius:120px 120px 30px 30px;border-width:8px}
+  #game::after{inset:14px 10px 12px;border-radius:110px 110px 24px 24px}
+  .pill{font-size:11px}
+  .table .nm,.table .seat.compact .nm{font-size:11px;line-height:13px}
+  .table .stk,.table .seat.compact .stk{font-size:12px;line-height:14px}
+  .table .act{font-size:10.5px;line-height:12px;min-height:12px}
+  .table .bet{font-size:10.5px}
+  .table .pot{font-size:11px}
+  .hero .wait,.hero .cashier .lbl,.hero .bz-chips .hint,.hero .bz-sum .need{font-size:11.5px;line-height:15px}
+  .hero .tower .cnt,.hero .tower .den{font-size:11px}
+  .hero .tag{font-size:10.5px}
+  .actions .btn small{font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -1396,8 +1446,9 @@ function seatPositions(n,heroSeated){
   // returns [{x,y}] in % for slots; slot 0 is bottom centre (hero) when seated
   const out=[];
   if(heroSeated){
-    const gap=n>7?0.42:0.52,start=Math.PI/2+gap,span=2*Math.PI-2*gap,m=n-1;
-    for(let k=1;k<n;k++){const t=m===1?Math.PI*1.5:start+span*(k-1)/(m-1);out[k]={x:50+39*Math.cos(t),y:49+38*Math.sin(t)};}
+    // wide gap at the bottom centre (the player's station sits there); lower seats land in the corners
+    const gap=n>7?0.62:0.78,start=Math.PI/2+gap,span=2*Math.PI-2*gap,m=n-1;
+    for(let k=1;k<n;k++){const t=m===1?Math.PI*1.5:start+span*(k-1)/(m-1);out[k]={x:50+44*Math.cos(t),y:50+40*Math.sin(t)};}
   }else{
     for(let k=0;k<n;k++){const t=Math.PI/2+2*Math.PI*k/n;out[k]={x:50+39*Math.cos(t),y:49+38*Math.sin(t)};}
   }
@@ -1545,7 +1596,7 @@ function railHTML(p,enabled){
 }
 function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
-  const next=nextRaiseWord(),word=/^\d+-bet$/.test(next)?next:'Raise',to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
+  const next=nextRaiseWord(),word=/^\d+-bet$/.test(next)?next:next==='下注'?'Bet':'Raise',to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
   const r={toCall,pushed,canR,minTo,word,to,allIn};
   r.callLbl=toCall===0?'Check':`Call<small>${fmt(Math.min(toCall,p.stack))}${toCall>=p.stack?' · All in':''}</small>`;
   r.canAllIn=p.stack>0&&(p.stack<=toCall||canR);
@@ -1554,7 +1605,7 @@ function actionLabels(p){
   if(!canR){r.raise=null;}
   else if(pushed===0){r.raise={lbl:`${word}<small>最少到 ${fmt(minTo)}</small>`,mode:'fill'};}
   else if(allIn){r.raise={lbl:`${word}<small>All in · ${fmt(p.bet+p.stack)}</small>`,mode:'go'};}
-  else if(to>=minTo){r.raise={lbl:`${word}<small>到 ${fmt(to)}</small>`,mode:'go'};}
+  else if(to>=minTo){r.raise={lbl:word==='Bet'?`Bet<small>${fmt(to)}</small>`:`${word}<small>到 ${fmt(to)}</small>`,mode:'go'};}
   else{r.raise={lbl:`${word}<small>还差 ${fmt(minTo-to)}</small>`,mode:'off'};}
   return r;
 }
