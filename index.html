@@ -524,18 +524,51 @@ body{background:
 @media(max-width:700px){.hero .towers{gap:8px}.hero .rail,.hero .rail.live{padding-inline:4px}}
 
 
-/* Mobile collision fix: seat rows never share the community-card band. */
+/* iPhone sizing follows the visible Safari viewport, not a fixed table height. */
 @media(max-width:700px){
- .table,.table.big{height:540px;min-height:540px;flex:0 0 540px;max-height:none}
- .table.big{height:600px;min-height:600px;flex-basis:600px}
- .table .seat{left:var(--phone-x)!important;top:var(--phone-y)!important}
- .table .center,.table .center.twice{top:59%;transform:translate(-50%,-50%);gap:8px;width:max-content;max-width:100%}
- .table .result{top:74.5%;width:220px;max-width:75%;font-size:11px;line-height:14px;max-height:36px;overflow:auto}
- .table .herobet{bottom:0}
- .hero,.hero.win{margin-top:18px;flex-shrink:0}
- #game{overflow:visible}
- .top .row{flex-wrap:wrap;row-gap:8px}
- .top h1{font-size:clamp(16px,4.5vw,20px)}
+ html{padding:0}
+ body{padding: max(6px,env(safe-area-inset-top)) 8px max(6px,env(safe-area-inset-bottom))}
+ body[data-view="table"] .wrap{height:calc(100dvh - max(6px,env(safe-area-inset-top)) - max(6px,env(safe-area-inset-bottom)));min-height:0;gap:4px}
+ .top{padding:2px 4px 5px;gap:4px}.top .row{flex-wrap:nowrap;gap:5px}.top .right{gap:4px}
+ .top h1{font-size:clamp(14px,4vw,18px)}.nav button{padding:4px 9px;min-height:30px;font-size:12px}.ghost.icon{min-height:30px;padding:4px 8px;font-size:11px}
+ .top .pills{display:flex;gap:10px}.pill{font-size:10px}
+ #game{flex:1 0 auto;min-height:0;padding:8px 2px 8px;gap:0}
+ .table,.table.big{height:auto;min-height:300px;flex:1 0 300px;max-height:none}
+ .table.big{min-height:380px;flex-basis:380px}
+ .table .seat{left:var(--phone-x)!important;top:var(--phone-y)!important;width:58px}
+ .table .plate,.table .seat.compact .plate{width:58px;padding:3px 2px;border-radius:7px}
+ .table .nm,.table .seat.compact .nm{font-size:10px;line-height:12px}
+ .table .stk,.table .seat.compact .stk{font-size:11px;line-height:13px;margin:0}
+ .table .mc,.table .seat.compact .mc{height:27px;margin-bottom:-8px}
+ .table .mc .card,.table .seat.compact .mc .card{--w:20px;--h:27px}
+ .table .seat.show .mc{margin-bottom:-2px}
+ .table .act{font-size:9px;line-height:11px;min-height:11px;max-width:62px}
+ .table .bet{font-size:9px;line-height:12px;padding:1px 3px;margin-top:2px}
+ .table .center,.table .center.twice{top:49%;transform:translate(-50%,-50%);gap:5px;width:max-content;max-width:65%}
+ .table .center>.piles{display:none}.table .pot{font-size:10px;gap:5px;white-space:nowrap}.table .pot b{font-size:17px}
+ .table .board{gap:3px}.table .card.bd{--w:clamp(29px,8.3vw,36px);--h:calc(var(--w)*1.38)}
+ .table .card.bd.sm{--w:clamp(26px,7.5vw,32px);--h:calc(var(--w)*1.38)}
+ .table .board.one,.table .board.two{padding-left:12px}
+ .table .result{top:auto;bottom:0;width:90%;max-height:14px;font-size:10px;line-height:11px;overflow:auto}
+ .table .herobet{bottom:22px}
+ .hero,.hero.win{display:grid;grid-template-columns:116px minmax(0,1fr);gap:6px 10px;width:100%;padding:10px;margin-top:6px;border-radius:17px;flex:none}
+ .hero .betzone{grid-column:1/-1;grid-row:1;min-height:27px;width:100%;padding:0 2px 4px}
+ .hero .bz-chips .hint,.hero .bz-sum .need{font-size:10px}.hero .bz-sum b{font-size:16px}
+ .hero .me{grid-column:1;grid-row:2;flex-direction:column;gap:4px;width:100%;align-items:center;align-self:center}
+ .hero .me .hc{gap:4px}.hero .me .card.big{--w:34px;--h:47px}
+ .hero .info{min-width:0;gap:0;text-align:center;width:100%}.hero .info .row1{justify-content:center;gap:4px;line-height:12px}.hero .info .who{font-size:10px}.hero .info .hand{display:none}
+ .hero .info .money{justify-content:center;gap:4px}.hero .info .money b{font-size:18px;line-height:23px}.hero .info .sub{display:none}.hero .tag{font-size:9px}
+ .hero .rail,.hero .rail.live{grid-column:2;grid-row:2;width:100%;padding:0;align-self:center}.hero .towers{gap:4px}.hero .tw{height:48px}.hero .tower{padding:0}.hero .tower .cnt{font-size:10px}.hero .tower .den{font-size:10px}
+ .hero .controls{grid-column:1/-1;grid-row:3;margin:0;padding-top:7px;gap:5px}
+ .actions .btn{min-height:44px;font-size:13px;padding:5px 2px}.actions .btn small{font-size:9px}.hero .wait{font-size:10px;line-height:14px;padding:0}.hero .cashier{gap:4px}.hero .cashier .lbl{font-size:10px}.hero .cbtn{min-height:30px;padding:4px 6px;font-size:11px}
+ #game::before{inset:0 -12px 0;border-radius:130px 130px 35px 35px}#game::after{inset:14px -1px 12px;border-radius:120px 120px 28px 28px}
+}
+/* Wider iPhones spend the extra width on the cards and chip spacing. */
+@media(min-width:414px) and (max-width:700px) and (min-height:650px){
+ .hero,.hero.win{grid-template-columns:130px minmax(0,1fr);padding:12px;gap:8px 12px}
+ .hero .me .card.big{--w:38px;--h:52px}.hero .tw{height:54px}.hero .towers{gap:7px}
+ .table .plate,.table .seat.compact .plate,.table .seat{width:62px}
+ .actions .btn{min-height:48px;font-size:14px}
 }
 </style>
 </head>
@@ -1360,20 +1393,22 @@ function seatPositions(n,heroSeated){
   }else{
     for(let k=0;k<n;k++){const t=Math.PI/2+2*Math.PI*k/n;out[k]={x:50+39*Math.cos(t),y:49+38*Math.sin(t)};}
   }
-  // Phone layout reserves the middle band exclusively for community cards.
+  // Perimeter slots leave a clear central lane on narrow screens.
   const count=heroSeated?n-1:n;
-  let rows=count<=6?[Math.ceil(count/3),Math.ceil((count-Math.ceil(count/3))/2),Math.floor((count-Math.ceil(count/3))/2)]
-    :count===7?[3,2,2]:count===8?[3,2,3]:count===9?[3,3,3]:[3,4,3];
-  if(count===1)rows=[1,0,0];
-  const mobile=[];
-  rows.forEach((total,row)=>{
-    const xs=total===1?[50]:total===2?[24,76]:total===3?[16,50,84]:[11,37,63,89];
-    xs.slice(0,total).forEach(x=>mobile.push({x,y:[10,30,91.4][row]}));
-  });
-  // Assign in perimeter order so neighbours stay neighbours across screen sizes.
-  mobile.sort((a,b)=>Math.atan2(a.y-50,a.x-50)-Math.atan2(b.y-50,b.x-50));
+  const layouts={
+    0:[],1:[[50,16]],2:[[25,16],[75,16]],
+    3:[[25,16],[75,16],[50,84]],
+    4:[[25,16],[75,16],[25,84],[75,84]],
+    5:[[25,16],[75,16],[90,47],[75,84],[25,84]],
+    6:[[25,16],[75,16],[90,47],[75,84],[25,84],[10,47]],
+    7:[[20,16],[50,16],[80,16],[90,47],[75,84],[25,84],[10,47]],
+    8:[[20,16],[50,16],[80,16],[90,47],[80,84],[50,84],[20,84],[10,47]],
+    9:[[20,13],[50,13],[80,13],[90,37],[90,64],[80,86],[50,86],[20,86],[10,50]],
+    10:[[20,13],[50,13],[80,13],[90,37],[90,64],[80,86],[50,86],[20,86],[10,64],[10,37]]
+  };
+  const mobile=layouts[count];
   for(let k=heroSeated?1:0;k<n;k++){
-    const m=mobile[k-(heroSeated?1:0)];out[k].mx=m.x;out[k].my=m.y;
+    const m=mobile[k-(heroSeated?1:0)];out[k].mx=m[0];out[k].my=m[1];
   }
   return out;
 }
