@@ -570,6 +570,12 @@ body{background:
  .table .plate,.table .seat.compact .plate,.table .seat{width:62px}
  .actions .btn{min-height:48px;font-size:14px}
 }
+
+/* Clear, large centre indices, matching the original card faces. */
+.card.faceup{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f5f1e5;color:#212923}
+.card.faceup.red{color:#b52b39}
+.card.faceup .r{font-family:var(--display);font-size:calc(var(--w)*.48)!important;font-weight:700;line-height:1}
+.card.faceup .s{font-family:var(--body);font-size:calc(var(--w)*.40)!important;line-height:1;margin-top:calc(var(--w)*.06)!important}
 </style>
 </head>
 <body>
@@ -1374,8 +1380,7 @@ function cardHTML(c,size){
   if(c===undefined)return `<div class="card ${size} empty"></div>`;
   if(c===null)return `<div class="card ${size} back"></div>`;
   const s=suitOf(c),red=s===1||s===2;
-  const corner=`<span class="rank">${rankStr(rankOf(c))}</span><span class="pip">${SUITS[s]}</span>`;
-  return `<div class="card faceup ${size}${red?' red':''}" role="img" aria-label="${cardTxt(c)}"><span class="corner" aria-hidden="true">${corner}</span><span class="emblem" aria-hidden="true">${SUITS[s]}</span><span class="corner lower" aria-hidden="true">${corner}</span></div>`;
+  return `<div class="card faceup ${size}${red?' red':''}" role="img" aria-label="${cardTxt(c)}"><span class="r" aria-hidden="true">${rankStr(rankOf(c))}</span><span class="s" aria-hidden="true">${SUITS[s]}</span></div>`;
 }
 function myHoleCards(){
   const m=mySeat();if(m<0)return null;
