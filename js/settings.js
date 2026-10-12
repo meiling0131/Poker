@@ -36,12 +36,13 @@ export function adoptStake(){if(S&&S.stakes&&validStake(S.stakes.sb,S.stakes.bb)
 export function setPLAY_MODE(v){PLAY_MODE=v;}
 export function setSHOW_HAND(v){SHOW_HAND=v;}
 
-// 牌桌皮肤: 'classic' 经典绿桌 | 'f1' Verve 一楼（棕色椭圆木桌、白色靠背椅）| 'f2' Verve 二楼（方桌、沙发）
-const SKINS=['classic','f1','f2'];
-export let SKIN=SKINS.includes(store.get('poker.skin'))?store.get('poker.skin'):'classic';
+// 牌桌皮肤: 'f1' Verve 一楼（会议室：胡桃木长桌、千鸟格扶手椅）| 'f2' Verve 二楼（休息区：石面方桌、皮沙发）
+export const SKINS=[['f1','Verve 一楼','会议室 · 胡桃木长桌'],['f2','Verve 二楼','休息区 · 皮沙发']];
+const valid=v=>SKINS.some(([k])=>k===v);
+export let SKIN=valid(store.get('poker.skin'))?store.get('poker.skin'):'f1';
 export function applySkin(){
   document.body.dataset.skin=SKIN;
-  document.querySelectorAll('#skin button').forEach(b=>b.classList.toggle('on',b.dataset.skin===SKIN));
+  document.querySelectorAll('button[data-skin]').forEach(b=>{b.classList.toggle('on',b.dataset.skin===SKIN);b.setAttribute('aria-pressed',String(b.dataset.skin===SKIN));});
 }
-export function setSkin(v){SKIN=SKINS.includes(v)?v:'classic';store.set('poker.skin',SKIN);applySkin();}
+export function setSkin(v){SKIN=valid(v)?v:'f1';store.set('poker.skin',SKIN);applySkin();}
 
