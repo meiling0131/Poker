@@ -101,7 +101,7 @@ export function renderTable(){
   const me=seated?S.seats[m]:null;
   tb.innerHTML=`<div class="felt"></div>
     <div class="center${twice?' twice':''}">${twice?'':pilesC(S.potChips,{size:15,max:6})}<div class="pot"><span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b>${fmt(potTotal())}</b></div><div class="board${twice?' one':''}">${twice?'<span class="bl">1</span>':''}${twice?board.join('').replace(/card bd/g,'card bd sm'):board.join('')}</div>${board2}</div>
-    <div class="result">${result}</div>
+    <div class="result${S.street==='done'?' done':''}">${result}</div>
     ${me&&me.bet>0?`<div class="herobet">${betHTML(me.bet,me.betChips)}</div>`:''}
     ${seats}
     ${profileHTML()}`;
