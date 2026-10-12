@@ -1,0 +1,53 @@
+/* 牌桌皮肤（设置 → 牌桌），照着 Verve 的实景：一楼会议室、二楼休息区。
+   body[data-skin] 让这里的规则压过 3-theme 里各个尺寸下的牌桌形状。 */
+
+/* 设置菜单里的皮肤选择 */
+.skinpick{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text)}
+.more{min-width:190px}
+
+/* ======== Verve 一楼：会议室 — 胡桃木长桌、千鸟格扶手椅、蓝绿墙、吊灯 ======== */
+body[data-skin="f1"]{background:
+    radial-gradient(ellipse 55% 26% at 50% 0%,#f6e2c24d,transparent 70%),      /* pendant light */
+    linear-gradient(90deg,#2e3a44 0,#1d5f80 22%,#1b5877 78%,#2e3a44 100%) fixed}
+body[data-skin="f1"] .top{border-bottom-color:#ffffff22}
+/* walnut table: long rounded rectangle, warm grain */
+body[data-skin="f1"] #game::before{border-radius:28px;border-width:6px;border-color:#7a4526;
+  background:
+    radial-gradient(ellipse 18% 9% at 32% 46%,#ffffff12,transparent 70%),
+    radial-gradient(ellipse 30% 12% at 66% 60%,#00000014,transparent 70%),
+    repeating-linear-gradient(176deg,#ffffff08 0 3px,transparent 3px 9px,#0000000d 9px 11px,transparent 11px 19px),
+    linear-gradient(115deg,#a9673d 0%,#8f532f 35%,#b07040 55%,#8a4e2b 80%,#9b5c34 100%);
+  box-shadow:0 0 0 1px #c48a5a,0 18px 40px #0009,inset 0 0 0 1px #ffffff1a,inset 0 0 40px #3b1d0c55}
+body[data-skin="f1"] #game::after{border-radius:20px;border-color:#ffe2bf1f}
+/* houndstooth armchair behind each seat (back + two arms) */
+body[data-skin="f1"] .table .seat::before{content:"";position:absolute;z-index:-1;left:50%;top:-14px;transform:translateX(-50%);
+  width:calc(100% + 14px);height:62%;border-radius:22px 22px 10px 10px;
+  background:repeating-conic-gradient(#f2f1ee 0 25%,#a7a7a5 0 50%) 0 0/6px 6px;
+  box-shadow:-9px 12px 0 -3px #c9c8c4,9px 12px 0 -3px #c9c8c4,0 6px 12px #0008,inset 0 0 0 2px #ffffffaa}
+
+/* ======== Verve 二楼：休息区 — 木条吊顶灯带、蓝绿墙、深色石面方桌、棕色皮沙发 ======== */
+body[data-skin="f2"]{background-color:#173f57;background-image:
+    linear-gradient(90deg,transparent 12%,#ffffffd9 12% 30%,transparent 30% 58%,#ffffffd9 58% 78%,transparent 78%),   /* LED strips */
+    repeating-linear-gradient(90deg,#7a5238 0 15px,#5e3d29 15px 17px),                                                 /* walnut slat ceiling */
+    linear-gradient(180deg,#1d6a8e 0,#195a79 45%,#22374a 100%);                                                        /* teal wall to carpet */
+  background-size:100% 3px,100% 76px,100% 100%;background-position:0 7px,0 0,0 0;background-repeat:no-repeat;background-attachment:fixed}
+body[data-skin="f2"] .top{border-bottom-color:#00000033}
+/* dark stone square table */
+body[data-skin="f2"] #game::before{border-radius:20px;border-width:8px;border-color:#3a3d42;
+  background:
+    linear-gradient(135deg,#ffffff10 0%,transparent 35%,transparent 65%,#ffffff08 100%),
+    radial-gradient(ellipse at 50% 40%,#3a3e44 0%,#2c2f34 60%,#23262a 100%);
+  box-shadow:0 0 0 1px #6b707866,0 20px 44px #000a,inset 0 0 0 1px #ffffff14,inset 0 0 50px #0006}
+body[data-skin="f2"] #game::after{border-radius:12px;border-color:#ffffff12}
+/* brown leather sofa: back with cushion seams, arms drawn as two lower copies */
+body[data-skin="f2"] .table .seat::before{content:"";position:absolute;z-index:-1;left:50%;top:-12px;transform:translateX(-50%);
+  width:calc(100% + 28px);height:60%;border-radius:12px 12px 6px 6px;
+  background:linear-gradient(90deg,transparent calc(50% - 1px),#5a321f calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)),
+    linear-gradient(180deg,#a26b4c,#86553a 70%,#76482f);
+  box-shadow:-14px 12px 0 -4px #7a4a31,14px 12px 0 -4px #7a4a31,0 6px 14px #0009,inset 0 2px 0 #c08a68}
+
+@media(max-width:700px){
+  body[data-skin="f1"] .table .seat::before{width:calc(100% + 10px);top:-10px;box-shadow:-7px 10px 0 -3px #c9c8c4,7px 10px 0 -3px #c9c8c4,0 5px 10px #0008,inset 0 0 0 2px #ffffffaa}
+  body[data-skin="f2"] .table .seat::before{width:calc(100% + 14px);top:-9px;box-shadow:-9px 10px 0 -3px #7a4a31,9px 10px 0 -3px #7a4a31,0 5px 10px #0009,inset 0 2px 0 #c08a68}
+  body[data-skin="f2"]{background-size:100% 3px,100% 64px,100% 100%;background-position:0 4px,0 0,0 0}
+}

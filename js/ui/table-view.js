@@ -7,7 +7,14 @@ import {avatarOf} from '../talk.js';
 import {miniStack,miniStackC,pilesC,topChip} from './chips-view.js';
 import {$,esc,fmt} from '../util.js';
 
-export const bubbleHTML=p=>p.say&&p.say.until>Date.now()?`<div class="bubble" data-bubble-until="${p.say.until}">${esc(p.say.t)}</div>`:'';
+// Every action redraws the table; a bubble pops in only the first time it is drawn, then stays still.
+const SHOWN=new Set();
+export function bubbleHTML(p,cls=''){
+  if(!p.say||p.say.until<=Date.now())return '';
+  const k=p.say.until+'|'+p.say.t,fresh=!SHOWN.has(k);
+  if(fresh){SHOWN.add(k);if(SHOWN.size>200)SHOWN.clear();}
+  return `<div class="bubble${cls?' '+cls:''}${fresh?'':' still'}" data-bubble-until="${p.say.until}">${esc(p.say.t)}</div>`;
+}
 export function cardHTML(c,size){
   if(c===undefined)return `<div class="card ${size} empty"></div>`;
   if(c===null)return `<div class="card ${size} back"></div>`;

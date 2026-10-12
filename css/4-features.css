@@ -65,3 +65,4 @@
 .stat span{font-size:12px;color:var(--text)}
 .stat i{font-style:normal;font-size:10.5px;color:var(--mute)}
 .panel .mini[data-stats-reset]{align-self:flex-start}
+.bubble.still,.verdict.still{animation:none}

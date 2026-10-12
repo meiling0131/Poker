@@ -5,7 +5,7 @@ import {maybeStart,newBotsTable,newOnlineTable,startHand} from '../engine.js';
 import {SOUND,beep,setSOUND} from '../fx.js';
 import {enterBots,enterOnline,toMenu} from '../modes.js';
 import {approveBuy,commit,joinTable,kick,leaveTable,newRoomCode,normRoom,roomLink,unkick} from '../online.js';
-import {SHOW_HAND,readStakeForm,setSHOW_HAND} from '../settings.js';
+import {SHOW_HAND,readStakeForm,setSHOW_HAND,setSkin} from '../settings.js';
 import {CONFIRM_RESET,GEN,M,PUSH,S,TT,setCONFIRM_RESET,setFLASH,setGEN,setPUSH,setSPEED,setVIEW} from '../state.js';
 import {log,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
@@ -43,6 +43,7 @@ document.addEventListener('click',e=>{
   if(t.id==='moreBtn'){const m=$('more');m.hidden=!m.hidden;t.setAttribute('aria-expanded',String(!m.hidden));return;}
   if(t.id==='menuBtn'){$('more').hidden=true;toMenu();return;}
   if(t.dataset.view){setVIEW(t.dataset.view);render();window.scrollTo&&window.scrollTo(0,0);return;}
+  if(t.dataset.skin){setSkin(t.dataset.skin);return;}
   if(t.dataset.speed){setSPEED(+t.dataset.speed);document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',b===t));return;}
   if(t.id==='restart'){
     if(!M.host||!S)return;

@@ -48,6 +48,7 @@ export function renderHero(){
   renderHeroInner();
   const inp=focus&&$('betAmt');if(inp){inp.focus();const n=inp.value.length;try{inp.setSelectionRange(n,n);}catch(e){}}
 }
+let VERDICT_HAND=-1;
 export function renderHeroInner(){
   const el=$('hero'),m=mySeat();
   if(m<0){
@@ -126,9 +127,10 @@ export function renderHeroInner(){
   }
   if(FLASH)ctl+=`<div class="flash">${esc(FLASH)}</div>`;
   const res=heroResult(p);
-  if(res)ctl=`<div class="verdict ${res.net>0?'up':res.net<0?'down':''}">${res.net>0?`🎉 这把赢了 +${fmt(res.net)}`:res.bust?`💸 输光了，买一手再战`:res.net<0?`😮‍💨 这把 −${fmt(-res.net)}`:'🤝 不输不赢'}</div>`+ctl;
+  const firstVerdict=res&&VERDICT_HAND!==S.hand;if(res)VERDICT_HAND=S.hand;
+  if(res)ctl=`<div class="verdict ${res.net>0?'up':res.net<0?'down':''}${firstVerdict?'':' still'}">${res.net>0?`🎉 这把赢了 +${fmt(res.net)}`:res.bust?`💸 输光了，买一手再战`:res.net<0?`😮‍💨 这把 −${fmt(-res.net)}`:'🤝 不输不赢'}</div>`+ctl;
   if(EMO_OPEN)ctl=`<div class="emopick" role="group" aria-label="表情">${EMOJIS.map(e=>`<button data-emo="${e}">${e}</button>`).join('')}</div>`+ctl;
-  el.innerHTML=`${bubbleHTML(p).replace('class="bubble"','class="bubble hero-bubble"')}<div class="me${p.folded?' folded':''}">
+  el.innerHTML=`${bubbleHTML(p,'hero-bubble')}<div class="me${p.folded?' folded':''}">
       <div class="hc">${cards}</div>
       <div class="info">
         <div class="row1"><span class="av big" aria-hidden="true">${avatarOf(p)}</span><span class="who">你</span><button class="emo-btn${EMO_OPEN?' on':''}" data-emo-open="1" aria-label="发表情" aria-expanded="${EMO_OPEN}">😀</button>${pos.map(t=>`<span class="tag">${t}</span>`).join('')}${handTxt?`<span class="hand">${esc(handTxt)}</span>`:''}</div>
