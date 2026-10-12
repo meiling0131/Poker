@@ -1760,7 +1760,7 @@ function towerHTML(d,count,enabled,pushed){
   const c=CCLS[d],shown=Math.min(count,12);
   return `<button class="tower ${c}" data-push="${d}"${enabled&&count>0?'':' disabled'} aria-label="${d} 面值，剩 ${count} 枚">
     <span class="tw">${'<i class="disc"></i>'.repeat(shown)}${count?'<span class="face"><i class="chip-d '+c+'"></i></span>':'<span class="emptyspot"></span>'}</span>
-    <span class="cnt">×${count}</span><span class="den">${d}</span></button>`;
+    <span class="cnt">×${count}</span></button>`;
 }
 function railHTML(p,enabled){
   const avail=Z();for(const d of DV)avail[d]=p.chips[d]-(enabled?PUSH[d]:0);
