@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="css/2-layout.css?v=f8824e8f">
 <link rel="stylesheet" href="css/3-theme.css?v=1726471a">
 <link rel="stylesheet" href="css/4-features.css?v=69c03c23">
+<link rel="stylesheet" href="css/5-skins.css?v=277b2588">
 </head>
 <body>
 <div class="wrap">
@@ -31,6 +32,7 @@
         <div class="more" id="more" hidden>
           <label class="hintToggle"><span>牌型提示</span><input id="handHints" type="checkbox" role="switch"></label>
           <label class="hintToggle"><span>轮到我时提醒</span><input id="soundOn" type="checkbox" role="switch"></label>
+          <div class="skinpick"><span>牌桌</span><div class="seg" id="skin" role="group" aria-label="牌桌皮肤"><button data-skin="classic">经典</button><button data-skin="f1">一楼</button><button data-skin="f2">二楼</button></div></div>
           <div class="seg" id="speed" hidden>
             <button data-speed="1100">慢</button><button data-speed="650" class="on">中</button><button data-speed="250">快</button>
           </div>
@@ -55,24 +57,24 @@
 {
   "imports": {
     "./js/actions.js": "./js/actions.js?v=dbcc8ab4",
-    "./js/bots.js": "./js/bots.js?v=0f078ed1",
+    "./js/bots.js": "./js/bots.js?v=bbeeb0ef",
     "./js/cards.js": "./js/cards.js?v=3d84d67a",
     "./js/chips.js": "./js/chips.js?v=3f7919fa",
-    "./js/config.js": "./js/config.js?v=ec2a1557",
+    "./js/config.js": "./js/config.js?v=fb467e3f",
     "./js/crypto.js": "./js/crypto.js?v=8944b73f",
     "./js/engine.js": "./js/engine.js?v=be750da9",
     "./js/fx.js": "./js/fx.js?v=14ba4118",
-    "./js/main.js": "./js/main.js?v=8d4fbe76",
+    "./js/main.js": "./js/main.js?v=874f613b",
     "./js/modes.js": "./js/modes.js?v=2581a3ac",
     "./js/online.js": "./js/online.js?v=48082cfd",
     "./js/pots.js": "./js/pots.js?v=8f05ccbd",
-    "./js/settings.js": "./js/settings.js?v=2eb10216",
+    "./js/settings.js": "./js/settings.js?v=17cd861c",
     "./js/state.js": "./js/state.js?v=e63dbf50",
     "./js/stats.js": "./js/stats.js?v=5fb8bcce",
     "./js/table.js": "./js/table.js?v=5e3fa08a",
-    "./js/talk.js": "./js/talk.js?v=51ebc208",
+    "./js/talk.js": "./js/talk.js?v=5951a82a",
     "./js/ui/chips-view.js": "./js/ui/chips-view.js?v=e28b578a",
-    "./js/ui/events.js": "./js/ui/events.js?v=78a09c27",
+    "./js/ui/events.js": "./js/ui/events.js?v=468849b5",
     "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=5fb88557",
     "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=bff15cbc",
     "./js/ui/records-view.js": "./js/ui/records-view.js?v=7bb502ce",
@@ -82,6 +84,6 @@
   }
 }
 </script>
-<script type="module" src="js/main.js?v=8d4fbe76"></script>
+<script type="module" src="js/main.js?v=874f613b"></script>
 </body>
 </html>

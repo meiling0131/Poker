@@ -80,6 +80,28 @@ function decideCore(p,i){
     if(to>p.bet+p.stack*.90)to=maxRaiseTo(p);
     return {type:'raise',to};
   };
+  // sc: sees almost every flop cheaply and folds to a bet the moment his hand isn't good.
+  // With a big hand he likes to check-call, or bet just a little — under 25BB (50 at 1/2) unless he has the nuts.
+  if(type==='peeker'){
+    const nuts=!pre&&eq>.93,big=pre?strength>.80:eq>.75,r=Math.random();
+    const small=()=>{
+      if(nuts)return raise(.9);
+      const to=Math.min(S.currentBet+Math.max(S.minRaise,Math.round((pot+toCall)*.3)),Math.round(BB*25)-1,maxRaiseTo(p));
+      return to>=minRaiseTo(p)?{type:'raise',to}:null;
+    };
+    if(pre){
+      if(!toCall)return {type:'check'};
+      if(big&&canR&&r<.3){const x=small();if(x)return x;}
+      return big||toCall<=BB*6||strength>.62?{type:'call'}:{type:'fold'};
+    }
+    if(!toCall){
+      if(big&&canR&&r<.35){const x=small();if(x)return x;}
+      return {type:'check'};                    // a big hand is usually checked, then called down
+    }
+    if(nuts&&canR&&r<.5)return raise(.9);
+    if(big)return {type:'call'};                // check-call, no raise
+    return eq>.55?{type:'call'}:{type:'fold'};
+  }
   // 奶龙 (土豪): never folds — checks when free, calls any bet; raises only now and then with a monster.
   if(type==='whale'){
     const r=Math.random(),big=pre?strength>.85:eq>.80;

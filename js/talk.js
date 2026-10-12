@@ -3,7 +3,7 @@ import {commit} from './online.js';
 import {M,MYDOC,S,myRef,setFLASH,view} from './state.js';
 import {later,mySeat} from './table.js';
 
-export const BOT_AV={Joe:'🐯',小雨:'🐰',老周:'🐢',奶龙:'🐲',Kmetsch:'🐻',阿芳:'🐱'};
+export const BOT_AV={Joe:'🐯',sc:'🐰',老周:'🐢',奶龙:'🐲',Kmetsch:'🐻',阿芳:'🐱'};
 export const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
 export function avatarOf(p){
   if(p.kind==='bot')return BOT_AV[p.name]||'🤖';
@@ -26,11 +26,12 @@ export const PERSONA_LINES={
     win:['有钱就是任性','早说了我运气好'],bust:['没事，我家有矿'],rebuy:['再来两手！我有的是钱','充值成功，继续','买两手，接着奏乐接着舞']},
   Joe:{fold:['这牌不打','纪律第一','等好牌'],allin:['这手我很有把握'],
     win:['按计划来','耐心是有回报的'],call:['合理的价格，跟'],raise:['加倍！','翻前就是要加倍','牌好，下大注','不让你便宜看牌']},
+  sc:{fold:['其实我能赢'],call:['看看','先看一张'],check:['看牌'],raise:['加一点点','小加一手']},
   Kmetsch:{raise:['这把是真的','我有牌'],call:['跟一下'],bluff:['信我，我有','这把我认真的','你敢跟吗？','我从不诈唬'],
     win:['我说了我有','嘿嘿'],fold:['这次算你赢']},
 };
 // a bot that always says its line for a given action
-export const PERSONA_ALWAYS={奶龙:{raise:1}};
+export const PERSONA_ALWAYS={奶龙:{raise:1},sc:{fold:1}};
 export const EMOJIS=['😂','👍','😭','😡','🤔','🔥','🙏','🤡','💸','🐟'];
 export function say(p,t,ms=3600){p.say={t:String(t).slice(0,24),until:Date.now()+ms};}
 export function botSay(p,kind,prob){

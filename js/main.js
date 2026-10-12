@@ -4,14 +4,14 @@ import {FIREBASE_CONFIG} from './config.js';
 import {startHand} from './engine.js';
 import {enterBots,enterOnline,toMenu} from './modes.js';
 import {joinTable,leaveTable,normRoom} from './online.js';
-import {loadStake} from './settings.js';
+import {applySkin,loadStake} from './settings.js';
 import {H,M,PUSH,S,setPUSH} from './state.js';
 import {mySeat} from './table.js';
 import './ui/events.js';
 import {render} from './ui/render.js';
 import {store} from './util.js';
 
-loadStake();
+loadStake();applySkin();
 
 export async function boot(){
   render();

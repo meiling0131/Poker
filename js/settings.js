@@ -35,3 +35,13 @@ export function readStakeForm(){
 export function adoptStake(){if(S&&S.stakes&&validStake(S.stakes.sb,S.stakes.bb)){SB=S.stakes.sb;BB=S.stakes.bb;}else if(S&&S.mode==='online'){SB=1;BB=2;}}
 export function setPLAY_MODE(v){PLAY_MODE=v;}
 export function setSHOW_HAND(v){SHOW_HAND=v;}
+
+// 牌桌皮肤: 'classic' 经典绿桌 | 'f1' Verve 一楼（棕色椭圆木桌、白色靠背椅）| 'f2' Verve 二楼（方桌、沙发）
+const SKINS=['classic','f1','f2'];
+export let SKIN=SKINS.includes(store.get('poker.skin'))?store.get('poker.skin'):'classic';
+export function applySkin(){
+  document.body.dataset.skin=SKIN;
+  document.querySelectorAll('#skin button').forEach(b=>b.classList.toggle('on',b.dataset.skin===SKIN));
+}
+export function setSkin(v){SKIN=SKINS.includes(v)?v:'classic';store.set('poker.skin',SKIN);applySkin();}
+
