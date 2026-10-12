@@ -39,3 +39,16 @@ test('chips are conserved hand after hand', async () => {
   assert.equal(S.seats.reduce((a, p) => a + p.stack + p.total, 0), bought);
   assert.ok(onTable > 0);
 });
+
+test('换座位: swapping two seats moves the players and keeps the dealer button with its player', async () => {
+  const { swapSeats, canSwapNow } = await import('../js/seats.js');
+  const S = state.S;
+  while (S.street !== 'done' && S.street !== 'idle') { if (!runNextTimer()) break; await null; if (myTurn()) { doAction(S.seats[0], 'fold'); proceed(); } }
+  assert.ok(canSwapNow(), 'between hands');
+  const a = S.seats[0], b = S.seats[3], dealer = S.seats[S.dealer];
+  assert.ok(swapSeats(0, 3));
+  assert.equal(S.seats[0], b);
+  assert.equal(S.seats[3], a);
+  assert.equal(S.seats[S.dealer], dealer, 'dealer button follows its player');
+  assert.equal(swapSeats(2, 2), false);
+});

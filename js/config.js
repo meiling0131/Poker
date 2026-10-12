@@ -22,6 +22,15 @@ export const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 // type 'bluffer' (Kmetsch): plays a few real hands straight, then starts bluffing; repeats.
 export const BOTS=[['Joe',{loose:.15,aggr:.75,type:'tag'}],['sc',{loose:.75,aggr:.20,type:'peeker'}],['老周',{loose:.15,aggr:.25}],
   ['奶龙',{loose:.95,aggr:.80,type:'whale'}],['Kmetsch',{loose:.40,aggr:.55,type:'bluffer'}],['阿芳',{loose:.80,aggr:.60}]];
+// shown on a bot's profile card (tap the seat)
+export const BOT_BLURB={
+  Joe:'翻前爱加倍：好牌开 25/50/75，被加注就翻倍；翻牌后守纪律，不乱诈唬。',
+  sc:'爱看牌，没中就弃（「其实我能赢」）；大牌喜欢 check-call 或者小注。',
+  老周:'很紧很稳，只打好牌，很少诈唬。',
+  奶龙:'土豪：粘牌爱看牌，但大钱要有大牌；加注时说「我说白了」，输光一次买两手。',
+  Kmetsch:'先打几手实牌，再开始诈唬；只骗一两个人，不骗跟注站。',
+  阿芳:'爱入池，也敢加注，手松但不傻。',
+};
 export const BOT_STYLE=Object.fromEntries(BOTS);
 export const DAILY_LIMIT=1000;
 // 人机模式：你买入之前（或输光之后）牌桌一直等你，不让机器人自己打

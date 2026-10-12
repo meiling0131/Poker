@@ -12,6 +12,7 @@ import {N,applyMoney,bookKey,canAct,canRaise,eligibleCount,endLater,freshBot,fre
 import {botSay} from './talk.js';
 import {buildPots} from './pots.js';
 import {fmt} from './util.js';
+import {applyDeferredSwaps} from './seats.js';
 
 export function maybeStart(){
   if(!S||!M.host||S.street!=='idle'||STARTING)return;
@@ -302,6 +303,7 @@ export function finish(){
   recordStats();
   S.seats.forEach(p=>{p.bet=0;applyMoney(p);});
   if(S.mode==='online'){applySeatChanges();}
+  applyDeferredSwaps();
   const auto=S.mode==='online';
   if(auto){S.nextAt=Date.now()+NEXT_MS;later(startHand,NEXT_MS);}else S.nextAt=0;
   commit();

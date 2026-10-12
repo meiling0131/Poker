@@ -1,11 +1,12 @@
 // The felt: seats, board, pot.
 import {SUITS,cardTxt,rankOf,rankStr,suitOf} from '../cards.js';
-import {BETTING,STREET_CN} from '../config.js';
-import {H,M,MYHOLE,S} from '../state.js';
-import {N,mySeat,nameOfUid,names,needToStart,potTotal} from '../table.js';
+import {BETTING,BOT_BLURB,STREET_CN} from '../config.js';
+import {H,M,MYHOLE,PROFILE,S} from '../state.js';
+import {N,bookKey,mySeat,nameOfUid,names,needToStart,potTotal} from '../table.js';
 import {avatarOf} from '../talk.js';
 import {miniStack,miniStackC,pilesC,topChip} from './chips-view.js';
 import {$,esc,fmt} from '../util.js';
+import {canSwapNow} from '../seats.js';
 
 // Every action redraws the table; a bubble pops in only the first time it is drawn, then stays still.
 const SHOWN=new Set();
@@ -75,7 +76,7 @@ export function seatHTML(i,pos,compact){
   return `<div class="${cls.join(' ')}" style="left:${pos.x.toFixed(2)}%;top:${pos.y.toFixed(2)}%;--phone-x:${pos.mx}%;--phone-y:${pos.my}%">
     <div class="mc">${cards}</div>
     ${bubbleHTML(p)}
-    <div class="plate">${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}<div class="nm${p.kind==='human'?' human':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}${tag?`<i>${tag}</i>`:''}</div><div class="stk">${topChip(p.stack)}${fmt(p.stack)}</div></div>
+    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}${tag?`<div class="blind" title="${tag}">${tag==='小盲'?'小':'大'}</div>`:''}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}</div><div class="stk">${topChip(p.stack)}${fmt(p.stack)}</div></div>
     ${act}
   </div>`;
 }
@@ -102,5 +103,29 @@ export function renderTable(){
     <div class="center${twice?' twice':''}">${twice?'':pilesC(S.potChips,{size:15,max:6})}<div class="pot"><span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b>${fmt(potTotal())}</b></div><div class="board${twice?' one':''}">${twice?'<span class="bl">1</span>':''}${twice?board.join('').replace(/card bd/g,'card bd sm'):board.join('')}</div>${board2}</div>
     <div class="result">${result}</div>
     ${me&&me.bet>0?`<div class="herobet">${betHTML(me.bet,me.betChips)}</div>`:''}
-    ${seats}`;
+    ${seats}
+    ${profileHTML()}`;
+}
+// profile card: tap a seat to see who they are, how they play, and (between hands) swap seats
+const pctOf=(a,b)=>b?Math.round(a*100/b)+'%':'—';
+export function profileHTML(){
+  if(!PROFILE)return '';
+  const i=S.seats.findIndex(q=>bookKey(q)===PROFILE),p=S.seats[i];if(!p)return '';
+  const st=(S.stats||{})[PROFILE]||{},h=st.h||0,me=i===mySeat();
+  const blurb=p.kind==='bot'?(BOT_BLURB[p.name]||''):me?'这是你。':'真人玩家';
+  let swap='';
+  if(mySeat()>=0&&!me){
+    const lbl=S.mode==='online'&&!M.host?'申请和 TA 换座位':'和 TA 换座位';
+    // bots mode: only between hands; online: you can ask any time, the swap happens after the hand
+    swap=canSwapNow()||S.mode==='online'
+      ?`<button class="btn swap" data-swap="${i}">${lbl}</button>${canSwapNow()?'':'<p class="pnote">这一手结束后换</p>'}`
+      :`<button class="btn swap" disabled>${lbl}</button><p class="pnote">这一手结束后才能换座位</p>`;
+  }
+  const tile=(v,l)=>`<div><b>${v}</b><span>${l}</span></div>`;
+  return `<div class="profile" role="dialog" aria-label="${esc(seatName(p))} 的资料">
+    <button class="pclose" data-profile-close="1" aria-label="关闭">×</button>
+    <div class="phead"><span class="pav" aria-hidden="true">${avatarOf(p)}</span><div><b>${esc(seatName(p))}</b><span>${esc(blurb)}</span></div></div>
+    <div class="pstats">${tile(fmt(h),'手数')}${tile(pctOf(st.vp||0,h),'入池率')}${tile(pctOf(st.pr||0,h),'翻前加注')}${tile(fmt(st.w||0),'赢的手数')}${tile(st.sd?pctOf(st.sdw||0,st.sd):'—','摊牌胜率')}${tile(fmt(st.big||0),'最大底池')}</div>
+    ${swap}
+  </div>`;
 }

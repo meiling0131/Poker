@@ -14,10 +14,12 @@ import {$,esc,fmt,sgn} from '../util.js';
 
 export function hostRequestsHTML(){
   if(!M.host||!S||S.mode!=='online')return '';
-  const asks=S.seats.filter(p=>p.askB>0);
-  if(!asks.length)return '';
+  const asks=S.seats.filter(p=>p.askB>0),seatAsks=S.seats.filter(p=>p.askSeat);
+  if(!asks.length&&!seatAsks.length)return '';
+  const other=uid=>{const q=S.seats.find(x=>x.uid===uid);return q?esc(seatName(q)):'玩家';};
   return `<div class="requests">${asks.map(p=>`<div class="req"><span><b>${esc(seatName(p))}</b> 申请买一手 +200${p.askB>1?` ×${p.askB}`:''}</span>
-    <button class="mini" data-deny="${esc(p.uid)}">拒绝</button><button class="mini ok" data-approve="${esc(p.uid)}">同意</button></div>`).join('')}</div>`;
+    <button class="mini" data-deny="${esc(p.uid)}">拒绝</button><button class="mini ok" data-approve="${esc(p.uid)}">同意</button></div>`).join('')}${seatAsks.map(p=>`<div class="req"><span><b>${esc(seatName(p))}</b> 想和 <b>${other(p.askSeat)}</b> 换座位</span>
+    <button class="mini" data-swapno="${esc(p.uid)}">拒绝</button><button class="mini ok" data-swapyes="${esc(p.uid)}">同意</button></div>`).join('')}</div>`;
 }
 export function cashierHTML(p){
   const pendB=p.qBuy,pendC=p.qCash;
@@ -108,7 +110,7 @@ export function renderHeroInner(){
     if(S.street==='done'){
       const nx=S.nextAt?` <span class="cd" data-until="${S.nextAt}"></span>`:'';
       const w=`${S.msg.map(names).join('<br>')}`;
-      if(S.mode==='bots')ctl=`<div class="wait">${w}</div><div class="main"><button class="btn next" data-a="next">下一手${nx}</button></div>`;
+      if(S.mode==='bots')ctl=`<div class="wait">${w}</div><div class="main"><button class="btn next" data-a="next">下一手${nx}</button></div><p class="seat-hint">点别人的座位：看资料、换座位</p>`;
       else ctl=`<div class="wait">${w}<br>下一手${nx} 后开始</div>`;
     }else if(S.street==='idle'){
       ctl=`<div class="wait">${names(S.msg[0]||'等待开局')}</div>`;

@@ -30,6 +30,7 @@ js/
   fx.js             彩带、轮到你的提示音、屏幕常亮
   online.js         联机同步：房间文档、座位文档、记录文档、审批和请出
   actions.js        你的操作：确认、下注预设、提前操作、买入/退出/整理
+  seats.js          换座位：人机局直接换；联机向房主申请
   modes.js          菜单 / 人机 / 联机 之间切换
   ui/               各块界面（牌桌、操作区、记录页、大厅）和事件处理
                     依赖方向只有一个：ui/ 用游戏逻辑，游戏逻辑不引用 ui/（重画走 state.js 的 view）
@@ -58,5 +59,5 @@ npm run check        # eslint + 单元测试；import map 没更新也会报错
 
 ## 联机需要的 Firebase 字段
 
-座位文档 `rooms/{房间}/seats/{uid}` 由玩家自己写：`name pub join t act buyN cashN tidyN emo`。
+座位文档 `rooms/{房间}/seats/{uid}` 由玩家自己写：`name pub join t act buyN cashN tidyN emo seatReq`。
 房间文档 `rooms/{房间}` 和记录文档 `rooms/{房间}/meta/records` 由房主写，房间里的人读。

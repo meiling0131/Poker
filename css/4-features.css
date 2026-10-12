@@ -66,3 +66,33 @@
 .stat i{font-style:normal;font-size:10.5px;color:var(--mute)}
 .panel .mini[data-stats-reset]{align-self:flex-start}
 .bubble.still,.verdict.still{animation:none}
+
+/* 座位：点开资料卡；盲注小圆标 */
+.table .plate[data-seat]{cursor:pointer}
+.table .plate[data-seat]:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.blind{position:absolute;top:-8px;right:-8px;z-index:3;width:18px;height:18px;border-radius:50%;background:#e9d9a8;color:#2a2214;
+  font:700 10px/18px var(--body);text-align:center;box-shadow:0 1px 2px #0008}
+.table .nm{letter-spacing:-.01em}
+@media(max-width:700px){
+  .blind{width:15px;height:15px;font-size:9px;line-height:15px;top:-6px;right:-6px}
+  .table .nm .av{margin-right:1px;font-size:10px}
+  .table .nm{letter-spacing:-.03em}
+}
+/* 资料卡 */
+.profile{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:min(300px,86%);
+  background:var(--panel);border:1px solid #c9b68566;border-radius:16px;padding:14px;box-shadow:0 18px 40px #000a;
+  display:flex;flex-direction:column;gap:10px;animation:pophero .2s ease-out}
+.pclose{position:absolute;top:6px;right:8px;background:none;border:0;color:var(--mute);font-size:20px;line-height:1;padding:4px 6px;cursor:pointer}
+.phead{display:flex;gap:10px;align-items:center;padding-right:20px}
+.pav{font-size:34px;line-height:1}
+.phead b{display:block;font-size:16px;color:var(--cream)}
+.phead div span{display:block;font-size:12px;line-height:1.5;color:var(--mute);margin-top:2px}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pstats div{background:#00000026;border-radius:10px;padding:7px 4px;text-align:center}
+.pstats b{display:block;font:700 15px var(--num);color:var(--cream)}
+.pstats span{font-size:10.5px;color:var(--mute)}
+.btn.swap{min-height:42px;background:var(--brass);color:var(--brass-ink);font-size:14px}
+.btn.swap:disabled{opacity:.45}
+.pnote{margin:-4px 0 0;font-size:11px;color:var(--mute);text-align:center}
+.seat-hint{margin:2px 0 0;font-size:11px;color:var(--mute);text-align:center}
+@media(max-width:700px){.table .nm.long{font-size:9.5px}}

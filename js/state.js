@@ -31,6 +31,7 @@ export let PUSH={1:0,5:0,10:0,25:0}; // chips pushed into the bet zone, by denom
 export let PUSH_TURN=-1;             // the turn PUSH belongs to
 export let VOTED=null;               // my run-it-twice vote, until the host records it
 export let SPEED=650;                // bots mode pace (ms)
+export let PROFILE=null;             // book key of the player whose profile card is open
 
 // The UI registers its renderers here, so game code can redraw without importing the UI.
 export const view={render(){},renderHero(){}};
@@ -59,3 +60,4 @@ export function setmyRef(v){myRef=v;}
 export function setrecRef(v){recRef=v;}
 export function setsecretRef(v){secretRef=v;}
 export function settableRef(v){tableRef=v;}
+export function setPROFILE(v){PROFILE=v;}
