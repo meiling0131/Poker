@@ -30,7 +30,7 @@ export function renderMenu(){
   else if(!crypto.subtle)why='这个浏览器环境不支持加密功能，请用 https 网址打开。';
   const prevNick=esc(M.nick||''),pre=esc(M.prefill||store.get('poker.room')||'');
   $('menu').innerHTML=`
-    <div class="lobby-intro"><span class="eyebrow">THE PRIVATE TABLE</span><h2>好朋友，开一桌。</h2><p>坐下来，从这一手开始。</p><div class="lobby-chips" aria-hidden="true"><i class="chip-d w"></i><i class="chip-d r"></i><i class="chip-d b"></i><i class="chip-d g"></i></div></div>
+    <div class="lobby-intro"><span class="eyebrow">THE PRIVATE TABLE</span><h2>Verve赌场</h2><p>坐下来，从这一手开始。</p><div class="lobby-chips" aria-hidden="true"><i class="chip-d w"></i><i class="chip-d r"></i><i class="chip-d b"></i><i class="chip-d g"></i></div></div>
     <section class="lobby-options">
       <div><strong>自定义盲注</strong><span>用于人机与新建好友房 · 每次买入 200</span></div>
       <label>小盲<input id="stakeSB" type="number" inputmode="numeric" min="1" max="99" value="${SB}"></label>
