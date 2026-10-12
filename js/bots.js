@@ -44,7 +44,8 @@ export function rangeEquity(hole,board,opponents,iters){
 }
 export function botDecide(p,i){
   const opponents=live().filter(q=>q!==p),opp=opponents.length,hole=H[i];
-  const {loose,aggr}=BOT_STYLE[p.name]||{loose:.5,aggr:.5};
+  const {loose,aggr,type}=BOT_STYLE[p.name]||{loose:.5,aggr:.5};
+  const tag=type==='tag';
   const toCall=Math.min(Math.max(0,S.currentBet-p.bet),p.stack),pot=potTotal(),canR=canRaise(p);
   // Exclude side-pot money this stack cannot win from its call price.
   const eligible=S.seats.reduce((sum,q)=>sum+Math.min(q.total,p.total+toCall),0);
@@ -67,24 +68,30 @@ export function botDecide(p,i){
   const eq=rangeEquity(hole,S.board,opponents,Math.max(180,Math.floor(650/(opp+1))));
   if(!pre&&humanShove&&aggr>=.70&&eq>=.40)return {type:'call'};
   const raise=frac=>{
-    let to=pre&&S.currentBet<=BB?BB*(2.5+(1-position)*.5)+S.seats.filter(q=>q!==p&&q.bet===BB).length*BB*.6
+    let to=pre&&S.currentBet<=BB?BB*((tag?4:2.5)+(1-position)*.5)+S.seats.filter(q=>q!==p&&q.bet===BB).length*BB*(tag?1:.6)
       :S.currentBet+Math.max(S.minRaise,(pot+toCall)*frac);
     to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(to)));
     // Commit the last few chips only when already close to an all-in.
     if(to>p.bet+p.stack*.90)to=maxRaiseTo(p);
     return {type:'raise',to};
   };
+  // 奶龙 (土豪): never folds — checks when free, calls any bet; raises only now and then with a monster.
+  if(type==='whale'){
+    const r=Math.random(),big=pre?strength>.85:eq>.80;
+    if(canR&&big&&r<(toCall?.35:.5))return raise(.6);
+    return {type:toCall?'call':'check'};
+  }
   if(pre){
     const unopened=S.currentBet<=BB,depth=p.stack/BB;
-    const openThreshold=.64-position*.13-(loose-.5)*.08;
+    const openThreshold=tag?.70-position*.06:.64-position*.13-(loose-.5)*.08;
     const premium=strength>=(S.raises>=3?.91:S.raises>=2?.82:.74);
     if(canR&&((unopened&&strength>openThreshold)||(premium&&eq>odds+.10))){
       if(depth<=12&&strength>.77)return {type:'raise',to:maxRaiseTo(p)};
-      return raise(.65+aggr*.25);
+      return raise(tag?1:.65+aggr*.25);
     }
     if(!toCall)return {type:'check'};
     const realization=.74+position*.13+(suitOf(hole[0])===suitOf(hole[1])?.05:0);
-    const margin=.025+(S.raises>=3?.06:0)-(loose-.5)*.025;
+    const margin=.025+(S.raises>=3?.06:0)-(loose-.5)*.025+(tag?.05:0);
     return eq*realization>odds+margin?{type:'call'}:{type:'fold'};
   }
   const cards=hole.concat(S.board),suits=[0,0,0,0];cards.forEach(c=>suits[suitOf(c)]++);
@@ -92,16 +99,16 @@ export function botDecide(p,i){
   let straightDraw=false;for(let low=1;low<=10;low++){let count=0;for(let r=low;r<low+5;r++)if(ranks.has(r))count++;if(count===4)straightDraw=true;}
   const draw=S.board.length<5&&(suits.includes(4)||straightDraw);
   const value=eq>(opp===1?.62:opp===2?.49:.40);
-  const r=Math.random(),size=eq>.82?.85:.45+aggr*.22;
+  const r=Math.random(),size=tag?(eq>.82?1:.8):eq>.82?.85:.45+aggr*.22;
   if(!toCall){
     if(canR&&value&&r<.65+aggr*.3)return raise(size);
-    if(canR&&opp<=2&&draw&&eq>.22&&r<.12+aggr*.18)return raise(.55);
-    if(canR&&opp===1&&position>.7&&eq<.25&&r<.035+aggr*.035)return raise(.5);
+    if(!tag&&canR&&opp<=2&&draw&&eq>.22&&r<.12+aggr*.18)return raise(.55);
+    if(!tag&&canR&&opp===1&&position>.7&&eq<.25&&r<.035+aggr*.035)return raise(.5);
     return {type:'check'};
   }
-  const margin=(S.board.length===5?0:.025)+(opp>2?.025:0)-(loose-.5)*.025;
+  const margin=(S.board.length===5?0:.025)+(opp>2?.025:0)-(loose-.5)*.025+(tag?.04:0);
   if(eq<odds+margin)return {type:'fold'};
   if(canR&&eq>(opp===1?.75:.62)&&r<.55+aggr*.35)return raise(size);
-  if(canR&&opp===1&&draw&&eq>.35&&toCall<pot*.4&&r<aggr*.12)return raise(.65);
+  if(!tag&&canR&&opp===1&&draw&&eq>.35&&toCall<pot*.4&&r<aggr*.12)return raise(.65);
   return {type:'call'};
 }

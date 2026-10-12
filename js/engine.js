@@ -73,7 +73,10 @@ export async function startHandInner(){
   S.street='idle';S.actor=-1;S.deadline=0;S.nextAt=0;
   applySeatChanges();
   const P=S.seats;
-  P.forEach(p=>{Object.assign(p,handFields());applyMoney(p);if(p.kind==='bot'&&p.stack===0){p.stack+=BUY;p.chips=BUY_CHIPS();ledger(p,'buy',BUY);}});
+  P.forEach(p=>{Object.assign(p,handFields());applyMoney(p);
+    if(p.kind==='bot'&&p.stack===0){ // bots rebuy at once; 奶龙 buys two hands at a time
+      const n=BOT_STYLE[p.name]?.type==='whale'?2:1;p.stack+=BUY*n;p.chips=Z();for(let k=0;k<n;k++)cadd(p.chips,BUY_CHIPS());
+      ledger(p,'buy',BUY*n);if(n>1)botSay(p,'rebuy',1);}});
   const elig=P.map((p,i)=>i).filter(i=>P[i].stack>0);
   S.board=[];S.board2=null;S.runout=null;S.potChips=Z();S.msg=[];S.enc={};
   P.forEach(p=>{p.inHand=p.stack>0;if(!p.inHand&&p.kind==='human')p.last='未买入';});

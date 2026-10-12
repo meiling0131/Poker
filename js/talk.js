@@ -20,12 +20,20 @@ export const LINES={
   bust:['我的筹码…','重来重来','今天不宜打牌','我去充个值','这不科学'],
   reply:['😂','🙄','你别得意','🐟','👍','😏','就这？','下把见真章']
 };
+// lines that only one bot says (fall back to LINES)
+export const PERSONA_LINES={
+  奶龙:{call:['跟！钱不是问题','我就喜欢看牌','来都来了，跟','小钱，跟'],check:['看看再说','先看牌'],raise:['土豪加注！','钱多，任性'],
+    win:['有钱就是任性','早说了我运气好'],bust:['没事，我家有矿'],rebuy:['再来两手！我有的是钱','充值成功，继续','买两手，接着奏乐接着舞']},
+  Joe:{fold:['这牌不打','纪律第一','等好牌'],raise:['牌好，下大注','我有货','不让你便宜看牌'],allin:['这手我很有把握'],
+    win:['按计划来','耐心是有回报的'],call:['合理的价格，跟']},
+};
 export const EMOJIS=['😂','👍','😭','😡','🤔','🔥','🙏','🤡','💸','🐟'];
 export function say(p,t,ms=3600){p.say={t:String(t).slice(0,24),until:Date.now()+ms};}
 export function botSay(p,kind,prob){
-  if(!p||p.kind!=='bot'||S.mode!=='bots'||!LINES[kind]||Math.random()>prob)return;
+  const L=(PERSONA_LINES[p&&p.name]||{})[kind]||LINES[kind];
+  if(!p||p.kind!=='bot'||S.mode!=='bots'||!L||Math.random()>prob)return;
   if(p.say&&p.say.until>Date.now()&&kind!=='win'&&kind!=='bust')return;
-  const L=LINES[kind];say(p,L[Math.floor(Math.random()*L.length)]);
+  say(p,L[Math.floor(Math.random()*L.length)]);
 }
 export let EMO_OPEN=false,EMO_LAST=0,EMO_N=0;
 export async function sendEmoji(e){
