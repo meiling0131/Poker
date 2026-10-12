@@ -14,6 +14,7 @@ export default [
     rules: {
       'no-undef': 'error',
       'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
+      'no-dupe-keys': 'error',
     },
   },
   {

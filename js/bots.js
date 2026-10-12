@@ -4,6 +4,7 @@ import {BOT_STYLE} from './config.js';
 import {BB} from './settings.js';
 import {H,S} from './state.js';
 import {N,canAct,canRaise,live,maxRaiseTo,minRaiseTo,potTotal} from './table.js';
+import {botSay} from './talk.js';
 
 // Estimates use only the acting bot's cards and publicly visible betting state.
 export function startingStrength(hole){
@@ -42,7 +43,9 @@ export function rangeEquity(hole,board,opponents,iters){
   }
   return wins/iters;
 }
-export function botDecide(p,i){
+// what the core saw on its last decision, for the personality wrappers below
+let CTX={};
+function decideCore(p,i){
   const opponents=live().filter(q=>q!==p),opp=opponents.length,hole=H[i];
   const {loose,aggr,type}=BOT_STYLE[p.name]||{loose:.5,aggr:.5};
   const tag=type==='tag';
@@ -54,6 +57,7 @@ export function botDecide(p,i){
   const order=active.sort((a,b)=>((a.k-S.dealer-1+N())%N())-((b.k-S.dealer-1+N())%N()));
   const position=order.length>1?order.findIndex(x=>x.k===i)/(order.length-1):1;
   const pre=S.board.length===0,strength=startingStrength(hole);
+  CTX={pre,strength,eq:null,toCall,pot,canR};
   // Aggressive profiles accept races with medium-or-better starting hands.
   // Calls are capped by the engine at this bot's remaining stack.
   const humanShove=toCall>0&&opponents.some(q=>q.kind==='human'&&q.allIn&&q.bet===S.currentBet);
@@ -66,6 +70,7 @@ export function botDecide(p,i){
     if(raceHand)return {type:'call'};
   }
   const eq=rangeEquity(hole,S.board,opponents,Math.max(180,Math.floor(650/(opp+1))));
+  CTX.eq=eq;
   if(!pre&&humanShove&&aggr>=.70&&eq>=.40)return {type:'call'};
   const raise=frac=>{
     let to=pre&&S.currentBet<=BB?BB*((tag?4:2.5)+(1-position)*.5)+S.seats.filter(q=>q!==p&&q.bet===BB).length*BB*(tag?1:.6)
@@ -83,8 +88,13 @@ export function botDecide(p,i){
   }
   if(pre){
     const unopened=S.currentBet<=BB,depth=p.stack/BB;
-    const openThreshold=tag?.70-position*.06:.64-position*.13-(loose-.5)*.08;
+    const openThreshold=tag?.62-position*.06:.64-position*.13-(loose-.5)*.08;
     const premium=strength>=(S.raises>=3?.91:S.raises>=2?.82:.74);
+    // Joe doubles a raise before the flop whenever his hand is decent
+    if(tag&&!unopened&&canR&&strength>.64&&eq>odds){
+      const to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),S.currentBet*2));
+      return {type:'raise',to:to>p.bet+p.stack*.9?maxRaiseTo(p):to};
+    }
     if(canR&&((unopened&&strength>openThreshold)||(premium&&eq>odds+.10))){
       if(depth<=12&&strength>.77)return {type:'raise',to:maxRaiseTo(p)};
       return raise(tag?1:.65+aggr*.25);
@@ -112,3 +122,28 @@ export function botDecide(p,i){
   if(!tag&&canR&&opp===1&&draw&&eq>.35&&toCall<pot*.4&&r<aggr*.12)return raise(.65);
   return {type:'call'};
 }
+
+// Kmetsch: after about three real hands (betting or calling with a strong holding) he switches to
+// bluffing — bets or raises with anything — for two bluffs, then plays straight again.
+const REAL_HANDS=3,BLUFFS=2;
+function bluffTo(p,frac){
+  const to=S.currentBet+Math.max(S.minRaise,(CTX.pot+CTX.toCall)*frac);
+  return Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(to)));
+}
+export function botDecide(p,i){
+  const d=decideCore(p,i),{type}=BOT_STYLE[p.name]||{};
+  if(type!=='bluffer')return d;
+  if((p.real||0)>=REAL_HANDS&&CTX.canR){
+    const r=Math.random(),weak=CTX.pre?CTX.strength<.6:(CTX.eq??0)<.5;
+    const spot=CTX.pre?r<.5:!CTX.toCall?r<.8:r<.4;
+    if(weak&&spot&&d.type!=='raise'){
+      p.bl=(p.bl||0)+1;p.bluffs=(p.bluffs||0)+1;botSay(p,'bluff',.85);
+      if(p.bl>=BLUFFS){p.real=0;p.bl=0;}
+      return {type:'raise',to:bluffTo(p,CTX.pre?.8:.75)};
+    }
+  }
+  const real=CTX.pre?CTX.strength>.74:(CTX.eq??0)>.6;
+  if(real&&(d.type==='raise'||d.type==='call'))p.real=(p.real||0)+1;
+  return d;
+}
+
