@@ -7,10 +7,11 @@ import { runNextTimer } from './headless.js';
 
 const HANDS = Number(process.argv[2] || 300), HERO = process.argv[3] || 'fold';
 // --behaviour: count how each bot plays in a few telling spots
-const BEH = {};
+const BEH = {}, STREETS = {};
 if (process.argv.includes('--behaviour')) globalThis.__botTrace = (p, d, c) => {
   const b = BEH[p.name] ||= { cheap: [0, 0], vs1: [0, 0], vs3b: [0, 0], river: [0, 0], rbluff: 0, rpos: [0, 0], xr: [0, 0], bets: [0, 0] };
   const raise = d.type === 'raise', inc = (k, hit) => { b[k][0]++; if (hit) b[k][1]++; };
+  if (!c.pre) { const k = state.S.hand + ':' + c.street; STREETS[k] ||= false; if (d.type === 'raise') STREETS[k] = true; }
   if (c.pre) {
     if (c.raises <= 1 && c.toCall > 0) inc('cheap', d.type !== 'fold');      // limp / complete for 1BB or less
     if (c.raises === 2 && c.toCall > 0) inc('vs1', raise);                  // facing one raise: 3-bet?
@@ -85,6 +86,11 @@ if (process.argv.includes('--behaviour')) {
   const pc = ([n, h]) => n ? Math.round(h * 100 / n) + '%' : '-';
   console.table(Object.entries(BEH).map(([who, b]) => ({ who, '便宜看牌': pc(b.cheap), '3-bet': pc(b.vs1), '4-bet': pc(b.vs3b),
     '翻后主动下注': pc(b.bets), '河牌被过牌后下注': pc(b.river), '其中诈唬': b.river[1] ? Math.round(b.rbluff * 100 / b.river[1]) + '%' : '-', '河牌最后位下注': pc(b.rpos), '过牌再加注': pc(b.xr) })));
+}
+if (process.argv.includes('--behaviour')) {
+  const by = { 3: [0, 0], 4: [0, 0], 5: [0, 0] };
+  for (const [k, bet] of Object.entries(STREETS)) { const st = k.split(':')[1]; by[st][0]++; if (!bet) by[st][1]++; }
+  console.log('整圈过牌（没人下注）的比例: 翻牌', Math.round(by[3][1] * 100 / by[3][0]) + '%', '转牌', Math.round(by[4][1] * 100 / by[4][0]) + '%', '河牌', Math.round(by[5][1] * 100 / by[5][0]) + '%');
 }
 if (process.argv.includes('--json')) console.log(JSON.stringify({ hands: s.hand, rows }));
 else { console.log(`hands ${s.hand}, hero=${HERO}`); console.table(rows); }
