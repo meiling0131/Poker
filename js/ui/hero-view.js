@@ -25,7 +25,8 @@ export function cashierHTML(p){
   const pendB=p.qBuy,pendC=p.qCash;
   const locked=lockedIn(p);
   const canCash=p.stack-pendC*BUY+pendB*BUY>=BUY;
-  let lbl=p.stack===0&&!pendB?'筹码为 0，买一手才能上牌':locked?'这一手结束后生效':'';
+  // after a hand the result line already says you're out of chips
+  let lbl=p.stack===0&&!pendB?(S.street==='done'?'':'筹码为 0，买一手才能上牌'):locked?'这一手结束后生效':'';
   if(pendB||pendC)lbl=`待生效：${pendB?`买 ${pendB} 手`:''}${pendB&&pendC?' · ':''}${pendC?`退 ${pendC} 手`:''}`;
   if(p.askB>0)lbl=(lbl?lbl+' · ':'')+`买 ${p.askB} 手，等房主同意`;
   const daily=S.mode==='bots'&&PLAY_MODE==='normal'?dailyAllowance():null;
@@ -80,7 +81,7 @@ export function renderHeroInner(){
   if(mine){
     const L=actionLabels(p),waiting=!M.host&&SUBMITTED===S.turn,dis=waiting?' disabled':'';
     zone=`<div class="betzone${L.pushed?' has':''}">
-      <div class="bz-chips">${L.pushed?DV.filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join(''):'<span class="hint">点下面的筹码推到这里</span>'}</div>
+      <div class="bz-chips">${L.pushed?DV.filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join(''):'<span class="hint">点筹码下注</span>'}</div>
       <div class="bz-sum">${L.pushed?`<b>${fmt(L.pushed)}</b><button class="mini" data-clear="1">撤回</button>`:`<span class="need">${L.toCall?`跟注 ${fmt(L.toCall)}`:'可过牌'}</span>`}</div>
     </div>`;
     if(pendingIsCurrent()){
@@ -110,7 +111,8 @@ export function renderHeroInner(){
     if(S.street==='done'){
       const nx=S.nextAt?` <span class="cd" data-until="${S.nextAt}"></span>`:'';
       const w=`${S.msg.map(names).join('<br>')}`;
-      if(S.mode==='bots')ctl=`<div class="wait">${w}</div><div class="main"><button class="btn next" data-a="next">下一手${nx}</button></div><p class="seat-hint">点别人的座位：看资料、换座位</p>`;
+      const broke=p.stack===0&&!p.qBuy; // busted: the next hand waits for a buy-in, so offer only that
+      if(S.mode==='bots')ctl=`<div class="wait">${w}</div>${broke?'':`<div class="main"><button class="btn next" data-a="next">下一手${nx}</button></div>`}${S.hand<=3?'<p class="seat-hint">点别人的座位：看资料、换座位</p>':''}`;
       else ctl=`<div class="wait">${w}<br>下一手${nx} 后开始</div>`;
     }else if(S.street==='idle'){
       ctl=`<div class="wait">${names(S.msg[0]||'等待开局')}</div>`;

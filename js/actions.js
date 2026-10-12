@@ -1,7 +1,7 @@
 // What the local player does: confirmations, bet presets, pre-actions, buy/cash/tidy.
 import {DV,Z,csum,tidyChips} from './chips.js';
 import {BETTING,BUY} from './config.js';
-import {castVote,doAction,maybeStart,proceed} from './engine.js';
+import {castVote,doAction,maybeStart,proceed,startHand} from './engine.js';
 import {commit} from './online.js';
 import {BB,PLAY_MODE,reserveDailyBuy} from './settings.js';
 import {LOCAL_B,LOCAL_C,M,MYDOC,PUSH,S,SESSION,SUBMITTED,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setPUSH,setSUBMITTED,setVOTED,view} from './state.js';
@@ -128,8 +128,12 @@ export async function money(kind){
       const ok=await reserveDailyBuy(()=>SESSION===session&&S===table&&PLAY_MODE==='normal');
       if(!ok){if(SESSION===session&&S===table)view.render();return;}
     }
+    const broke=p.stack===0;
     if(kind==='buy')p.qBuy++;else p.qCash++;
-    applyMoney(p);commit();maybeStart();return;
+    applyMoney(p);commit();
+    // busted at the end of a hand: buying back in deals the next hand right away
+    if(kind==='buy'&&broke&&S.street==='done'&&p.stack>0){startHand();return;}
+    maybeStart();return;
   }
   const d=MYDOC||{};
   try{
