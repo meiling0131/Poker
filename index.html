@@ -738,7 +738,7 @@ const sgn=n=>(n>0?'+':n<0?'−':'')+fmt(Math.abs(n));
 const STREET_CN={idle:'等待',dealing:'发牌',preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',done:'结算'};
 const BETTING=['preflop','flop','turn','river'];
 let SB=1,BB=2;
-const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=5,ONLINE_MAX=10;
+const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=2,ONLINE_MAX=10;
 const BUY_SET=[[25,4],[10,6],[5,6],[1,10]];
 const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 const BOTS=[['阿杰',{loose:.30,aggr:.70}],['小雨',{loose:.65,aggr:.30}],['老周',{loose:.15,aggr:.25}],
@@ -1797,7 +1797,7 @@ function renderMenu(){
     <div class="mode online${canOnline?'':' disabled'}">
       <span class="mk">好友模式</span>
       <span class="mt">5–10 人 · 全是真人</span>
-      <span class="md">创建房间，邀请朋友入座。每次买入 200，满 5 人开局。房主需保持页面开启。</span>
+      <span class="md">创建房间，邀请朋友入座。每次买入 200，2–10 人，满 2 人开局。房主需保持页面开启。</span>
       <div class="form">
         <label for="nick">昵称</label><input id="nick" maxlength="16" placeholder="朋友们看到的名字" value="${prevNick}" autocomplete="nickname"${canOnline?'':' disabled'}>
         <label for="roomIn">房间号</label><input id="roomIn" maxlength="8" placeholder="比如 K7Q2M" value="${pre}" autocapitalize="characters" autocomplete="off"${canOnline?'':' disabled'}>
@@ -1816,7 +1816,7 @@ function renderTable(){
   else if(S.actor>=0&&S.actor!==m&&BETTING.includes(S.street))result=`${esc(seatName(S.seats[S.actor]))} 思考中…`;
   if(S.mode==='online'&&S.street==='idle'){
     const bought=S.seats.filter(p=>p.stack>0).length;
-    result=`等待玩家 <b class="cnt">${bought}/${needToStart()}</b><br>${S.started?'有人买入后继续':'买一手入座，满 5 人自动开局'}<br><span class="roomcode">房间号 ${esc(M.room)}</span>`;
+    result=`等待玩家 <b class="cnt">${bought}/${needToStart()}</b><br>${S.started?'有人买入后继续':'买一手入座，满 2 人自动开局'}<br><span class="roomcode">房间号 ${esc(M.room)}</span>`;
   }
   const R=S.runout,twice=R&&R.times===2&&R.stage!=='vote';
   let board2='';
