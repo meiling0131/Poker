@@ -3,7 +3,7 @@ import {commit} from './online.js';
 import {M,MYDOC,S,myRef,setFLASH,view} from './state.js';
 import {later,mySeat} from './table.js';
 
-export const BOT_AV={Joe:'🐯',小雨:'🐰',老周:'🐢',奶龙:'🐲',大卫:'🐻',阿芳:'🐱'};
+export const BOT_AV={Joe:'🐯',小雨:'🐰',老周:'🐢',奶龙:'🐲',Kmetsch:'🐻',阿芳:'🐱'};
 export const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
 export function avatarOf(p){
   if(p.kind==='bot')return BOT_AV[p.name]||'🤖';
@@ -20,12 +20,25 @@ export const LINES={
   bust:['我的筹码…','重来重来','今天不宜打牌','我去充个值','这不科学'],
   reply:['😂','🙄','你别得意','🐟','👍','😏','就这？','下把见真章']
 };
+// lines that only one bot says (fall back to LINES)
+export const PERSONA_LINES={
+  奶龙:{call:['跟！钱不是问题','我就喜欢看牌','来都来了，跟','小钱，跟'],check:['看看再说','先看牌'],raise:['我说白了'],
+    win:['有钱就是任性','早说了我运气好'],bust:['没事，我家有矿'],rebuy:['再来两手！我有的是钱','充值成功，继续','买两手，接着奏乐接着舞']},
+  Joe:{fold:['这牌不打','纪律第一','等好牌'],allin:['这手我很有把握'],
+    win:['按计划来','耐心是有回报的'],call:['合理的价格，跟'],raise:['加倍！','翻前就是要加倍','牌好，下大注','不让你便宜看牌']},
+  Kmetsch:{raise:['这把是真的','我有牌'],call:['跟一下'],bluff:['信我，我有','这把我认真的','你敢跟吗？','我从不诈唬'],
+    win:['我说了我有','嘿嘿'],fold:['这次算你赢']},
+};
+// a bot that always says its line for a given action
+export const PERSONA_ALWAYS={奶龙:{raise:1}};
 export const EMOJIS=['😂','👍','😭','😡','🤔','🔥','🙏','🤡','💸','🐟'];
 export function say(p,t,ms=3600){p.say={t:String(t).slice(0,24),until:Date.now()+ms};}
 export function botSay(p,kind,prob){
-  if(!p||p.kind!=='bot'||S.mode!=='bots'||!LINES[kind]||Math.random()>prob)return;
-  if(p.say&&p.say.until>Date.now()&&kind!=='win'&&kind!=='bust')return;
-  const L=LINES[kind];say(p,L[Math.floor(Math.random()*L.length)]);
+  const L=(PERSONA_LINES[p&&p.name]||{})[kind]||LINES[kind];
+  const always=!!(PERSONA_ALWAYS[p&&p.name]||{})[kind];
+  if(!p||p.kind!=='bot'||S.mode!=='bots'||!L||(!always&&Math.random()>prob))return;
+  if(!always&&p.say&&p.say.until>Date.now()&&kind!=='win'&&kind!=='bust')return;
+  say(p,L[Math.floor(Math.random()*L.length)]);
 }
 export let EMO_OPEN=false,EMO_LAST=0,EMO_N=0;
 export async function sendEmoji(e){

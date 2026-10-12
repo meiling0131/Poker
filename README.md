@@ -1,4 +1,4 @@
-# Texas Hold'em Poker
+# Verve Poker
 
 单页德州扑克：人机练习，或者用 Firebase 和朋友开房间联机。没有构建步骤，GitHub Pages 直接发布 `main` 分支。
 
