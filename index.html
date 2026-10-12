@@ -689,6 +689,40 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
 .preacts button i{width:14px;height:14px;flex:none;border-radius:4px;border:1.5px solid #ffffff55}
 .preacts button.on{background:#3f8a5f40;border-color:#8fd3a8aa;color:#e8f7ee}
 .preacts button.on i{background:#3f8a5f;border-color:#8fd3a8;box-shadow:inset 0 0 0 2px #22302d}
+
+/* table talk */
+.av{display:inline-block;font-size:12px;line-height:1;margin-right:3px;vertical-align:-1px}
+.av.big{font-size:18px;margin-right:0}
+
+.bubble{position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);z-index:6;max-width:140px;width:max-content;
+  background:#fffaf0;color:#1f2321;font-size:12px;font-weight:600;line-height:1.3;padding:5px 9px;border-radius:12px;box-shadow:0 4px 12px #0006;
+  text-align:center;animation:pop .28s cubic-bezier(.3,1.6,.6,1);pointer-events:none}
+.bubble::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fffaf0}
+.hero{position:relative}
+.hero-bubble{bottom:auto;top:-30px;left:64px;transform:none;font-size:18px}
+.hero-bubble::after{left:16px}
+@keyframes pop{from{transform:translateX(-50%) scale(.4);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.hero-bubble{animation-name:pophero}
+@keyframes pophero{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.emo-btn{background:none;border:1px solid #ffffff22;border-radius:999px;font-size:13px;line-height:1;padding:3px 6px;cursor:pointer}
+.emo-btn.on{border-color:var(--brass);background:#c9b68522}
+.emopick{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;background:#1a2321;border:1px solid #ffffff1a;border-radius:12px;padding:6px}
+.emopick button{background:none;border:0;font-size:22px;line-height:1;padding:6px 0;border-radius:8px;cursor:pointer}
+.emopick button:active{background:#ffffff14;transform:scale(1.2)}
+.verdict{text-align:center;font-size:15px;font-weight:700;padding:6px 0 2px;color:var(--text);animation:pophero .35s ease-out}
+.verdict.up{color:#f3d77e}.verdict.down{color:#e9a99f}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+.confetti span{position:absolute;top:-40px;animation:fall 2.4s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes fall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(105vh) rotate(540deg);opacity:.9}}
+@media(max-width:700px){.emopick{grid-template-columns:repeat(5,minmax(0,1fr))}.bubble{font-size:11px;max-width:110px;padding:4px 7px}.av.big{font-size:15px}}
+
+/* 我的统计 */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:#1a2321;border:1px solid #ffffff14;border-radius:12px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.stat b{font:700 20px var(--num);color:var(--cream)}
+.stat span{font-size:12px;color:var(--text)}
+.stat i{font-style:normal;font-size:10.5px;color:var(--mute)}
+.panel .mini[data-stats-reset]{align-self:flex-start}
 </style>
 </head>
 <body>
@@ -702,6 +736,7 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
         <button class="ghost icon" id="moreBtn" hidden aria-label="设置" aria-expanded="false">设置</button>
         <div class="more" id="more" hidden>
           <label class="hintToggle"><span>牌型提示</span><input id="handHints" type="checkbox" role="switch"></label>
+          <label class="hintToggle"><span>轮到我时提醒</span><input id="soundOn" type="checkbox" role="switch"></label>
           <div class="seg" id="speed" hidden>
             <button data-speed="1100">慢</button><button data-speed="650" class="on">中</button><button data-speed="250">快</button>
           </div>
@@ -863,7 +898,7 @@ function payChips(p,amt,picked){
 }
 function giveChips(p,amt){p.stack+=amt;cadd(p.chips,greedyC(amt));}
 // pay a winner out of the pot's own chips: win ten 10s, keep ten 10s
-function giveFromPot(p,amt,pool){p.stack+=amt;cadd(p.chips,takeChips(pool,amt));}
+function giveFromPot(p,amt,pool){p.stack+=amt;p.won=(p.won||0)+amt;cadd(p.chips,takeChips(pool,amt));}
 // 整理筹码: rebuild a stack into the buy-in mix (白10 红6 蓝6 绿4 per 200) so it can be bet in small steps
 function tidyChips(p){const t=chipBreakdown(csum(p.chips));const same=DV.every(d=>t[d]===p.chips[d]);if(!same)p.chips=t;return !same;}
 // choose chips from what a seat owns that add up to at least `amt`, as close as possible
@@ -988,7 +1023,7 @@ function nameOfUid(uid){if(uid===M.me)return '你';const n=S&&S.names&&S.names[u
 const nameOfKey=k=>k.startsWith('bot:')?k.slice(4):nameOfUid(k);
 const names=t=>esc(t).replace(/@@([^@]+)@@/g,(_,u)=>esc(nameOfUid(u)));
 function log(t,cls){S.log.unshift({t,cls:cls||''});if(S.log.length>80)S.log.length=80;REC_VER++;}
-function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false};}
+function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false,won:0,vp:false,pr:false};}
 function freshBot(i){return Object.assign({kind:'bot',uid:null,name:BOTS[i-1][0],stack:0,chips:Z(),qBuy:0,qCash:0,seenB:0,seenC:0,leaving:false},handFields());}
 function freshHuman(uid,seenB,seenC,seenT){return Object.assign({kind:'human',uid,stack:0,chips:Z(),qBuy:0,qCash:0,seenB:seenB||0,seenC:seenC||0,seenT:seenT||0,leaving:false},handFields());}
 function put(p,amt,picked){amt=Math.max(0,Math.min(amt,p.stack));if(amt>0)cadd(p.betChips,payChips(p,amt,picked));p.stack-=amt;p.bet+=amt;p.total+=amt;if(p.stack===0)p.allIn=true;return amt;}
@@ -1044,10 +1079,13 @@ function syncDoc(p){ // pull cumulative buy/cash counters from the player's own 
   }
   p.qBuy+=ok;p.qCash+=nc;p.seenB+=nb;p.seenC+=nc;applyMoney(p);return true;
 }
+// 人机模式：你买入之前（或输光之后）牌桌一直等你，不让机器人自己打
+const BOTS_WAIT='买一手 +200 就开始发牌';
+const heroReady=()=>S.mode!=='bots'||S.seats.some(p=>p.kind==='human'&&(p.stack>0||p.qBuy>0));
 function eligibleCount(){return S.seats.filter(p=>p.kind==='bot'||p.stack>0||p.qBuy>0).length;}
 function maybeStart(){
   if(!S||!M.host||S.street!=='idle'||STARTING)return;
-  if(eligibleCount()>=needToStart())later(startHand,1200);
+  if(heroReady()&&eligibleCount()>=needToStart())later(startHand,1200);
 }
 
 /* ---------- persistence ---------- */
@@ -1092,6 +1130,8 @@ function newBotsTable(){
   S=baseTable('bots');
   S.seats.push(freshHuman('local'));
   for(let i=1;i<7;i++)S.seats.push(freshBot(i));
+  S.msg=[BOTS_WAIT];
+  const mine=loadMyStats();if(mine)S.stats={local:mine};
 }
 function newOnlineTable(keepSeated){
   const old=S&&S.mode==='online'?S:null;
@@ -1141,6 +1181,7 @@ async function startHandInner(){
   S.board=[];S.board2=null;S.runout=null;S.potChips=Z();S.msg=[];S.enc={};
   P.forEach(p=>{p.inHand=p.stack>0;if(!p.inHand&&p.kind==='human')p.last='未买入';});
   const need=needToStart();
+  if(!heroReady()){S.msg=[BOTS_WAIT];S.sbPos=S.bbPos=-1;commit();return;}
   if(elig.length<need){
     S.msg=[S.mode==='online'?`等待玩家：已有 ${elig.length} 人买入，满 ${need} 人自动开局`:'至少需要两位有筹码的玩家才能开局'];
     S.sbPos=S.bbPos=-1;commit();return;
@@ -1239,6 +1280,7 @@ function doAction(p,type,to,picked){
   if(type==='check'&&toCall>0)type='fold';
   if(type==='raise'&&!canRaise(p))type='call';
   if(type==='call'&&toCall===0)type='check';
+  if(S.street==='preflop'){if(type==='raise')p.vp=p.pr=true;else if(type==='call')p.vp=true;}
   if(type==='fold'){p.folded=true;p.last='弃牌';}
   else if(type==='check'){p.last='过牌';}
   else if(type==='call'){const a=put(p,toCall,picked);p.last=p.allIn?`全下 ${fmt(p.bet)}`:`跟注 ${fmt(a)}`;}
@@ -1257,6 +1299,7 @@ function doAction(p,type,to,picked){
   }
   p.acted=true;p.actedStreet=true;p.seenRaise=S.fullRaiseId;S.turn++;
   log(`${who(p)} ${p.last}`);
+  botSay(p,p.allIn&&type!=='fold'?'allin':type,type==='fold'?.18:type==='check'?.12:type==='call'?.2:.45);
 }
 function collectBets(){
   S.seats.forEach(p=>{cadd(S.potChips,p.betChips);p.betChips=Z();p.bet=0;p.acted=false;p.actedStreet=false;if(p.inHand&&!p.folded&&!p.allIn)p.last='';});
@@ -1320,7 +1363,7 @@ function runoutStep(){
 function winByFold(){
   collectBets();
   const w=live()[0],amt=potTotal();
-  w.stack+=amt;cadd(w.chips,S.potChips);w.win=true;S.potChips=Z();
+  w.stack+=amt;w.won=(w.won||0)+amt;cadd(w.chips,S.potChips);w.win=true;S.potChips=Z();botSay(w,'win',.7);
   S.msg=[`${who(w)} 赢得 ${fmt(amt)}，其他人都弃牌了`];
   log(S.msg[0],'w');finish();
 }
@@ -1360,14 +1403,54 @@ function showdown(){
   });
   S.potChips=Z();
   S.msg.push(...back);
+  S.seats.forEach(p=>{if(p.win)botSay(p,'win',.6);else if(p.inHand&&!p.folded&&p.stack===0)botSay(p,'bust',.9);});
   S.msg.forEach(m=>log(m,'w'));
   finish();
 }
+/* ---------- 我的统计 ---------- */
+// per player (book key): h 手数, vp 入池, pr 翻前加注, w 赢的手数, sd 摊牌, sdw 摊牌赢, big 最大赢得底池
+const ZS=()=>({h:0,vp:0,pr:0,w:0,sd:0,sdw:0,big:0});
+function loadMyStats(){try{const v=JSON.parse(store.get('poker.stats.bots')||'null');return v&&typeof v.h==='number'?Object.assign(ZS(),v):null;}catch(e){return null;}}
+function recordStats(){
+  S.stats=S.stats||{};
+  S.seats.forEach(p=>{
+    if(!p.inHand)return;
+    const k=bookKey(p),st=S.stats[k]=Object.assign(ZS(),S.stats[k]);
+    st.h++;if(p.vp)st.vp++;if(p.pr)st.pr++;
+    if(p.win){st.w++;st.big=Math.max(st.big,p.won||0);}
+    if(p.shown&&!p.folded){st.sd++;if(p.win)st.sdw++;}
+  });
+  // 人机模式里你的统计存在本机，换桌、刷新都会累计
+  if(S.mode==='bots'&&S.stats.local)store.set('poker.stats.bots',JSON.stringify(S.stats.local));
+}
+const pct=(a,b)=>b?Math.round(a*100/b)+'%':'—';
+function statsHTML(){
+  const st=S.stats||{},meKey=M.me,me=Object.assign(ZS(),st[meKey]);
+  const nb=S.seats.some(p=>bookKey(p)===meKey)||S.book[meKey]?netOf(meKey).net:0;
+  const tile=(v,l,hint)=>`<div class="stat"><b>${v}</b><span>${l}</span>${hint?`<i>${hint}</i>`:''}</div>`;
+  const mine=`<section class="panel"><h2>我的统计 <span>${S.mode==='bots'?'人机模式累计 · 存在本机':'本房间'}</span></h2>
+    ${me.h?`<div class="stats">
+      ${tile(fmt(me.h),'打了几手')}
+      ${tile(pct(me.vp,me.h),'入池率','主动跟注或加注')}
+      ${tile(pct(me.pr,me.h),'翻前加注')}
+      ${tile(fmt(me.w),'赢了几手',pct(me.w,me.h))}
+      ${tile(me.sd?pct(me.sdw,me.sd):'—','摊牌胜率',me.sd?`${me.sdw}/${me.sd}`:'')}
+      ${tile(fmt(me.big),'最大底池')}
+    </div>${S.mode==='online'?`<p>本房间盈亏 <span class="${nb>0?'pos':nb<0?'neg':''}">${sgn(nb)}</span></p>`:''}${S.mode==='bots'?'<button class="mini" data-stats-reset="1">清空我的统计</button>':''}`
+    :'<p>打完一手就有数据了。</p>'}</section>`;
+  const keys=Object.keys(st).filter(k=>st[k].h>0&&(S.mode==='online'||k!=='local'));
+  const all=keys.length?`<section class="panel"><h2>全桌统计 <span>${S.mode==='bots'?'这一桌':'本房间'}</span></h2>
+    <div class="scroll"><table class="book"><thead><tr><th>玩家</th><th>手数</th><th>入池</th><th>加注</th><th>赢</th><th>最大底池</th></tr></thead><tbody>
+    ${keys.sort((a,b)=>st[b].h-st[a].h).map(k=>{const x=st[k];return `<tr class="${k===meKey?'mine':''}"><td>${esc(nameOfKey(k))}</td><td>${x.h}</td><td>${pct(x.vp,x.h)}</td><td>${pct(x.pr,x.h)}</td><td>${x.w}</td><td>${fmt(x.big)}</td></tr>`;}).join('')}
+    </tbody></table></div></section>`:'';
+  return mine+all;
+}
 function finish(){
   S.street='done';S.actor=-1;S.deadline=0;clearTimeout(TT);clearTimeout(RT);if(S.runout)S.runout.stage='over';
+  recordStats();
   S.seats.forEach(p=>{p.bet=0;applyMoney(p);});
   if(S.mode==='online'){applySeatChanges();}
-  const auto=S.mode==='online'||S.seats[0].stack===0;
+  const auto=S.mode==='online';
   if(auto){S.nextAt=Date.now()+NEXT_MS;later(startHand,NEXT_MS);}else S.nextAt=0;
   commit();
 }
@@ -1488,6 +1571,7 @@ function onSeatDocs(snap){
     const d=SEATDOCS[p.uid],stay=!!(d&&d.join)&&!isKicked(p.uid);
     if(p.leaving===stay){p.leaving=!stay;changed=true;}
     if(syncDoc(p))changed=true;
+    if(syncEmoji(p,d))changed=true;
   });
   if(!handLive()){if(applySeatChanges())changed=true;}
   else{
@@ -1502,6 +1586,93 @@ function onSeatDocs(snap){
   if(S.runout&&S.runout.stage==='vote')checkVotes();
   if(changed)commit();
   maybeStart();
+}
+
+/* ---------- table talk: avatars, speech bubbles, emoji, celebrations ---------- */
+const BOT_AV={阿杰:'🐯',小雨:'🐰',老周:'🐢',Mia:'🦊',大卫:'🐻',阿芳:'🐱'};
+const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
+function avatarOf(p){
+  if(p.kind==='bot')return BOT_AV[p.name]||'🤖';
+  let h=0;for(const c of String(p.uid))h=(h*31+c.charCodeAt(0))>>>0;
+  return HUMAN_AV[h%HUMAN_AV.length];
+}
+const LINES={
+  fold:['这牌我都不好意思看','溜了溜了','你们玩，我看戏','手气留给下一把','打扰了','算你狠'],
+  check:['过～','我先看看','让一让','稳住'],
+  call:['跟就跟，谁怕谁','我就看一眼','不信你有','来都来了','我是来交朋友的'],
+  raise:['加点料','你敢跟吗？','我牌很大（真的）','今天手热','不服来战'],
+  allin:['梭哈！','全部家当都在这了','不装了，摊牌了','要么吃肉要么回家','信我一次'],
+  win:['谢谢老板','承让承让','这就是实力','晚饭有着落了','运气也是实力'],
+  bust:['我的筹码…','重来重来','今天不宜打牌','我去充个值','这不科学'],
+  reply:['😂','🙄','你别得意','🐟','👍','😏','就这？','下把见真章']
+};
+const EMOJIS=['😂','👍','😭','😡','🤔','🔥','🙏','🤡','💸','🐟'];
+function say(p,t,ms=3600){p.say={t:String(t).slice(0,24),until:Date.now()+ms};}
+function botSay(p,kind,prob){
+  if(!p||p.kind!=='bot'||S.mode!=='bots'||!LINES[kind]||Math.random()>prob)return;
+  if(p.say&&p.say.until>Date.now()&&kind!=='win'&&kind!=='bust')return;
+  const L=LINES[kind];say(p,L[Math.floor(Math.random()*L.length)]);
+}
+const bubbleHTML=p=>p.say&&p.say.until>Date.now()?`<div class="bubble" data-bubble-until="${p.say.until}">${esc(p.say.t)}</div>`:'';
+let EMO_OPEN=false,EMO_LAST=0,EMO_N=0;
+async function sendEmoji(e){
+  const m=mySeat();if(m<0||!EMOJIS.includes(e)||Date.now()-EMO_LAST<1500)return;
+  EMO_LAST=Date.now();EMO_OPEN=false;
+  const p=S.seats[m];
+  if(M.host){
+    say(p,e);commit();
+    if(S.mode==='bots'&&Math.random()<.45){
+      const pool=S.seats.filter(q=>q.kind==='bot'&&q.stack+q.total>0);const b=pool[Math.floor(Math.random()*pool.length)];
+      if(b)later(()=>{botSay(b,'reply',1);commit();},700+Math.random()*900);
+    }
+    return;
+  }
+  EMO_N=Math.max(EMO_N,Number((MYDOC&&MYDOC.emo&&MYDOC.emo.n)||0))+1;
+  say(p,e);renderHero(); // shown at once here; the host relays it to everyone else
+  try{await myRef.update({emo:{e,n:EMO_N}});}catch(err){FLASH='表情发送失败';render();}
+}
+// host: pick up emoji a player sent through their own seat doc
+function syncEmoji(p,d){
+  const n=Number(d&&d.emo&&d.emo.n)||0;
+  if(!(n>(p.emoN||0)))return false;
+  p.emoN=n;if(EMOJIS.includes(d.emo.e))say(p,d.emo.e);return true;
+}
+// confetti burst, played once per hand on your own result
+let CELEB_HAND=-1;
+function confetti(list){
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const box=document.createElement('div');box.className='confetti';box.setAttribute('aria-hidden','true');
+  for(let i=0;i<22;i++){const sp=document.createElement('span');sp.textContent=list[i%list.length];
+    sp.style.left=(Math.random()*100)+'%';sp.style.animationDelay=(Math.random()*.6)+'s';sp.style.fontSize=(18+Math.random()*16)+'px';box.appendChild(sp);}
+  document.body.appendChild(box);setTimeout(()=>box.remove(),3200);
+}
+function heroResult(p){
+  if(S.street!=='done'||!p||!(p.total>0||p.won>0))return null;
+  return {net:(p.won||0)-p.total,bust:p.stack===0&&p.qBuy===0};
+}
+function celebrate(){
+  const m=mySeat();if(m<0||S.street!=='done'||CELEB_HAND===S.hand)return;
+  CELEB_HAND=S.hand;const r=heroResult(S.seats[m]);if(!r)return;
+  if(r.net>0)confetti(r.net>=BB*20?['🎉','💰','🪙','✨','🥳']:['🎉','✨','🪙']);
+  else if(r.bust)confetti(['💸','😭','🪦']);
+}
+// your-turn ping: short tone + vibration (Android); audio unlocks on the first tap
+let SOUND=store.get('poker.sound')!=='off',AC=null,ALERTED='';
+function beep(){
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
+    const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
+    o.type='sine';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(880,t+.09);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.18,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.28);
+    o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.3);
+  }catch(e){}
+  try{navigator.vibrate&&navigator.vibrate(70);}catch(e){}
+}
+document.addEventListener('pointerdown',()=>{if(SOUND&&!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}},{once:true});
+function turnAlert(){
+  if(!myTurn())return;
+  const k=SESSION+'/'+S.hand+'/'+S.turn;if(ALERTED===k)return;ALERTED=k;
+  if(SOUND&&document.visibilityState==='visible')beep();
 }
 
 /* ---------- player actions ---------- */
@@ -1793,7 +1964,8 @@ function seatHTML(i,pos,compact){
   else act=`<div class="act">${esc((p.shown?p.handName:p.last)||(p.qBuy?'买入待生效':''))||'&nbsp;'}</div>`;
   return `<div class="${cls.join(' ')}" style="left:${pos.x.toFixed(2)}%;top:${pos.y.toFixed(2)}%;--phone-x:${pos.mx}%;--phone-y:${pos.my}%">
     <div class="mc">${cards}</div>
-    <div class="plate">${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}<div class="nm${p.kind==='human'?' human':''}">${esc(seatName(p))}${tag?`<i>${tag}</i>`:''}</div><div class="stk">${topChip(p.stack)}${fmt(p.stack)}</div></div>
+    ${bubbleHTML(p)}
+    <div class="plate">${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}<div class="nm${p.kind==='human'?' human':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}${tag?`<i>${tag}</i>`:''}</div><div class="stk">${topChip(p.stack)}${fmt(p.stack)}</div></div>
     ${act}
   </div>`;
 }
@@ -1809,7 +1981,7 @@ function render(){
     $('hero').innerHTML=`<div class="wait">${M.ready?'牌桌还没开。':'连接中…'}${FLASH?`<br>${esc(FLASH)}`:''}</div>`;
     $('records').innerHTML='';return;
   }
-  runPre();
+  runPre();turnAlert();celebrate();
   if(VIEW==='records'){renderRecords();tick();refreshNames();return;}
   renderTable();renderHero();
   tick();refreshNames();
@@ -1819,7 +1991,7 @@ function renderHeader(){
   $('pills').innerHTML=!M.mode?'':`<span class="pill">${online?`房间 ${esc(M.room||'')}`:`${PLAY_MODE==='normal'?'正常':'练习'} · 7 人`}</span><span class="pill">盲注 ${SB}/${BB}</span>${S&&S.hand?`<span class="pill">第 ${S.hand} 手</span>`:''}`;
   $('nav').hidden=!M.mode;
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.view===VIEW));
-  $('handHints').checked=SHOW_HAND;
+  $('handHints').checked=SHOW_HAND;$('soundOn').checked=SOUND;
   $('speed').hidden=M.mode!=='bots';
   $('restart').hidden=!(M.mode==='bots'||(online&&M.host));
   $('restart').textContent=CONFIRM_RESET?'确认重置？':'重置牌桌';
@@ -2025,10 +2197,13 @@ function renderHeroInner(){
     if(S.mode==='online')ctl+=`<button class="linkbtn" data-a="leave">${p.leaving?'将在这一手结束后离座':'离开座位'}</button>`;
   }
   if(FLASH)ctl+=`<div class="flash">${esc(FLASH)}</div>`;
-  el.innerHTML=`<div class="me${p.folded?' folded':''}">
+  const res=heroResult(p);
+  if(res)ctl=`<div class="verdict ${res.net>0?'up':res.net<0?'down':''}">${res.net>0?`🎉 这把赢了 +${fmt(res.net)}`:res.bust?`💸 输光了，买一手再战`:res.net<0?`😮‍💨 这把 −${fmt(-res.net)}`:'🤝 不输不赢'}</div>`+ctl;
+  if(EMO_OPEN)ctl=`<div class="emopick" role="group" aria-label="表情">${EMOJIS.map(e=>`<button data-emo="${e}">${e}</button>`).join('')}</div>`+ctl;
+  el.innerHTML=`${bubbleHTML(p).replace('class="bubble"','class="bubble hero-bubble"')}<div class="me${p.folded?' folded':''}">
       <div class="hc">${cards}</div>
       <div class="info">
-        <div class="row1"><span class="who">你</span>${pos.map(t=>`<span class="tag">${t}</span>`).join('')}${handTxt?`<span class="hand">${esc(handTxt)}</span>`:''}</div>
+        <div class="row1"><span class="av big" aria-hidden="true">${avatarOf(p)}</span><span class="who">你</span><button class="emo-btn${EMO_OPEN?' on':''}" data-emo-open="1" aria-label="发表情" aria-expanded="${EMO_OPEN}">😀</button>${pos.map(t=>`<span class="tag">${t}</span>`).join('')}${handTxt?`<span class="hand">${esc(handTxt)}</span>`:''}</div>
         <div class="money"><b>${fmt(p.stack-(mine?csum(PUSH):0))}</b>${mine&&csum(PUSH)?`<span class="pushed">→ ${fmt(csum(PUSH))}</span>`:''}</div>
         <div class="sub">${p.bet>0?`本轮已下 ${fmt(p.bet)} · `:''}盈亏 <span class="${nb.net>0?'pos':nb.net<0?'neg':''}">${sgn(nb.net)}</span> <button class="linkbtn inline" data-view="records">账本</button></div>
       </div>
@@ -2051,7 +2226,7 @@ function renderRecords(){
       <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}${p.leaving?' · 离座中':''}${M.host&&p.uid!==M.me&&!isKicked(p.uid)?kickBtn(p.uid):''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队${M.host?kickBtn(u):''}</span>`).join('')||''}</div>
       ${M.host&&S.kicked&&Object.keys(S.kicked).length?`<div class="people">${Object.keys(S.kicked).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 已请出<button class="kick" data-unkick="${esc(u)}">允许回来</button></span>`).join('')}</div>`:''}
       <p>${M.host?'你是房主：发牌在你这个页面上进行，页面关掉牌局就暂停。':'发牌由房主的页面负责。你的底牌只发给你，用你浏览器里的密钥加密。'}</p></section>`:'';
-  el.innerHTML=`${invite}${people}
+  el.innerHTML=`${statsHTML()}${invite}${people}
     <section class="panel"><h2>账本 <span>一手 200 · 白10 红6 蓝6 绿4</span></h2>
       <div class="scroll"><table class="book"><thead><tr><th>玩家</th><th>买入</th><th>退出</th><th>桌上</th><th>盈亏</th></tr></thead><tbody>${rows||'<tr><td colspan="5">还没有人买入。</td></tr>'}</tbody>
       <tfoot><tr><td>合计</td><td>${fmt(tin)}</td><td>${fmt(tout)}</td><td>${fmt(ton)}</td><td>${sgn(ton+tout-tin)}</td></tr></tfoot></table></div></section>
@@ -2065,6 +2240,7 @@ let NAME_BUSY=false;
 function refreshNames(){}
 let DISPLAY_DAY=localDay();
 function tick(){
+  document.querySelectorAll('[data-bubble-until]').forEach(e=>{if(+e.dataset.bubbleUntil<Date.now())e.remove();});
   const day=localDay();if(day!==DISPLAY_DAY){DISPLAY_DAY=day;render();return;}
   document.querySelectorAll('[data-until]').forEach(e=>{const s=Math.max(0,Math.ceil((+e.dataset.until-Date.now())/1000));e.textContent=s+'s';});
   const away=$('away');
@@ -2076,6 +2252,7 @@ function tick(){
 }
 setInterval(tick,1000);
 document.addEventListener('change',e=>{
+  if(e.target.id==='soundOn'){SOUND=e.target.checked;store.set('poker.sound',SOUND?'on':'off');if(SOUND)beep();return;}
   if(e.target.id==='handHints'||e.target.dataset.handHints){
     SHOW_HAND=e.target.checked;store.set('poker.showHand',SHOW_HAND?'on':'off');
     $('handHints').checked=SHOW_HAND;if(S)renderHero();
@@ -2114,6 +2291,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.m){money(t.dataset.m);return;}
   if(t.dataset.tidy){tidy();return;}
   if(t.dataset.pre){setPre(t.dataset.pre);return;}
+  if(t.dataset.statsReset){if(t.dataset.sure){store.set('poker.stats.bots','');if(S&&S.stats)delete S.stats.local;render();}else{t.dataset.sure='1';t.textContent='确认清空？';}return;}
+  if(t.dataset.emoOpen){EMO_OPEN=!EMO_OPEN;renderHero();return;}
+  if(t.dataset.emo){sendEmoji(t.dataset.emo);return;}
   if(t.dataset.approve){approveBuy(t.dataset.approve,true);return;}
   if(t.dataset.deny){approveBuy(t.dataset.deny,false);return;}
   if(t.dataset.kick){kick(t.dataset.kick);return;}
