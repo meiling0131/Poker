@@ -682,6 +682,13 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
 .person .kick{margin-left:6px;background:none;border:1px solid #d9675d66;color:#f0a59a;border-radius:999px;font:inherit;font-size:11px;padding:1px 8px;cursor:pointer}
 .person .kick.warn{background:#b3443b;color:#fff3ef;border-color:#b3443b}
 .person [data-unkick]{border-color:var(--line2);color:var(--mute)}
+
+/* 提前操作 */
+.preacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.preacts button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:10px;border:1px solid #ffffff22;background:#22302d;color:var(--text);font:inherit;font-size:12.5px;cursor:pointer;padding:4px 6px}
+.preacts button i{width:14px;height:14px;flex:none;border-radius:4px;border:1.5px solid #ffffff55}
+.preacts button.on{background:#3f8a5f40;border-color:#8fd3a8aa;color:#e8f7ee}
+.preacts button.on i{background:#3f8a5f;border-color:#8fd3a8;box-shadow:inset 0 0 0 2px #22302d}
 </style>
 </head>
 <body>
@@ -965,7 +972,7 @@ let MYHOLE={hand:-1,c:null},MYDOC=null;
 let GEN=0,TT=null,SPEED=650,RAISE_TO=0,RAISE_TURN=-1,SUBMITTED=-1,FLASH='',CONFIRM_RESET=false,VIEW='table';
 let LOCAL_B=0,LOCAL_C=0,UNSUBS=[],SESSION=0,PUSH={1:0,5:0,10:0,25:0},PUSH_TURN=-1,VOTED=null;
 const NAMES={},AVATARS={};
-let tableRef=null,secretRef=null,myRef=null;
+let tableRef=null,secretRef=null,myRef=null,recRef=null;
 
 const N=()=>S.seats.length;
 function later(fn,ms){const g=GEN;setTimeout(()=>{if(g===GEN)fn();},ms);}
@@ -980,7 +987,7 @@ const bookKey=p=>p.kind==='bot'?'bot:'+p.name:p.uid;
 function nameOfUid(uid){if(uid===M.me)return '你';const n=S&&S.names&&S.names[uid];return n||(uid===S?.ownerUid?'房主':'玩家');}
 const nameOfKey=k=>k.startsWith('bot:')?k.slice(4):nameOfUid(k);
 const names=t=>esc(t).replace(/@@([^@]+)@@/g,(_,u)=>esc(nameOfUid(u)));
-function log(t,cls){S.log.unshift({t,cls:cls||''});if(S.log.length>80)S.log.length=80;}
+function log(t,cls){S.log.unshift({t,cls:cls||''});if(S.log.length>80)S.log.length=80;REC_VER++;}
 function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false};}
 function freshBot(i){return Object.assign({kind:'bot',uid:null,name:BOTS[i-1][0],stack:0,chips:Z(),qBuy:0,qCash:0,seenB:0,seenC:0,leaving:false},handFields());}
 function freshHuman(uid,seenB,seenC,seenT){return Object.assign({kind:'human',uid,stack:0,chips:Z(),qBuy:0,qCash:0,seenB:seenB||0,seenC:seenC||0,seenT:seenT||0,leaving:false},handFields());}
@@ -1011,7 +1018,7 @@ function netOf(k){
 function ledger(p,kind,amt){
   const k=bookKey(p);const b=S.book[k]||(S.book[k]={in:0,out:0});
   if(kind==='buy')b.in+=amt;else b.out+=amt;
-  S.ledger.unshift({t:Date.now(),k,kind,amt});if(S.ledger.length>300)S.ledger.length=300;
+  S.ledger.unshift({t:Date.now(),k,kind,amt});if(S.ledger.length>300)S.ledger.length=300;REC_VER++;
   log(`${who(p)} ${kind==='buy'?'买一手':kind==='cash'?'退一手':'离桌带走'} ${fmt(amt)}`,'h');
 }
 function applyMoney(p){
@@ -1054,9 +1061,26 @@ function makeWriter(getRef,getBody){
     }}finally{busy=false;}
   };
 }
-const saveTable=makeWriter(()=>tableRef,()=>JSON.parse(JSON.stringify(S)));
+// The room doc carries only live table state; the logs (up to 380 rows) go to rooms/R/meta/records,
+// written at most about once a second. If that doc cannot be written, fall back to the room doc.
+let REC_VER=0,REC_SAVED=-1,REC_TIMER=null,SPLIT_RECS=true,REMOTE_RECS=null;
+const tableBody=()=>{const o=JSON.parse(JSON.stringify(S));if(SPLIT_RECS){delete o.log;delete o.ledger;}return o;};
+const saveTable=makeWriter(()=>tableRef,tableBody);
+function scheduleRecords(){
+  if(REC_TIMER||REC_VER===REC_SAVED||!SPLIT_RECS||!recRef)return;
+  const g=SESSION;
+  REC_TIMER=setTimeout(async()=>{
+    REC_TIMER=null;if(g!==SESSION||!S)return;
+    const v=REC_VER;
+    try{await recRef.set({log:S.log,ledger:S.ledger,t:Date.now()});REC_SAVED=v;}
+    catch(e){console.warn('records save failed',e);if(e&&e.code==='permission-denied'){SPLIT_RECS=false;saveTable();}}
+    if(REC_VER!==REC_SAVED)scheduleRecords();
+  },1000);
+}
+// guests: the room doc may come without logs; fill them from the records doc
+function attachRecords(){if(S&&S.mode==='online'&&!M.host){if(!Array.isArray(S.log))S.log=(REMOTE_RECS&&REMOTE_RECS.log)||[];if(!Array.isArray(S.ledger))S.ledger=(REMOTE_RECS&&REMOTE_RECS.ledger)||[];}}
 const saveSecret=makeWriter(()=>secretRef,()=>({hand:S.hand,deck:DECK.slice(),holes:H.map(h=>(h||[]).join(','))}));
-function commit(){S.updated=Date.now();render();if(M.online&&M.host&&M.mode==='online')saveTable();}
+function commit(){S.updated=Date.now();render();if(M.online&&M.host&&M.mode==='online'){saveTable();scheduleRecords();}}
 
 /* ---------- host engine ---------- */
 function baseTable(mode){
@@ -1452,6 +1476,8 @@ function botDecide(p,i){
   if(canR&&opp===1&&draw&&eq>.35&&toCall<pot*.4&&r<aggr*.12)return raise(.65);
   return {type:'call'};
 }
+// re-run the seat docs we already hold (values captured first: onSeatDocs resets SEATDOCS)
+function reapplySeatDocs(){const cur=Object.entries(SEATDOCS);onSeatDocs({docs:cur.map(([id,v])=>({id,data:()=>v}))});}
 function onSeatDocs(snap){
   SEATDOCS={};snap.docs.forEach(d=>{const v=d.data();if(v)SEATDOCS[d.id]=v;});
   if(!M.ready||!S||S.mode!=='online')return;
@@ -1482,6 +1508,29 @@ function onSeatDocs(snap){
 const mySeat=()=>S?S.seats.findIndex(p=>p.uid===M.me):-1;
 function myTurn(){const m=mySeat();return m>=0&&S.actor===m&&BETTING.includes(S.street)&&canAct(S.seats[m]);}
 let PENDING_ACTION=null,BET_MENU=null,CUSTOM_VAL='';
+// 提前操作: chosen while someone else acts, played the moment the turn reaches you.
+// cf = 过牌/弃牌, call = 只跟当前这注 (dropped if the bet changes), any = 跟任何注
+let PRE=null;
+function preOptions(p){
+  const toCall=Math.min(p.stack,Math.max(0,S.currentBet-p.bet));
+  return [{k:'cf',lbl:toCall?'弃牌':'过牌/弃牌'},{k:'call',lbl:toCall?`跟注 ${fmt(toCall)}`:'过牌'},{k:'any',lbl:'跟任何注'}];
+}
+function setPre(kind){
+  const m=mySeat();if(m<0||!S)return;
+  if(PRE&&PRE.kind===kind&&PRE.hand===S.hand){PRE=null;renderHero();return;}
+  PRE={kind,hand:S.hand,session:SESSION,bet:S.currentBet};renderHero();
+}
+function runPre(){
+  if(!PRE||!S)return;
+  const m=mySeat(),p=m>=0?S.seats[m]:null;
+  if(!p||PRE.session!==SESSION||PRE.hand!==S.hand||!p.inHand||p.folded||p.allIn||!BETTING.includes(S.street)){PRE=null;return;}
+  if(PRE.kind==='call'&&S.currentBet!==PRE.bet){PRE=null;return;}
+  if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
+  const toCall=Math.max(0,S.currentBet-p.bet),x=PRE;PRE=null;
+  const type=x.kind==='cf'?(toCall?'fold':'check'):(toCall?'call':'check');
+  const turn=S.turn;
+  setTimeout(()=>{if(S&&S.turn===turn&&myTurn())act(type,0,null);},0);
+}
 // Actions are confirmed in place: the four buttons turn into 取消 + 确认 …; Check goes straight through.
 function cancelAction(){PENDING_ACTION=null;BET_MENU=null;}
 const stillMyTurn=x=>x&&S&&x.session===SESSION&&x.hand===S.hand&&x.turn===S.turn&&myTurn()&&(M.host||SUBMITTED!==S.turn);
@@ -1643,9 +1692,23 @@ async function leaveTable(){
   render();
 }
 
+/* ---------- keep the screen on during online play ---------- */
+// The host's page deals every hand; if the phone dims and Safari parks the tab, the whole table stops.
+let WAKE=null,WAKE_BUSY=false;
+async function keepAwake(){
+  const want=M.mode==='online'&&document.visibilityState==='visible';
+  if(WAKE_BUSY||!('wakeLock' in navigator))return;
+  WAKE_BUSY=true;
+  try{
+    if(want&&!WAKE){WAKE=await navigator.wakeLock.request('screen');WAKE.addEventListener('release',()=>{WAKE=null;});}
+    else if(!want&&WAKE){const w=WAKE;WAKE=null;await w.release();}
+  }catch(e){}finally{WAKE_BUSY=false;}
+}
+document.addEventListener('visibilitychange',keepAwake);
+
 /* ---------- mode switching ---------- */
 function stopAll(){
-  cancelAction();
+  cancelAction();PRE=null;
   GEN++;SESSION++;clearTimeout(TT);UNSUBS.forEach(f=>{try{f();}catch(e){}});UNSUBS=[];
   S=null;H=[];DECK=[];SEATDOCS={};MYHOLE={hand:-1,c:null};MYDOC=null;
   M.host=false;M.online=false;M.ready=false;M.mode=null;SUBMITTED=-1;FLASH='';VIEW='table';
@@ -1735,7 +1798,7 @@ function seatHTML(i,pos,compact){
   </div>`;
 }
 function render(){
-  adoptStake();
+  adoptStake();keepAwake();
   if(PENDING_ACTION&&!pendingIsCurrent())cancelAction();
   const app=$('app');
   document.body.dataset.view=M.mode?VIEW:'menu';
@@ -1746,6 +1809,7 @@ function render(){
     $('hero').innerHTML=`<div class="wait">${M.ready?'牌桌还没开。':'连接中…'}${FLASH?`<br>${esc(FLASH)}`:''}</div>`;
     $('records').innerHTML='';return;
   }
+  runPre();
   if(VIEW==='records'){renderRecords();tick();refreshNames();return;}
   renderTable();renderHero();
   tick();refreshNames();
@@ -1954,6 +2018,8 @@ function renderHeroInner(){
     }else{
       const a=S.actor>=0?`等 <b>${esc(seatName(S.seats[S.actor]))}</b> 行动…`:'发牌中…';
       ctl=`<div class="wait">${p.folded?'你已弃牌，看他们打完这手。':p.allIn?'你已全下，等结果。':(!hole&&!M.host?'正在解密你的底牌…':a)}</div>`;
+      if(canAct(p)&&BETTING.includes(S.street)&&!(S.runout&&S.runout.stage))
+        ctl+=`<div class="preacts" role="group" aria-label="提前操作">${preOptions(p).map(o=>{const on=PRE&&PRE.hand===S.hand&&PRE.kind===o.k;return `<button data-pre="${o.k}" aria-pressed="${on}" class="${on?'on':''}"><i></i>${o.lbl}</button>`;}).join('')}</div>`;
     }
     ctl+=cashierHTML(p);
     if(S.mode==='online')ctl+=`<button class="linkbtn" data-a="leave">${p.leaving?'将在这一手结束后离座':'离开座位'}</button>`;
@@ -2047,6 +2113,7 @@ document.addEventListener('click',e=>{
   }
   if(t.dataset.m){money(t.dataset.m);return;}
   if(t.dataset.tidy){tidy();return;}
+  if(t.dataset.pre){setPre(t.dataset.pre);return;}
   if(t.dataset.approve){approveBuy(t.dataset.approve,true);return;}
   if(t.dataset.deny){approveBuy(t.dataset.deny,false);return;}
   if(t.dataset.kick){kick(t.dataset.kick);return;}
@@ -2110,7 +2177,8 @@ async function decryptMine(){
 }
 async function startOnline(){
   const g=SESSION,R=M.room;
-  tableRef=M.db.doc(`rooms/${R}`);
+  tableRef=M.db.doc(`rooms/${R}`);recRef=M.db.doc(`rooms/${R}/meta/records`);
+  REC_VER=0;REC_SAVED=-1;SPLIT_RECS=true;REMOTE_RECS=null;
   M.keys=M.keys||await loadKeys();
   if(g!==SESSION)return;
   let t0=null;try{const s0=await tableRef.get();if(s0.exists)t0=s0.data();}catch(e){}
@@ -2131,7 +2199,12 @@ async function startOnline(){
     if(g!==SESSION)return;
     M.ready=true;
     if(t&&t.v===6&&t.mode==='online'&&Array.isArray(t.seats)&&t.ownerUid===M.uid){
-      S=t;adoptStake();S.log=S.log||[];S.pending=S.pending||[];S.book=S.book||{};S.ledger=S.ledger||[];
+      S=t;adoptStake();S.pending=S.pending||[];S.book=S.book||{};
+      if(!Array.isArray(S.log)||!Array.isArray(S.ledger)){
+        let r=null;try{const rs=await recRef.get();if(rs.exists)r=rs.data();}catch(e){}
+        if(g!==SESSION)return;
+        if(!Array.isArray(S.log))S.log=(r&&r.log)||[];if(!Array.isArray(S.ledger))S.ledger=(r&&r.ledger)||[];
+      }
       const resumable=sec&&sec.hand===S.hand&&Array.isArray(sec.holes)&&sec.holes.length===S.seats.length;
       if(resumable){DECK=sec.deck.slice();H=sec.holes.map(h=>h?String(h).split(',').map(Number):[]);}
       const oldPub=S.hostPub;S.hostPub=M.keys.pub;
@@ -2141,9 +2214,9 @@ async function startOnline(){
       }else if(handLive()&&JSON.stringify(oldPub)!==JSON.stringify(S.hostPub)){
         for(let i=0;i<S.seats.length;i++){const p=S.seats[i];if(isRemote(p)&&p.inHand&&SEATDOCS[p.uid]&&SEATDOCS[p.uid].pub)S.enc[p.uid]=await seal(M.keys.priv,SEATDOCS[p.uid].pub,{h:S.hand,c:H[i]});}
       }
-      onSeatDocs({docs:Object.keys(SEATDOCS).map(id=>({id,data:()=>SEATDOCS[id]}))});
+      reapplySeatDocs();
       resumeTurn();
-    }else{newOnlineTable(false);onSeatDocs({docs:Object.keys(SEATDOCS).map(id=>({id,data:()=>SEATDOCS[id]}))});commit();maybeStart();}
+    }else{newOnlineTable(false);reapplySeatDocs();commit();maybeStart();}
   }else{
     UNSUBS.push(tableRef.onSnapshot(s=>{
       if(g!==SESSION)return;
@@ -2151,10 +2224,16 @@ async function startOnline(){
       S=s.exists?s.data():null;
       if(S&&(S.v!==6||S.mode!=='online'||!Array.isArray(S.seats)))S=null;
       if(!S&&!M.ready2){M.ready2=true;}
+      attachRecords();
       if(S&&SUBMITTED>=0&&SUBMITTED<S.turn)SUBMITTED=-1;
       if(S&&isKicked(M.me)&&MYDOC&&MYDOC.join)myRef.update({join:false}).catch(()=>{});
       render();decryptMine();
     },e=>{console.warn(e);}));
+    UNSUBS.push(recRef.onSnapshot(s=>{
+      if(g!==SESSION)return;
+      REMOTE_RECS=s.exists?s.data():null;
+      if(S&&REMOTE_RECS){S.log=REMOTE_RECS.log||[];S.ledger=REMOTE_RECS.ledger||[];if(VIEW==='records')render();}
+    },()=>{}));
     setTimeout(()=>{if(g===SESSION&&!M.ready){M.ready=true;render();}},6000);
   }
 }
