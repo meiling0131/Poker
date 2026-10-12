@@ -715,6 +715,14 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
 .confetti span{position:absolute;top:-40px;animation:fall 2.4s cubic-bezier(.2,.6,.4,1) forwards}
 @keyframes fall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(105vh) rotate(540deg);opacity:.9}}
 @media(max-width:700px){.emopick{grid-template-columns:repeat(5,minmax(0,1fr))}.bubble{font-size:11px;max-width:110px;padding:4px 7px}.av.big{font-size:15px}}
+
+/* 我的统计 */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:#1a2321;border:1px solid #ffffff14;border-radius:12px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.stat b{font:700 20px var(--num);color:var(--cream)}
+.stat span{font-size:12px;color:var(--text)}
+.stat i{font-style:normal;font-size:10.5px;color:var(--mute)}
+.panel .mini[data-stats-reset]{align-self:flex-start}
 </style>
 </head>
 <body>
@@ -1015,7 +1023,7 @@ function nameOfUid(uid){if(uid===M.me)return '你';const n=S&&S.names&&S.names[u
 const nameOfKey=k=>k.startsWith('bot:')?k.slice(4):nameOfUid(k);
 const names=t=>esc(t).replace(/@@([^@]+)@@/g,(_,u)=>esc(nameOfUid(u)));
 function log(t,cls){S.log.unshift({t,cls:cls||''});if(S.log.length>80)S.log.length=80;REC_VER++;}
-function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false,won:0};}
+function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false,won:0,vp:false,pr:false};}
 function freshBot(i){return Object.assign({kind:'bot',uid:null,name:BOTS[i-1][0],stack:0,chips:Z(),qBuy:0,qCash:0,seenB:0,seenC:0,leaving:false},handFields());}
 function freshHuman(uid,seenB,seenC,seenT){return Object.assign({kind:'human',uid,stack:0,chips:Z(),qBuy:0,qCash:0,seenB:seenB||0,seenC:seenC||0,seenT:seenT||0,leaving:false},handFields());}
 function put(p,amt,picked){amt=Math.max(0,Math.min(amt,p.stack));if(amt>0)cadd(p.betChips,payChips(p,amt,picked));p.stack-=amt;p.bet+=amt;p.total+=amt;if(p.stack===0)p.allIn=true;return amt;}
@@ -1123,6 +1131,7 @@ function newBotsTable(){
   S.seats.push(freshHuman('local'));
   for(let i=1;i<7;i++)S.seats.push(freshBot(i));
   S.msg=[BOTS_WAIT];
+  const mine=loadMyStats();if(mine)S.stats={local:mine};
 }
 function newOnlineTable(keepSeated){
   const old=S&&S.mode==='online'?S:null;
@@ -1271,6 +1280,7 @@ function doAction(p,type,to,picked){
   if(type==='check'&&toCall>0)type='fold';
   if(type==='raise'&&!canRaise(p))type='call';
   if(type==='call'&&toCall===0)type='check';
+  if(S.street==='preflop'){if(type==='raise')p.vp=p.pr=true;else if(type==='call')p.vp=true;}
   if(type==='fold'){p.folded=true;p.last='弃牌';}
   else if(type==='check'){p.last='过牌';}
   else if(type==='call'){const a=put(p,toCall,picked);p.last=p.allIn?`全下 ${fmt(p.bet)}`:`跟注 ${fmt(a)}`;}
@@ -1397,8 +1407,47 @@ function showdown(){
   S.msg.forEach(m=>log(m,'w'));
   finish();
 }
+/* ---------- 我的统计 ---------- */
+// per player (book key): h 手数, vp 入池, pr 翻前加注, w 赢的手数, sd 摊牌, sdw 摊牌赢, big 最大赢得底池
+const ZS=()=>({h:0,vp:0,pr:0,w:0,sd:0,sdw:0,big:0});
+function loadMyStats(){try{const v=JSON.parse(store.get('poker.stats.bots')||'null');return v&&typeof v.h==='number'?Object.assign(ZS(),v):null;}catch(e){return null;}}
+function recordStats(){
+  S.stats=S.stats||{};
+  S.seats.forEach(p=>{
+    if(!p.inHand)return;
+    const k=bookKey(p),st=S.stats[k]=Object.assign(ZS(),S.stats[k]);
+    st.h++;if(p.vp)st.vp++;if(p.pr)st.pr++;
+    if(p.win){st.w++;st.big=Math.max(st.big,p.won||0);}
+    if(p.shown&&!p.folded){st.sd++;if(p.win)st.sdw++;}
+  });
+  // 人机模式里你的统计存在本机，换桌、刷新都会累计
+  if(S.mode==='bots'&&S.stats.local)store.set('poker.stats.bots',JSON.stringify(S.stats.local));
+}
+const pct=(a,b)=>b?Math.round(a*100/b)+'%':'—';
+function statsHTML(){
+  const st=S.stats||{},meKey=M.me,me=Object.assign(ZS(),st[meKey]);
+  const nb=S.seats.some(p=>bookKey(p)===meKey)||S.book[meKey]?netOf(meKey).net:0;
+  const tile=(v,l,hint)=>`<div class="stat"><b>${v}</b><span>${l}</span>${hint?`<i>${hint}</i>`:''}</div>`;
+  const mine=`<section class="panel"><h2>我的统计 <span>${S.mode==='bots'?'人机模式累计 · 存在本机':'本房间'}</span></h2>
+    ${me.h?`<div class="stats">
+      ${tile(fmt(me.h),'打了几手')}
+      ${tile(pct(me.vp,me.h),'入池率','主动跟注或加注')}
+      ${tile(pct(me.pr,me.h),'翻前加注')}
+      ${tile(fmt(me.w),'赢了几手',pct(me.w,me.h))}
+      ${tile(me.sd?pct(me.sdw,me.sd):'—','摊牌胜率',me.sd?`${me.sdw}/${me.sd}`:'')}
+      ${tile(fmt(me.big),'最大底池')}
+    </div>${S.mode==='online'?`<p>本房间盈亏 <span class="${nb>0?'pos':nb<0?'neg':''}">${sgn(nb)}</span></p>`:''}${S.mode==='bots'?'<button class="mini" data-stats-reset="1">清空我的统计</button>':''}`
+    :'<p>打完一手就有数据了。</p>'}</section>`;
+  const keys=Object.keys(st).filter(k=>st[k].h>0&&(S.mode==='online'||k!=='local'));
+  const all=keys.length?`<section class="panel"><h2>全桌统计 <span>${S.mode==='bots'?'这一桌':'本房间'}</span></h2>
+    <div class="scroll"><table class="book"><thead><tr><th>玩家</th><th>手数</th><th>入池</th><th>加注</th><th>赢</th><th>最大底池</th></tr></thead><tbody>
+    ${keys.sort((a,b)=>st[b].h-st[a].h).map(k=>{const x=st[k];return `<tr class="${k===meKey?'mine':''}"><td>${esc(nameOfKey(k))}</td><td>${x.h}</td><td>${pct(x.vp,x.h)}</td><td>${pct(x.pr,x.h)}</td><td>${x.w}</td><td>${fmt(x.big)}</td></tr>`;}).join('')}
+    </tbody></table></div></section>`:'';
+  return mine+all;
+}
 function finish(){
   S.street='done';S.actor=-1;S.deadline=0;clearTimeout(TT);clearTimeout(RT);if(S.runout)S.runout.stage='over';
+  recordStats();
   S.seats.forEach(p=>{p.bet=0;applyMoney(p);});
   if(S.mode==='online'){applySeatChanges();}
   const auto=S.mode==='online';
@@ -2177,7 +2226,7 @@ function renderRecords(){
       <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}${p.leaving?' · 离座中':''}${M.host&&p.uid!==M.me&&!isKicked(p.uid)?kickBtn(p.uid):''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队${M.host?kickBtn(u):''}</span>`).join('')||''}</div>
       ${M.host&&S.kicked&&Object.keys(S.kicked).length?`<div class="people">${Object.keys(S.kicked).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 已请出<button class="kick" data-unkick="${esc(u)}">允许回来</button></span>`).join('')}</div>`:''}
       <p>${M.host?'你是房主：发牌在你这个页面上进行，页面关掉牌局就暂停。':'发牌由房主的页面负责。你的底牌只发给你，用你浏览器里的密钥加密。'}</p></section>`:'';
-  el.innerHTML=`${invite}${people}
+  el.innerHTML=`${statsHTML()}${invite}${people}
     <section class="panel"><h2>账本 <span>一手 200 · 白10 红6 蓝6 绿4</span></h2>
       <div class="scroll"><table class="book"><thead><tr><th>玩家</th><th>买入</th><th>退出</th><th>桌上</th><th>盈亏</th></tr></thead><tbody>${rows||'<tr><td colspan="5">还没有人买入。</td></tr>'}</tbody>
       <tfoot><tr><td>合计</td><td>${fmt(tin)}</td><td>${fmt(tout)}</td><td>${fmt(ton)}</td><td>${sgn(ton+tout-tin)}</td></tr></tfoot></table></div></section>
@@ -2242,6 +2291,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.m){money(t.dataset.m);return;}
   if(t.dataset.tidy){tidy();return;}
   if(t.dataset.pre){setPre(t.dataset.pre);return;}
+  if(t.dataset.statsReset){if(t.dataset.sure){store.set('poker.stats.bots','');if(S&&S.stats)delete S.stats.local;render();}else{t.dataset.sure='1';t.textContent='确认清空？';}return;}
   if(t.dataset.emoOpen){EMO_OPEN=!EMO_OPEN;renderHero();return;}
   if(t.dataset.emo){sendEmoji(t.dataset.emo);return;}
   if(t.dataset.approve){approveBuy(t.dataset.approve,true);return;}
