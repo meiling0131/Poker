@@ -1,7 +1,7 @@
 // Your station: cards, chip rail, bet zone, action buttons, cashier.
 import {BET_MENU,CUSTOM_VAL,PENDING_ACTION,PRE,actionLabels,betPresets,confirmDetail,confirmLabel,confirmationPlan,pendingIsCurrent,preOptions,stillMyTurn} from '../actions.js';
 import {describe} from '../cards.js';
-import {BUY_CHIPS,CCLS,DV,Z,chipBreakdown,csum} from '../chips.js';
+import {BUY_CHIPS,CCLS,DV,Z,csum,tidied} from '../chips.js';
 import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {heroResult} from '../fx.js';
 import {PLAY_MODE,SHOW_HAND,dailyAllowance} from '../settings.js';
@@ -40,8 +40,8 @@ export function towerHTML(d,count,enabled,pushed){
 }
 export function railHTML(p,enabled){
   const avail=Z();for(const d of DV)avail[d]=p.chips[d]-(enabled?PUSH[d]:0);
-  const t=chipBreakdown(csum(p.chips)),tidy=DV.every(d=>t[d]===p.chips[d]);
-  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div><button class="mini tidy" data-tidy="1"${tidy?' disabled':''} title="把大面值筹码拆开，按 白10 红6 蓝6 绿4 每 200 重新配">整理</button></div>`;
+  const t=tidied(p.chips),tidy=DV.every(d=>t[d]===p.chips[d]);
+  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div><button class="mini tidy" data-tidy="1"${tidy?' disabled':''} title="先凑 白10 红6 蓝6，其余换成绿25">整理</button></div>`;
 }
 export function renderHero(){
   const focus=document.activeElement&&document.activeElement.id==='betAmt';

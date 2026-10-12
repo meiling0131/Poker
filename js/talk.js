@@ -3,7 +3,7 @@ import {commit} from './online.js';
 import {M,MYDOC,S,myRef,setFLASH,view} from './state.js';
 import {later,mySeat} from './table.js';
 
-export const BOT_AV={阿杰:'🐯',小雨:'🐰',老周:'🐢',Mia:'🦊',大卫:'🐻',阿芳:'🐱'};
+export const BOT_AV={Joe:'🐯',小雨:'🐰',老周:'🐢',奶龙:'🐲',大卫:'🐻',阿芳:'🐱'};
 export const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
 export function avatarOf(p){
   if(p.kind==='bot')return BOT_AV[p.name]||'🤖';

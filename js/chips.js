@@ -57,7 +57,18 @@ export function giveChips(p,amt){p.stack+=amt;cadd(p.chips,greedyC(amt));}
 // pay a winner out of the pot's own chips: win ten 10s, keep ten 10s
 export function giveFromPot(p,amt,pool){p.stack+=amt;p.won=(p.won||0)+amt;cadd(p.chips,takeChips(pool,amt));}
 // 整理筹码: rebuild a stack into the buy-in mix (白10 红6 蓝6 绿4 per 200) so it can be bet in small steps
-export function tidyChips(p){const t=chipBreakdown(csum(p.chips));const same=DV.every(d=>t[d]===p.chips[d]);if(!same)p.chips=t;return !same;}
+// 整理筹码: whatever the stack holds, rebuild it as 白10 红6 蓝6 first, the rest in 绿25;
+// a remainder too small for a 25 tops up the smaller chips. Small chips are merged upward and big
+// ones broken down as needed — only the total is kept.
+export const TIDY_KEEP=[[1,10],[5,6],[10,6]];
+export function tidyTarget(total){
+  const out=Z();let r=total;
+  for(const [d,n] of TIDY_KEEP){const k=Math.min(n,Math.floor(r/d));out[d]=k;r-=k*d;}
+  out[25]=Math.floor(r/25);r-=out[25]*25;
+  return cadd(out,greedyC(r));
+}
+export const tidied=chips=>tidyTarget(csum(chips));
+export function tidyChips(p){const t=tidied(p.chips);const same=DV.every(d=>t[d]===p.chips[d]);if(!same)p.chips=t;return !same;}
 // choose chips from what a seat owns that add up to at least `amt`, as close as possible
 export function pickChips(owned,amt){
   const out=Z();let rem=amt;
