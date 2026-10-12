@@ -6,13 +6,15 @@ import {SOUND,beep,setSOUND} from '../fx.js';
 import {enterBots,enterOnline,toMenu} from '../modes.js';
 import {approveBuy,commit,joinTable,kick,leaveTable,newRoomCode,normRoom,roomLink,unkick} from '../online.js';
 import {SHOW_HAND,readStakeForm,setSHOW_HAND,setSkin} from '../settings.js';
-import {CONFIRM_RESET,GEN,M,PUSH,S,TT,setCONFIRM_RESET,setFLASH,setGEN,setPUSH,setSPEED,setVIEW} from '../state.js';
-import {log,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
+import {CONFIRM_RESET,GEN,M,PROFILE,PUSH,S,TT,setCONFIRM_RESET,setFLASH,setGEN,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
+import {bookKey,log,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
 import {renderHero} from './hero-view.js';
 import {renderMenu} from './menu-view.js';
 import {render} from './render.js';
 import {$,store} from '../util.js';
+import {approveSwap,requestSwap} from '../seats.js';
+import {renderTable} from './table-view.js';
 
 document.addEventListener('change',e=>{
   if(e.target.id==='soundOn'){setSOUND(e.target.checked);store.set('poker.sound',SOUND?'on':'off');if(SOUND)beep();return;}
@@ -23,7 +25,14 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('click',e=>{
   const mo=$('more');if(mo&&!mo.hidden&&!e.target.closest('.morewrap'))mo.hidden=true;
+  const seatEl=e.target.closest('[data-seat]');
+  if(seatEl&&S){const q=S.seats[Number(seatEl.dataset.seat)];if(q){setPROFILE(PROFILE===bookKey(q)?null:bookKey(q));renderTable();}return;}
+  if(PROFILE&&!e.target.closest('.profile')){setPROFILE(null);if(S)renderTable();}
   const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.profileClose){setPROFILE(null);renderTable();return;}
+  if(t.dataset.swap){setPROFILE(null);requestSwap(Number(t.dataset.swap));render();return;}
+  if(t.dataset.swapyes){approveSwap(t.dataset.swapyes,true);return;}
+  if(t.dataset.swapno){approveSwap(t.dataset.swapno,false);return;}
   if(t.dataset.mode){if(readStakeForm())enterBots(t.dataset.mode);return;}
   if(t.dataset.room){
     const nick=($('nick')&&$('nick').value||'').replace(/\s+/g,' ').trim().slice(0,16);
@@ -100,4 +109,9 @@ document.addEventListener('click',e=>{
     if(L.raise.mode==='go')requestAction('raise',L.allIn?p.bet+p.stack:L.to,Object.assign({},PUSH));
     return;
   }
+});
+document.addEventListener('keydown',e=>{
+  const seatEl=(e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('[data-seat]');
+  if(seatEl){e.preventDefault();seatEl.click();}
+  else if(e.key==='Escape'&&PROFILE){setPROFILE(null);if(S)renderTable();}
 });

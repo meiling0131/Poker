@@ -3,11 +3,11 @@ import {cancelAction,setPRE} from './actions.js';
 import {maybeStart,newBotsTable} from './engine.js';
 import {commit,normRoom,startOnline} from './online.js';
 import {PLAY_MODE,loadStake,setPLAY_MODE} from './settings.js';
-import {GEN,M,SESSION,TT,UNSUBS,setDECK,setFLASH,setGEN,setH,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSESSION,setSUBMITTED,setUNSUBS,setVIEW,view} from './state.js';
+import {GEN,M,SESSION,TT,UNSUBS,setDECK,setFLASH,setGEN,setH,setMYDOC,setMYHOLE,setPROFILE,setS,setSEATDOCS,setSESSION,setSUBMITTED,setUNSUBS,setVIEW,view} from './state.js';
 import {store} from './util.js';
 
 export function stopAll(){
-  cancelAction();setPRE(null);
+  cancelAction();setPRE(null);setPROFILE(null);
   setGEN(GEN+1);setSESSION(SESSION+1);clearTimeout(TT);UNSUBS.forEach(f=>{try{f();}catch(e){}});setUNSUBS([]);
   setS(null);setH([]);setDECK([]);setSEATDOCS({});setMYHOLE({hand:-1,c:null});setMYDOC(null);
   M.host=false;M.online=false;M.ready=false;M.mode=null;setSUBMITTED(-1);setFLASH('');setVIEW('table');

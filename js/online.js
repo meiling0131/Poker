@@ -9,6 +9,7 @@ import {DECK,H,M,MYDOC,MYHOLE,S,SEATDOCS,SESSION,SUBMITTED,TT,UNSUBS,VIEW,myRef,
 import {applyMoney,handFields,handLive,isKicked,isRemote,log,who} from './table.js';
 import {syncEmoji} from './talk.js';
 import {sleep} from './util.js';
+import {syncSeatReq} from './seats.js';
 
 export function syncDoc(p){ // pull cumulative buy/cash counters from the player's own seat doc
   const d=SEATDOCS[p.uid];if(!d)return false;
@@ -69,6 +70,7 @@ export function onSeatDocs(snap){
     if(p.leaving===stay){p.leaving=!stay;changed=true;}
     if(syncDoc(p))changed=true;
     if(syncEmoji(p,d))changed=true;
+    if(syncSeatReq(p,d))changed=true;
   });
   if(!handLive()){if(applySeatChanges())changed=true;}
   else{

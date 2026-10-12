@@ -62,4 +62,5 @@ export function applyMoney(p){
 export const heroReady=()=>S.mode!=='bots'||S.seats.some(p=>p.kind==='human'&&(p.stack>0||p.qBuy>0));
 export function eligibleCount(){return S.seats.filter(p=>p.kind==='bot'||p.stack>0||p.qBuy>0).length;}
 export const mySeat=()=>S?S.seats.findIndex(p=>p.uid===M.me):-1;
-export function myTurn(){const m=mySeat();return m>=0&&S.actor===m&&BETTING.includes(S.street)&&canAct(S.seats[m]);}
+// my turn = I'm the actor and I still owe an action (guards the pause after a round closes)
+export function myTurn(){const m=mySeat(),p=S.seats[m];return m>=0&&S.actor===m&&BETTING.includes(S.street)&&canAct(p)&&(!p.acted||p.bet<S.currentBet);}

@@ -3,10 +3,17 @@ import {best7,rankOf,suitOf} from './cards.js';
 import {BOT_STYLE} from './config.js';
 import {BB} from './settings.js';
 import {H,S} from './state.js';
-import {N,canAct,canRaise,live,maxRaiseTo,minRaiseTo,potTotal} from './table.js';
+import {N,bookKey,canAct,canRaise,live,maxRaiseTo,minRaiseTo,potTotal} from './table.js';
 import {botSay} from './talk.js';
 
-// Estimates use only the acting bot's cards and publicly visible betting state.
+// Estimates use only the acting bot's cards and publicly visible betting state, plus what everyone
+// has shown so far (their 入池率 / 翻前加注 from the table stats).
+// read(q): how often q raises before the flop (af) and how often q plays a hand (vp), shrunk toward
+// typical values until there are enough hands to trust.
+export function read(q){
+  const st=(S.stats||{})[bookKey(q)]||{},h=st.h||0,k=15;
+  return {af:((st.pr||0)+.15*k)/(h+k),vp:((st.vp||0)+.25*k)/(h+k)};
+}
 export function startingStrength(hole){
   const hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
   if(hi===lo)return Math.min(.99,.50+(hi-2)*.041);
@@ -16,14 +23,20 @@ export function startingStrength(hole){
 export function rangeEquity(hole,board,opponents,iters){
   if(!opponents.length)return 1;
   const known=new Set(hole.concat(board)),deck=Array.from({length:52},(_,c)=>c).filter(c=>!known.has(c));
+  // how tight each opponent's range is: bigger public bets → stronger; a player who raises everything
+  // preflop → wider. The preflop read can only widen a range after the flop (it says nothing about
+  // how they shove later).
+  const potNow=potTotal(),raises=Math.min(.18,Math.max(0,(S.raises||0)-1)*.06),pre=board.length===0;
+  const tights=opponents.map(q=>{
+    const pressure=q.bet>BB?Math.min(1,q.bet/Math.max(BB,potNow-q.bet)):0,adj=(.15-read(q).af)*1.1;
+    return Math.max(.05,Math.min(.85,.25+pressure*.45+raises+(pre?adj:Math.min(0,adj))));
+  });
   let wins=0;
   for(let t=0;t<iters;t++){
     const pool=deck.slice(),hands=[];
     const draw=()=>pool.splice(Math.floor(Math.random()*pool.length),1)[0];
-    for(const q of opponents){
-      // Larger public bets imply a stronger range, with room for bluffs.
-      const pressure=q.bet>BB?Math.min(1,q.bet/Math.max(BB,potTotal()-q.bet)):0;
-      const tight=.25+pressure*.45+Math.min(.18,Math.max(0,(S.raises||0)-1)*.06);
+    for(let o=0;o<opponents.length;o++){
+      const tight=tights[o];
       let h;
       for(let attempt=0;attempt<8;attempt++){
         h=[draw(),draw()];let strength=startingStrength(h);
@@ -58,20 +71,12 @@ function decideCore(p,i){
   const position=order.length>1?order.findIndex(x=>x.k===i)/(order.length-1):1;
   const pre=S.board.length===0,strength=startingStrength(hole);
   CTX={pre,strength,eq:null,toCall,pot,canR};
-  // Aggressive profiles accept races with medium-or-better starting hands.
-  // Calls are capped by the engine at this bot's remaining stack.
-  const humanShove=toCall>0&&opponents.some(q=>q.kind==='human'&&q.allIn&&q.bet===S.currentBet);
-  if(pre&&humanShove&&aggr>=.70){
-    const hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
-    const suited=suitOf(hole[0])===suitOf(hole[1]);
-    const raceHand=(hi===lo&&hi>=6)||(hi===14&&lo>=9)
-      ||(hi===13&&lo>=10)||(hi===12&&lo===11)
-      ||(suited&&hi-lo===1&&lo>=8);
-    if(raceHand)return {type:'call'};
-  }
   const eq=rangeEquity(hole,S.board,opponents,Math.max(180,Math.floor(650/(opp+1))));
-  CTX.eq=eq;
-  if(!pre&&humanShove&&aggr>=.70&&eq>=.40)return {type:'call'};
+  // calling stations: players who play lots of hands but rarely raise
+  const station=opponents.length>0&&opponents.every(q=>{const x=read(q);return x.vp>.55&&x.af<.12;});
+  // a call that commits a big part of the stack needs more than bare pot odds
+  const commit=toCall/Math.max(1,p.stack+p.bet);
+  Object.assign(CTX,{eq,opp,station});
   const raise=frac=>{
     let to=pre&&S.currentBet<=BB?BB*((tag?4:2.5)+(1-position)*.5)+S.seats.filter(q=>q!==p&&q.bet===BB).length*BB*(tag?1:.6)
       :S.currentBet+Math.max(S.minRaise,(pot+toCall)*frac);
@@ -102,16 +107,24 @@ function decideCore(p,i){
     if(big)return {type:'call'};                // check-call, no raise
     return eq>.55?{type:'call'}:{type:'fold'};
   }
-  // 奶龙 (土豪): never folds — checks when free, calls any bet; raises only now and then with a monster.
+  // 奶龙 (土豪): sticky and loves to see cards — but not every single time, and without a big hand
+  // he won't put in big money (over half the pot, over 15% of his stack, or into a raise).
   if(type==='whale'){
     const r=Math.random(),big=pre?strength>.85:eq>.80;
-    // ...but once all five cards are out he lets go without at least two pair or a real chance
-    if(toCall&&S.board.length===5){
-      const made=Math.floor(best7(hole.concat(S.board))/Math.pow(16,5));
-      if(made<2&&eq<.5)return {type:'fold'};
-    }
     if(canR&&big&&r<(toCall?.35:.5))return raise(.6);
-    return {type:toCall?'call':'check'};
+    if(!toCall)return {type:'check'};
+    const made=pre?0:Math.floor(best7(hole.concat(S.board))/Math.pow(16,5));
+    if(S.board.length===5&&made<2&&eq<.5)return {type:'fold'};          // river: two pair or a real chance
+    if(pre){                                                              // sees most flops, but not for a fortune
+      const bbs=toCall/BB;
+      if(bbs>20)return strength>.66?{type:'call'}:{type:'fold'};
+      if(bbs>8)return strength>.50||r<.25?{type:'call'}:{type:'fold'};
+      return strength<.40&&r<.18?{type:'fold'}:{type:'call'};
+    }
+    // big money after the flop: over half the pot, over 15% of his stack, or any raise
+    const huge=toCall>Math.min(pot*.5,(p.stack+p.bet)*.15)||(S.raises||0)>=2;
+    if(huge)return made>=2||eq>odds+.06?{type:'call'}:{type:'fold'};
+    return eq>odds-.08||r<.4?{type:'call'}:{type:'fold'};                  // sticks with pairs, draws, often air
   }
   if(pre){
     const unopened=S.currentBet<=BB,depth=p.stack/BB;
@@ -134,22 +147,26 @@ function decideCore(p,i){
     }
     if(!toCall)return {type:'check'};
     const realization=.74+position*.13+(suitOf(hole[0])===suitOf(hole[1])?.05:0);
-    const margin=.025+(S.raises>=3?.06:0)-(loose-.5)*.025+(tag?.05:0);
+    const margin=.025+(S.raises>=3?.06:0)-(loose-.5)*.025+(tag?.05:0)+(commit>.35?.05:0);
     return eq*realization>odds+margin?{type:'call'}:{type:'fold'};
   }
   const cards=hole.concat(S.board),suits=[0,0,0,0];cards.forEach(c=>suits[suitOf(c)]++);
   const ranks=new Set(cards.map(rankOf));if(ranks.has(14))ranks.add(1);
   let straightDraw=false;for(let low=1;low<=10;low++){let count=0;for(let r=low;r<low+5;r++)if(ranks.has(r))count++;if(count===4)straightDraw=true;}
   const draw=S.board.length<5&&(suits.includes(4)||straightDraw);
-  const value=eq>(opp===1?.62:opp===2?.49:.40);
-  const r=Math.random(),size=tag?(eq>.82?1:.8):eq>.82?.85:.45+aggr*.22;
+  // against calling stations: thinner value bets, bigger sizes, almost no bluffs
+  const value=eq>(opp===1?(station?.55:.62):opp===2?(station?.45:.49):.40);
+  const bluffy=station?.2:1;
+  const r=Math.random(),size=(station||tag)?(eq>.82?1:.8):eq>.82?.85:.45+aggr*.22;
   if(!toCall){
     if(canR&&value&&r<.65+aggr*.3)return raise(size);
-    if(!tag&&canR&&opp<=2&&draw&&eq>.22&&r<.12+aggr*.18)return raise(.55);
-    if(!tag&&canR&&opp===1&&position>.7&&eq<.25&&r<.035+aggr*.035)return raise(.5);
+    // Joe c-bets the flop when he was the last preflop raiser and still has something
+    if(tag&&canR&&S.board.length===3&&S.pfAgg===i&&opp<=2&&eq>.40&&r<.6)return raise(.55);
+    if(!tag&&canR&&opp<=2&&draw&&eq>.22&&r<(.12+aggr*.18)*bluffy)return raise(.55);
+    if(!tag&&canR&&opp===1&&position>.7&&eq<.25&&r<(.035+aggr*.035)*bluffy)return raise(.5);
     return {type:'check'};
   }
-  const margin=(S.board.length===5?0:.025)+(opp>2?.025:0)-(loose-.5)*.025+(tag?.04:0);
+  const margin=(S.board.length===5?0:.025)+(opp>2?.025:0)-(loose-.5)*.025+(tag?.04:0)+(commit>.35&&eq<.65?.05:0);
   if(eq<odds+margin)return {type:'fold'};
   if(canR&&eq>(opp===1?.75:.62)&&r<.55+aggr*.35)return raise(size);
   if(!tag&&canR&&opp===1&&draw&&eq>.35&&toCall<pot*.4&&r<aggr*.12)return raise(.65);
@@ -169,7 +186,7 @@ export function botDecide(p,i){
   if((p.real||0)>=REAL_HANDS&&CTX.canR){
     const r=Math.random(),weak=CTX.pre?CTX.strength<.6:(CTX.eq??0)<.5;
     const spot=CTX.pre?r<.5:!CTX.toCall?r<.8:r<.4;
-    if(weak&&spot&&d.type!=='raise'){
+    if(weak&&spot&&d.type!=='raise'&&(CTX.opp||0)<=2&&!CTX.station){
       p.bl=(p.bl||0)+1;p.bluffs=(p.bluffs||0)+1;botSay(p,'bluff',.85);
       if(p.bl>=BLUFFS){p.real=0;p.bl=0;}
       return {type:'raise',to:bluffTo(p,CTX.pre?.8:.75)};
