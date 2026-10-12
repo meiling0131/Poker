@@ -15,8 +15,8 @@ export const BETTING=['preflop','flop','turn','river'];
 export const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=2,ONLINE_MAX=10;
 export const BUY_SET=[[25,4],[10,6],[5,6],[1,10]];
 export const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
-// type 'whale' (奶龙, 土豪): sees every flop, calls every bet, rebuys two hands when busted.
-// type 'tag' (Joe): disciplined, but loves to raise before the flop — opens big and doubles any raise.
+// type 'whale' (奶龙, 土豪): sticky — calls everything until the river, then folds without two pair; rebuys two hands.
+// type 'tag' (Joe): disciplined, but loves to raise before the flop — opens 12.5–37.5BB and doubles any raise.
 // type 'bluffer' (Kmetsch): plays a few real hands straight, then starts bluffing; repeats.
 export const BOTS=[['Joe',{loose:.15,aggr:.75,type:'tag'}],['小雨',{loose:.65,aggr:.30}],['老周',{loose:.15,aggr:.25}],
   ['奶龙',{loose:.95,aggr:.80,type:'whale'}],['Kmetsch',{loose:.40,aggr:.55,type:'bluffer'}],['阿芳',{loose:.80,aggr:.60}]];

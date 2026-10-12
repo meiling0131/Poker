@@ -37,7 +37,10 @@ export function botSay(p,kind,prob){
   const L=(PERSONA_LINES[p&&p.name]||{})[kind]||LINES[kind];
   const always=!!(PERSONA_ALWAYS[p&&p.name]||{})[kind];
   if(!p||p.kind!=='bot'||S.mode!=='bots'||!L||(!always&&Math.random()>prob))return;
-  if(!always&&p.say&&p.say.until>Date.now()&&kind!=='win'&&kind!=='bust')return;
+  const big=kind==='win'||kind==='bust'||kind==='rebuy';
+  if(!always&&!big&&p.say&&p.say.until>Date.now())return;
+  // small talk: one bot at a time
+  if(!always&&!big&&S.seats.some(q=>q!==p&&q.say&&q.say.until>Date.now()))return;
   say(p,L[Math.floor(Math.random()*L.length)]);
 }
 export let EMO_OPEN=false,EMO_LAST=0,EMO_N=0;

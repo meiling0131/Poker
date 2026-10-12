@@ -83,6 +83,11 @@ function decideCore(p,i){
   // 奶龙 (土豪): never folds — checks when free, calls any bet; raises only now and then with a monster.
   if(type==='whale'){
     const r=Math.random(),big=pre?strength>.85:eq>.80;
+    // ...but once all five cards are out he lets go without at least two pair or a real chance
+    if(toCall&&S.board.length===5){
+      const made=Math.floor(best7(hole.concat(S.board))/Math.pow(16,5));
+      if(made<2&&eq<.5)return {type:'fold'};
+    }
     if(canR&&big&&r<(toCall?.35:.5))return raise(.6);
     return {type:toCall?'call':'check'};
   }
@@ -90,6 +95,12 @@ function decideCore(p,i){
     const unopened=S.currentBet<=BB,depth=p.stack/BB;
     const openThreshold=tag?.62-position*.06:.64-position*.13-(loose-.5)*.08;
     const premium=strength>=(S.raises>=3?.91:S.raises>=2?.82:.74);
+    // Joe opens big: 12.5BB with hands like AT, 25 or 37.5BB with QJ / TT and better (25 / 50 / 75 at 1/2)
+    if(tag&&unopened&&canR&&strength>Math.min(.60,openThreshold)){
+      const bbs=strength>=.66?(Math.random()<.5?25:37.5):12.5;
+      const to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(BB*bbs)));
+      return {type:'raise',to:to>p.bet+p.stack*.9?maxRaiseTo(p):to};
+    }
     // Joe doubles a raise before the flop whenever his hand is decent
     if(tag&&!unopened&&canR&&strength>.64&&eq>odds){
       const to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),S.currentBet*2));
