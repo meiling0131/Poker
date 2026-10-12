@@ -1,5 +1,5 @@
 // Version every module URL by its content so a deploy never mixes old and new files from the browser cache.
-// Writes an import map into index.html (and versions the entry script). Source files are never edited.
+// Writes an import map into index.html and versions the entry script and stylesheets. Sources are never edited.
 //   node tools/stamp.js          update index.html
 //   node tools/stamp.js --check  exit 1 if index.html is stale (also run by the tests)
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
@@ -25,7 +25,9 @@ export function stamped(html) {
   html = a < 0
     ? html.replace('<script type="module"', `${map}\n<script type="module"`)
     : html.slice(0, a) + map + html.slice(html.indexOf(END, a) + END.length);
-  return html.replace(/<script type="module" src="js\/main\.js(\?v=\w+)?">/, `<script type="module" src="${imports['./js/main.js']}">`.replace('src="./', 'src="'));
+  html = html.replace(/<script type="module" src="js\/main\.js(\?v=\w+)?">/, `<script type="module" src="${imports['./js/main.js']}">`.replace('src="./', 'src="'));
+  // stylesheets: version each <link href="css/…"> the same way
+  return html.replace(/<link rel="stylesheet" href="(css\/[\w.-]+\.css)(\?v=\w+)?">/g, (_, f) => `<link rel="stylesheet" href="${f}?v=${v(join(root, f))}">`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

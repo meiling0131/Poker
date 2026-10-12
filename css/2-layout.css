@@ -1,0 +1,121 @@
+/* 手机一屏布局、筹码轨、下注区、第二块公共牌、联机表单。 */
+/* ---- phone-first one-screen layout (iPhone Safari / Chrome) ---- */
+body{padding-inline:12px;padding-block:6px 10px;-webkit-text-size-adjust:100%}
+button{touch-action:manipulation}
+body[data-view="table"]{overflow-x:hidden}
+.top{display:flex;flex-direction:column;gap:8px;flex:none}
+.top .row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.top .right{display:flex;align-items:center;gap:6px;flex:none}
+.top .pills:empty{display:none}
+h1{text-overflow:ellipsis}
+.pills{flex-wrap:nowrap}
+.nav button{font-size:13px}
+.morewrap{position:relative;flex:none}
+.ghost.icon{padding:4px 10px;font-size:12px}
+.more{position:absolute;right:0;top:calc(100% + 6px);z-index:20;display:flex;flex-direction:column;gap:8px;align-items:stretch;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5);min-width:150px}
+.more .ghost{padding:8px 12px;font-size:13px;text-align:left}
+.more .seg button{flex:1;padding:8px 0;font-size:13px}
+.table{flex:1 1 auto}
+.table.big{height:auto;min-height:360px}
+@media (min-width:480px){.table{height:auto}.table.big{height:auto}}
+.result{font-size:12px}
+/* seats */
+.mc .card .r{font-size:12px}
+.mc .card .s{font-size:10px}
+.act{font-size:10px}
+.seat.compact{width:64px}
+.seat.compact .plate{width:64px}
+.seat.compact .mc .card{--w:22px;--h:30px}
+.seat.compact .mc{height:30px}
+.dbtn{width:16px;font-size:10px;line-height:16px}
+/* board */
+/* hero dock */
+.hero{flex:none;padding:10px;gap:8px}
+.me{gap:10px;flex-wrap:nowrap}
+.me .hc{gap:4px}
+.card.big{--w:46px;--h:64px;border-radius:7px}
+.card.big .r{font-size:21px}
+.card.big .s{font-size:17px;margin-top:2px}
+.info{gap:2px}
+.info .row1{gap:6px}
+.info .money{gap:8px;flex-wrap:nowrap}
+.info .money .piles .chip-d{--cs:13px !important}
+.presets button{padding:6px 0;font-size:12px}
+.btn.small{min-height:36px}
+.wait{padding:4px 0;font-size:12px}
+.cashier{gap:6px}
+.cashier .lbl{flex-basis:100%;font-size:11px}
+.cbtn{padding:8px 10px;min-height:38px}
+.linkbtn{min-height:24px}
+@media (max-height:640px){.card.big{--w:40px;--h:56px}}
+#records{padding-bottom:12px}
+@media (max-height:620px){
+  .top .pills{display:none}
+  .card.big{--w:40px;--h:56px}.card.big .r{font-size:18px}.card.big .s{font-size:15px}
+  .presets button{min-height:30px;padding:4px 0}
+  .hero{padding:8px;gap:6px}
+}
+/* ---- first-person chip rail ---- */
+.disc{display:block;width:var(--dw,34px);height:5px;border-radius:2px/50%;margin-top:-1px;
+  background:repeating-linear-gradient(90deg,var(--c) 0 5px,var(--e) 5px 8px);
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,.35),0 1px 0 rgba(0,0,0,.45)}
+.tower.w{--c:var(--chip-w);--e:var(--chip-w-edge)}
+.tower.r{--c:var(--chip-r);--e:var(--chip-r-edge)}
+.tower.b{--c:var(--chip-b);--e:var(--chip-b-edge)}
+.tower.g{--c:var(--chip-g);--e:var(--chip-g-edge)}
+.rail{display:flex;align-items:flex-end;gap:8px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.28));border-radius:12px;padding:4px 6px 4px;border:1px solid var(--line)}
+.rail.live{border-color:rgba(201,162,83,.45);background:radial-gradient(ellipse at 50% 120%,rgba(26,94,76,.55),rgba(0,0,0,.15) 70%)}
+.towers{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;align-items:end;min-width:0}
+.tower{display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:0;padding:2px 0;color:var(--text);cursor:pointer;border-radius:10px;font:inherit;transition:transform .16s}
+.tower:disabled{cursor:default}
+.rail:not(.live) .tower{opacity:.85}
+.rail.live .tower:not(:disabled):active{transform:translateY(-2px)}
+.tw{display:flex;flex-direction:column-reverse;align-items:center;justify-content:flex-start;padding-top:4px}
+.face{display:flex;align-items:center;justify-content:center;width:34px;margin-bottom:-3px;position:relative;z-index:1}
+.face .chip-d{--cs:34px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.emptyspot{display:block;width:34px;height:12px;border-radius:50%;border:1px dashed rgba(245,239,225,.18)}
+.tower .cnt{font:600 11px var(--num);color:var(--cream)}
+/* bet zone (chips pushed past the line) */
+.betzone{display:flex;align-items:center;gap:8px;order:0;align-self:center}
+.betzone.has{border-style:solid}
+.bz-chips{flex:1;display:flex;gap:2px;align-items:flex-end;min-width:0;overflow-x:auto}
+.bz-chips .pull{background:none;border:0;padding:0 2px;cursor:pointer}
+.bz-sum{display:flex;align-items:center;gap:6px;flex:none}
+.bz-sum b{font:700 18px var(--num);color:var(--win)}
+.bz-sum .need{font-size:12px;padding-right:4px}
+.mini{background:transparent;border:1px solid var(--line2);color:var(--mute);border-radius:999px;font:inherit;font-size:11px;padding:4px 9px;cursor:pointer}
+.btn small{display:block;font-size:10.5px;font-weight:500;opacity:.8;margin-top:1px;letter-spacing:.02em}
+.btn{line-height:1.15}
+.btn.raise.off{border-color:var(--line2);opacity:1}
+.info .money .pushed{font:600 13px var(--num);color:var(--win)}
+.act.vote{color:var(--win)}
+/* second board */
+.board.one,.board.two{position:relative;padding-left:16px}
+.board .bl{position:absolute;left:-2px;top:50%;transform:translateY(-50%);width:14px;height:14px;border-radius:50%;background:var(--brass);color:var(--brass-ink);font:700 9px/14px var(--num);text-align:center}
+.card.bd.sm{--w:clamp(28px,8.6vw,38px)}
+.card.bd.sm .r{font-size:clamp(13px,4vw,18px)}
+.card.bd.sm .s{font-size:clamp(11px,3.2vw,14px)}
+/* hero sizing with the rail */
+.table{min-height:262px}
+@media (max-height:620px){.table{min-height:220px}}
+@media (max-height:620px){
+  .info .sub{display:none}
+}
+.seat.show .mc{margin-bottom:-3px;z-index:2}
+.seat.show .mc .card{box-shadow:0 2px 6px rgba(0,0,0,.6)}
+/* standalone page skeleton */
+[hidden]{display:none!important}
+/* online room form */
+.mode.online{grid-template-columns:1fr;grid-template-areas:"k" "t" "d" "f";cursor:default}
+.mode.online:hover{border-color:var(--line)}
+.mode.disabled{opacity:.55}
+.mode .form{grid-area:f;display:grid;align-items:center;margin-top:10px}
+.mode .form label{font-size:12px;color:var(--mute)}
+.mode .form input{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;color:var(--cream);font:500 16px var(--body);padding:9px 10px;min-width:0}
+.mode .form input#roomIn{font-family:var(--num);letter-spacing:.12em;text-transform:uppercase}
+.mode .form input:focus{outline:2px solid var(--brass);outline-offset:1px}
+.formbtns{grid-column:1/-1;display:flex;gap:8px;margin-top:8px}
+.formbtns .btn{min-height:44px;font-size:14px}
+.invite{display:flex;gap:8px;align-items:center;min-width:0}
+.invite code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font:500 12px var(--num);color:var(--cream);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;user-select:all;-webkit-user-select:all}
+.roomcode{font:600 12px var(--num);color:var(--brass);letter-spacing:.1em}

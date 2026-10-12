@@ -1,0 +1,37 @@
+/* 页面根：颜色、字体变量，以及 iPhone 安全区留白。整套只在这里定义一次。 */
+:root {
+  color-scheme: dark;
+  --ink: #1c1813;
+  --red: #b5242d;
+  --back: #7d1e26;
+  --back2: #922c33;
+  --danger: #d9675d;
+  --good: #7cc59a;
+  --chip-w: #ece6d8;
+  --chip-w-edge: #2f63a8;
+  --chip-r: #b8232f;
+  --chip-r-edge: #f3ece0;
+  --chip-b: #1f4f9c;
+  --chip-b-edge: #f3ece0;
+  --chip-g: #1f7a45;
+  --chip-g-edge: #f3ece0;
+  --display: "Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
+  --body: -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --num: "IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  padding-top: env(safe-area-inset-top,0px);
+  padding-bottom: env(safe-area-inset-bottom,0px);
+  --felt: #245348;
+  --felt-hi: #306456;
+  --rail: #142b25;
+  --brass-ink: #231f15;
+  --page: #141a19;
+  --panel: #1c2422;
+  --panel2: #18201e;
+  --line: #2f3d38;
+  --line2: #3d4e47;
+  --text: #e6e4dc;
+  --mute: #a9b6ae;
+  --cream: #ece8dc;
+  --brass: #c9b685;
+  --win: #e2d4a8;
+}

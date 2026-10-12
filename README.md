@@ -5,7 +5,13 @@
 ## 目录
 
 ```
-index.html          页面骨架、样式，以及 import map（由 tools/stamp.js 生成）
+index.html          页面骨架，以及 import map（由 tools/stamp.js 生成）
+css/                样式，按编号顺序加载，后面的会覆盖前面的
+  0-tokens.css      颜色、字体变量（只在这里定义）
+  1-base.css        牌桌、座位、牌、操作区、面板
+  2-layout.css      手机一屏布局、筹码轨、下注区
+  3-theme.css       牌桌外观和 iPhone 尺寸
+  4-features.css    确认按钮、房主审批、提前操作、头像表情、统计
 js/
   main.js           入口：连接 Firebase，恢复上次的模式
   config.js         常量和 Firebase 配置
@@ -41,7 +47,7 @@ npm run serve        # http://localhost:8000
 ## 改完代码之后
 
 ```
-npm run stamp        # 更新 index.html 里的 import map（每次改 js 都要跑）
+npm run stamp        # 更新 index.html 里的版本号（每次改 js 或 css 都要跑）
 npm run check        # eslint + 单元测试；import map 没更新也会报错
 ```
 
