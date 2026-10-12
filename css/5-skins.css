@@ -1,6 +1,18 @@
 /* 牌桌皮肤（设置 → 牌桌），照着 Verve 的实景：一楼会议室、二楼休息区。
    body[data-skin] 让这里的规则压过 3-theme 里各个尺寸下的牌桌形状。 */
 
+/* 大厅：选楼层 */
+.floorpick{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.floor{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"i b" "i s";align-items:center;gap:2px 12px;text-align:left;
+  padding:14px;border-radius:16px;border:1px solid #ffffff22;background:#18221fcc;color:var(--text);font:inherit;cursor:pointer}
+.floor i{grid-area:i;width:54px;height:40px;border-radius:9px;box-shadow:inset 0 0 0 1px #ffffff26}
+.floor.f1 i{background:repeating-linear-gradient(176deg,#ffffff0d 0 3px,transparent 3px 8px),linear-gradient(115deg,#a9673d,#8f532f 45%,#b07040)}
+.floor.f2 i{background:linear-gradient(180deg,#7a5238 0 30%,#1d6a8e 30% 62%,#a26b4c 62%)}
+.floor b{grid-area:b;font-size:16px}
+.floor span{grid-area:s;font-size:12px;color:var(--mute)}
+.floor.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 6px 18px #0005;background:#202b27}
+@media(max-width:700px){.floorpick{gap:8px}.floor{padding:10px;gap:2px 8px}.floor i{width:40px;height:32px}.floor b{font-size:14px}.floor span{font-size:11px}}
+
 /* 设置菜单里的皮肤选择 */
 .skinpick{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text)}
 .more{min-width:190px}
@@ -51,3 +63,28 @@ body[data-skin="f2"] .table .seat::before{content:"";position:absolute;z-index:-
   body[data-skin="f2"] .table .seat::before{width:calc(100% + 14px);top:-9px;box-shadow:-9px 10px 0 -3px #7a4a31,9px 10px 0 -3px #7a4a31,0 5px 10px #0009,inset 0 2px 0 #c08a68}
   body[data-skin="f2"]{background-size:100% 3px,100% 64px,100% 100%;background-position:0 4px,0 0,0 0}
 }
+
+/* ======== 面板配色跟着桌子走（不用绿色）：一楼胡桃木棕，二楼石面灰 ======== */
+body[data-skin="f1"]{--panel:#3f2414;--panel2:#33200f;--line:#6b4a33;--line2:#7d5a40;
+  --sk-card:linear-gradient(145deg,#5c3621,#3b2112);--sk-flat:#4a2b19;--sk-deep:#2f1b0e;--sk-edge:#e7b98a33;--sk-plate:#3a2112f0}
+body[data-skin="f2"]{--panel:#2b2e32;--panel2:#232528;--line:#44484e;--line2:#53585f;
+  --sk-card:linear-gradient(145deg,#3a3d42,#26282c);--sk-flat:#33363a;--sk-deep:#1f2124;--sk-edge:#ffffff1f;--sk-plate:#26292cf0}
+/* lobby */
+body[data-skin] .mode,body[data-skin] .mode.online,body[data-skin] .lobby-options{background:var(--sk-card);border-color:var(--sk-edge)}
+body[data-skin] .lobby-options input[type=number],body[data-skin] .mode .form input{background:var(--sk-deep);border-color:var(--line2)}
+body[data-skin] .floor{background:var(--sk-card);border-color:var(--sk-edge)}
+body[data-skin] .floor.on{background:var(--sk-flat);border-color:var(--brass)}
+/* table, your station, menus, panels */
+body[data-skin] .plate{background:var(--sk-plate);border-color:var(--sk-edge)}
+body[data-skin] .hero,body[data-skin] .hero.win{background:var(--sk-card);border-color:var(--sk-edge);border-top-color:#c9b68566}
+body[data-skin] .hero.win{border-top-color:var(--win)}
+body[data-skin] .more,body[data-skin] .panel,body[data-skin] .stat,body[data-skin] .emopick,body[data-skin] .requests{background:var(--sk-flat);border-color:var(--sk-edge)}
+body[data-skin] .hero .cbtn,body[data-skin] .cbtn{background:var(--sk-deep);border-color:var(--sk-edge)}
+body[data-skin] .betmenu button,body[data-skin] .preacts button{background:var(--sk-deep);border-color:var(--sk-edge)}
+body[data-skin] .preacts button.on{background:#3f8a5f40;border-color:#8fd3a8aa}
+body[data-skin] .preacts button.on i{box-shadow:inset 0 0 0 2px var(--sk-deep)}
+body[data-skin] .custom input{background:var(--sk-deep)}
+body[data-skin] .btn.fold,body[data-skin] .btn.cancel,body[data-skin] .btn.raise.off{background:var(--sk-flat);border-color:var(--sk-edge)}
+body[data-skin] .seg{border-color:var(--line)}
+body[data-skin] .seg button.on{background:var(--line2)}
+body[data-skin] .nav button.on{background:var(--line2)}

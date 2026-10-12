@@ -41,7 +41,7 @@ document.addEventListener('click',e=>{
     return;
   }
   if(t.id==='moreBtn'){const m=$('more');m.hidden=!m.hidden;t.setAttribute('aria-expanded',String(!m.hidden));return;}
-  if(t.id==='menuBtn'){$('more').hidden=true;toMenu();return;}
+  if(t.id==='homeBtn'){$('more').hidden=true;toMenu();return;}
   if(t.dataset.view){setVIEW(t.dataset.view);render();window.scrollTo&&window.scrollTo(0,0);return;}
   if(t.dataset.skin){setSkin(t.dataset.skin);return;}
   if(t.dataset.speed){setSPEED(+t.dataset.speed);document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',b===t));return;}

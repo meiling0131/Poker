@@ -1,7 +1,7 @@
 // Header and lobby.
 import {DAILY_LIMIT} from '../config.js';
 import {SOUND} from '../fx.js';
-import {BB,PLAY_MODE,SB,SHOW_HAND,dailyAllowance} from '../settings.js';
+import {BB,PLAY_MODE,SB,SHOW_HAND,SKIN,SKINS,dailyAllowance} from '../settings.js';
 import {CONFIRM_RESET,FLASH,M,S,VIEW} from '../state.js';
 import {$,esc,fmt,store} from '../util.js';
 
@@ -15,8 +15,8 @@ export function renderHeader(){
   $('restart').hidden=!(M.mode==='bots'||(online&&M.host));
   $('restart').textContent=CONFIRM_RESET?'确认重置？':'重置牌桌';
   $('restart').classList.toggle('warn',CONFIRM_RESET);
-  $('menuBtn').hidden=!M.mode;
-  $('moreBtn').hidden=!M.mode||($('speed').hidden&&$('restart').hidden&&$('menuBtn').hidden);
+  $('homeBtn').hidden=!M.mode;
+  $('moreBtn').hidden=!M.mode;
   if(!M.mode){$('more').hidden=true;}
   const away=$('away');if(away&&!online)away.hidden=true;
 }
@@ -31,6 +31,7 @@ export function renderMenu(){
   const prevNick=esc(M.nick||''),pre=esc(M.prefill||store.get('poker.room')||'');
   $('menu').innerHTML=`
     <div class="lobby-intro"><span class="eyebrow">THE PRIVATE TABLE</span><h2>Verve赌场</h2><p>坐下来，从这一手开始。</p><div class="lobby-chips" aria-hidden="true"><i class="chip-d w"></i><i class="chip-d r"></i><i class="chip-d b"></i><i class="chip-d g"></i></div></div>
+    <section class="floorpick" role="group" aria-label="选择楼层">${SKINS.map(([k,t,d])=>`<button class="floor ${k}${SKIN===k?' on':''}" data-skin="${k}" aria-pressed="${SKIN===k}"><i aria-hidden="true"></i><b>${t}</b><span>${d}</span></button>`).join('')}</section>
     <section class="lobby-options">
       <div><strong>自定义盲注</strong><span>用于人机与新建好友房 · 每次买入 200</span></div>
       <label>小盲<input id="stakeSB" type="number" inputmode="numeric" min="1" max="99" value="${SB}"></label>
