@@ -3,8 +3,7 @@ import {cancelAction,setPRE} from './actions.js';
 import {maybeStart,newBotsTable} from './engine.js';
 import {commit,normRoom,startOnline} from './online.js';
 import {PLAY_MODE,loadStake,setPLAY_MODE} from './settings.js';
-import {GEN,M,SESSION,TT,UNSUBS,setDECK,setFLASH,setGEN,setH,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSESSION,setSUBMITTED,setUNSUBS,setVIEW} from './state.js';
-import {render} from './ui/render.js';
+import {GEN,M,SESSION,TT,UNSUBS,setDECK,setFLASH,setGEN,setH,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSESSION,setSUBMITTED,setUNSUBS,setVIEW,view} from './state.js';
 import {store} from './util.js';
 
 export function stopAll(){
@@ -24,7 +23,7 @@ export async function enterOnline(room,create){
   stopAll();loadStake();M.mode='online';M.me=M.uid;M.online=true;M.room=room;M.creating=!!create;
   store.set('poker.mode','online');store.set('poker.room',room);store.set('poker.nick',M.nick);
   try{history.replaceState(null,'',`?room=${room}`);}catch(e){}
-  render();
-  try{await startOnline();}catch(e){console.warn('online failed',e);setFLASH('联机连接失败，请稍后再试。');render();}
+  view.render();
+  try{await startOnline();}catch(e){console.warn('online failed',e);setFLASH('联机连接失败，请稍后再试。');view.render();}
 }
-export function toMenu(){stopAll();store.set('poker.mode','');try{history.replaceState(null,'',location.pathname);}catch(e){}render();}
+export function toMenu(){stopAll();store.set('poker.mode','');try{history.replaceState(null,'',location.pathname);}catch(e){}view.render();}

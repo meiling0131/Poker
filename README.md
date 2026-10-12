@@ -17,7 +17,7 @@ js/
   config.js         常量和 Firebase 配置
   util.js           小工具（$、fmt、esc、store…）
   settings.js       盲注、练习/正式模式、牌型提示、每日买入额度
-  state.js          共享的运行状态（S 牌桌、M 会话…），写入用 setX()
+  state.js          共享的运行状态（按用途分组），写入用 setX()；界面通过 view 钩子注册重画函数
   cards.js          牌、洗牌、比牌型、胜率估算        ← 纯逻辑，有测试
   chips.js          筹码：精确付款、找零、整理          ← 纯逻辑，有测试
   pots.js           主池和边池                          ← 纯逻辑，有测试
@@ -32,6 +32,7 @@ js/
   actions.js        你的操作：确认、下注预设、提前操作、买入/退出/整理
   modes.js          菜单 / 人机 / 联机 之间切换
   ui/               各块界面（牌桌、操作区、记录页、大厅）和事件处理
+                    依赖方向只有一个：ui/ 用游戏逻辑，游戏逻辑不引用 ui/（重画走 state.js 的 view）
 tests/              node:test 单元测试
 tools/stamp.js      按文件内容给每个模块加版本号，防止更新时新旧文件混用
 ```

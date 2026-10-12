@@ -3,7 +3,7 @@ import {PENDING_ACTION,cancelAction,pendingIsCurrent,runPre} from '../actions.js
 import {BETTING} from '../config.js';
 import {celebrate,keepAwake,turnAlert} from '../fx.js';
 import {adoptStake} from '../settings.js';
-import {FLASH,M,S,VIEW} from '../state.js';
+import {FLASH,M,S,VIEW,view} from '../state.js';
 import {renderHero} from './hero-view.js';
 import {renderHeader,renderMenu} from './menu-view.js';
 import {renderRecords} from './records-view.js';
@@ -39,3 +39,4 @@ export function tick(){
   }else away.hidden=true;
 }
 setInterval(tick,1000);
+view.render=render;

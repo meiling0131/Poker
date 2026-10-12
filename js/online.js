@@ -5,10 +5,9 @@ import {BETTING} from './config.js';
 import {genKeys,seal,unseal} from './crypto.js';
 import {applySeatChanges,checkRemoteAct,checkVotes,doAction,maybeStart,newOnlineTable,proceed,resumeTurn} from './engine.js';
 import {adoptStake} from './settings.js';
-import {DECK,H,M,MYDOC,MYHOLE,S,SEATDOCS,SESSION,SUBMITTED,TT,UNSUBS,VIEW,myRef,recRef,secretRef,setDECK,setFLASH,setH,setLOCAL_B,setLOCAL_C,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSUBMITTED,setmyRef,setrecRef,setsecretRef,settableRef,tableRef} from './state.js';
+import {DECK,H,M,MYDOC,MYHOLE,S,SEATDOCS,SESSION,SUBMITTED,TT,UNSUBS,VIEW,myRef,recRef,secretRef,setDECK,setFLASH,setH,setLOCAL_B,setLOCAL_C,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSUBMITTED,setmyRef,setrecRef,setsecretRef,settableRef,tableRef,view} from './state.js';
 import {applyMoney,handFields,handLive,isKicked,isRemote,log,who} from './table.js';
 import {syncEmoji} from './talk.js';
-import {render} from './ui/render.js';
 import {sleep} from './util.js';
 
 export function syncDoc(p){ // pull cumulative buy/cash counters from the player's own seat doc
@@ -55,7 +54,7 @@ export function scheduleRecords(){
 // guests: the room doc may come without logs; fill them from the records doc
 export function attachRecords(){if(S&&S.mode==='online'&&!M.host){if(!Array.isArray(S.log))S.log=(REMOTE_RECS&&REMOTE_RECS.log)||[];if(!Array.isArray(S.ledger))S.ledger=(REMOTE_RECS&&REMOTE_RECS.ledger)||[];}}
 export const saveSecret=makeWriter(()=>secretRef,()=>({hand:S.hand,deck:DECK.slice(),holes:H.map(h=>(h||[]).join(','))}));
-export function commit(){S.updated=Date.now();render();if(M.online&&M.host&&M.mode==='online'){saveTable();scheduleRecords();}}
+export function commit(){S.updated=Date.now();view.render();if(M.online&&M.host&&M.mode==='online'){saveTable();scheduleRecords();}}
 
 // re-run the seat docs we already hold (values captured first: onSeatDocs resets SEATDOCS)
 export function reapplySeatDocs(){const cur=Object.entries(SEATDOCS);onSeatDocs({docs:cur.map(([id,v])=>({id,data:()=>v}))});}
@@ -97,7 +96,7 @@ export function approveBuy(uid,yes){
 export let CONFIRM_KICK=null;
 export function kick(uid){
   if(!M.host||!S||S.mode!=='online'||uid===M.me)return;
-  if(CONFIRM_KICK!==uid){CONFIRM_KICK=uid;render();setTimeout(()=>{if(CONFIRM_KICK===uid){CONFIRM_KICK=null;if(M.mode)render();}},4000);return;}
+  if(CONFIRM_KICK!==uid){CONFIRM_KICK=uid;view.render();setTimeout(()=>{if(CONFIRM_KICK===uid){CONFIRM_KICK=null;if(M.mode)view.render();}},4000);return;}
   CONFIRM_KICK=null;
   S.kicked=S.kicked||{};S.kicked[uid]=Date.now();
   S.pending=(S.pending||[]).filter(u=>u!==uid);
@@ -117,11 +116,11 @@ export async function joinTable(){
   setFLASH('');setLOCAL_B(1);setLOCAL_C(0);
   try{await myRef.set({name:M.nick,pub:M.keys.pub,join:true,t:Date.now(),act:null,buyN:1,cashN:0});}
   catch(e){setFLASH('加入失败，请检查网络后再试一次。');}
-  render();
+  view.render();
 }
 export async function leaveTable(){
   try{await myRef.update({join:false});}catch(e){setFLASH('操作失败，请再试一次。');}
-  render();
+  view.render();
 }
 
 export const ROOM_ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -140,7 +139,7 @@ export async function decryptMine(){
   const box=S.enc&&S.enc[M.me];
   if(!box||MYHOLE.hand===S.hand)return;
   const hand=S.hand;
-  try{const o=await unseal(M.keys.priv,S.hostPub,box);if(o.h===hand){setMYHOLE({hand,c:o.c});render();}}
+  try{const o=await unseal(M.keys.priv,S.hostPub,box);if(o.h===hand){setMYHOLE({hand,c:o.c});view.render();}}
   catch(e){console.warn('decrypt failed',e);}
 }
 export async function startOnline(){
@@ -154,7 +153,7 @@ export async function startOnline(){
   if(g!==SESSION)return;
   setmyRef(M.db.doc(`rooms/${R}/seats/${M.uid}`));
   try{const ms=await myRef.get();if(!ms.exists)await myRef.set({name:M.nick,join:false,t:Date.now(),act:null,buyN:0,cashN:0,pub:M.keys.pub});else if(ms.data().name!==M.nick)await myRef.update({name:M.nick});}catch(e){console.warn(e);}
-  UNSUBS.push(myRef.onSnapshot(s=>{if(g!==SESSION)return;setMYDOC(s.exists?s.data():null);if(M.mode)render();},()=>{}));
+  UNSUBS.push(myRef.onSnapshot(s=>{if(g!==SESSION)return;setMYDOC(s.exists?s.data():null);if(M.mode)view.render();},()=>{}));
   if(M.owner){
     M.host=true;
     setsecretRef(M.db.doc(`users/${M.uid}/private/secret_${R}`));
@@ -195,14 +194,14 @@ export async function startOnline(){
       attachRecords();
       if(S&&SUBMITTED>=0&&SUBMITTED<S.turn)setSUBMITTED(-1);
       if(S&&isKicked(M.me)&&MYDOC&&MYDOC.join)myRef.update({join:false}).catch(()=>{});
-      render();decryptMine();
+      view.render();decryptMine();
     },e=>{console.warn(e);}));
     UNSUBS.push(recRef.onSnapshot(s=>{
       if(g!==SESSION)return;
       REMOTE_RECS=s.exists?s.data():null;
-      if(S&&REMOTE_RECS){S.log=REMOTE_RECS.log||[];S.ledger=REMOTE_RECS.ledger||[];if(VIEW==='records')render();}
+      if(S&&REMOTE_RECS){S.log=REMOTE_RECS.log||[];S.ledger=REMOTE_RECS.ledger||[];if(VIEW==='records')view.render();}
     },()=>{}));
-    setTimeout(()=>{if(g===SESSION&&!M.ready){M.ready=true;render();}},6000);
+    setTimeout(()=>{if(g===SESSION&&!M.ready){M.ready=true;view.render();}},6000);
   }
 }
 export function setREC_VER(v){REC_VER=v;}

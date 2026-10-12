@@ -1,9 +1,7 @@
 // Table talk: avatars, bot banter, emoji reactions.
 import {commit} from './online.js';
-import {M,MYDOC,S,myRef,setFLASH} from './state.js';
+import {M,MYDOC,S,myRef,setFLASH,view} from './state.js';
 import {later,mySeat} from './table.js';
-import {renderHero} from './ui/hero-view.js';
-import {render} from './ui/render.js';
 
 export const BOT_AV={阿杰:'🐯',小雨:'🐰',老周:'🐢',Mia:'🦊',大卫:'🐻',阿芳:'🐱'};
 export const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
@@ -43,8 +41,8 @@ export async function sendEmoji(e){
     return;
   }
   EMO_N=Math.max(EMO_N,Number((MYDOC&&MYDOC.emo&&MYDOC.emo.n)||0))+1;
-  say(p,e);renderHero(); // shown at once here; the host relays it to everyone else
-  try{await myRef.update({emo:{e,n:EMO_N}});}catch(err){setFLASH('表情发送失败');render();}
+  say(p,e);view.renderHero(); // shown at once here; the host relays it to everyone else
+  try{await myRef.update({emo:{e,n:EMO_N}});}catch(err){setFLASH('表情发送失败');view.render();}
 }
 // host: pick up emoji a player sent through their own seat doc
 export function syncEmoji(p,d){

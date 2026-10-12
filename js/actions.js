@@ -4,10 +4,8 @@ import {BETTING,BUY} from './config.js';
 import {castVote,doAction,maybeStart,proceed} from './engine.js';
 import {commit} from './online.js';
 import {BB,PLAY_MODE,reserveDailyBuy} from './settings.js';
-import {LOCAL_B,LOCAL_C,M,MYDOC,PUSH,S,SESSION,SUBMITTED,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setPUSH,setSUBMITTED,setVOTED} from './state.js';
+import {LOCAL_B,LOCAL_C,M,MYDOC,PUSH,S,SESSION,SUBMITTED,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setPUSH,setSUBMITTED,setVOTED,view} from './state.js';
 import {applyMoney,canRaise,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from './table.js';
-import {renderHero} from './ui/hero-view.js';
-import {render} from './ui/render.js';
 import {$,fmt} from './util.js';
 
 export let PENDING_ACTION=null,BET_MENU=null,CUSTOM_VAL='';
@@ -20,8 +18,8 @@ export function preOptions(p){
 }
 export function setPre(kind){
   const m=mySeat();if(m<0||!S)return;
-  if(PRE&&PRE.kind===kind&&PRE.hand===S.hand){PRE=null;renderHero();return;}
-  PRE={kind,hand:S.hand,session:SESSION,bet:S.currentBet};renderHero();
+  if(PRE&&PRE.kind===kind&&PRE.hand===S.hand){PRE=null;view.renderHero();return;}
+  PRE={kind,hand:S.hand,session:SESSION,bet:S.currentBet};view.renderHero();
 }
 export function runPre(){
   if(!PRE||!S)return;
@@ -73,12 +71,12 @@ export function requestAction(type,to=0,chips=null,custom=false){
   PENDING_ACTION={type,to,custom,session:SESSION,hand:S.hand,turn:S.turn,chips:chips?Object.assign({},chips):null};
   BET_MENU=null;
   if(custom)CUSTOM_VAL=String(to);
-  renderHero();
+  view.renderHero();
   const inp=$('betAmt');if(inp&&custom){inp.focus();inp.select();}
 }
 export function openBetMenu(){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
-  PENDING_ACTION=null;BET_MENU={session:SESSION,hand:S.hand,turn:S.turn};renderHero();
+  PENDING_ACTION=null;BET_MENU={session:SESSION,hand:S.hand,turn:S.turn};view.renderHero();
 }
 // 常用下注：raise-to totals, null when below the minimum; anything past the stack becomes All in
 export function betPresets(p){
@@ -88,7 +86,7 @@ export function betPresets(p){
 }
 export function confirmAction(){
   const plan=confirmationPlan();
-  if(plan.error){renderHero();return;}
+  if(plan.error){view.renderHero();return;}
   cancelAction(); // Clear before dispatch so double clicks / held Enter cannot repeat.
   act(plan.type,plan.to,plan.chips);
 }
@@ -101,7 +99,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('keydown',e=>{
   if(!pendingIsCurrent()&&!stillMyTurn(BET_MENU))return;
-  if(e.key==='Escape'){e.preventDefault();cancelAction();renderHero();}
+  if(e.key==='Escape'){e.preventDefault();cancelAction();view.renderHero();}
   else if(e.key==='Enter'&&!e.isComposing&&pendingIsCurrent()){e.preventDefault();if(!e.repeat)confirmAction();}
 });
 export async function act(type,to,chips){
@@ -109,26 +107,26 @@ export async function act(type,to,chips){
   to=to||0;chips=chips||null;
   if(M.host){setPUSH(Z());doAction(S.seats[mySeat()],type,to,chips);proceed();return;}
   if(SUBMITTED===S.turn)return;
-  setSUBMITTED(S.turn);setFLASH('');render();
+  setSUBMITTED(S.turn);setFLASH('');view.render();
   try{await myRef.update({act:{hand:S.hand,turn:S.turn,type,to,chips}});setPUSH(Z());}
-  catch(e){setSUBMITTED(-1);setFLASH('提交失败，请再点一次。');render();}
+  catch(e){setSUBMITTED(-1);setFLASH('提交失败，请再点一次。');view.render();}
 }
 export async function vote(n){
   const m=mySeat(),R=S&&S.runout;if(m<0||!R||R.stage!=='vote'||!R.voters.includes(m)||R.votes[m])return;
   if(M.host){castVote(m,n);return;}
-  setVOTED({hand:S.hand,turn:R.turn,n});render();
-  try{await myRef.update({act:{type:'rit',n,hand:S.hand,turn:R.turn}});}catch(e){setVOTED(null);setFLASH('提交失败，请再点一次。');render();}
+  setVOTED({hand:S.hand,turn:R.turn,n});view.render();
+  try{await myRef.update({act:{type:'rit',n,hand:S.hand,turn:R.turn}});}catch(e){setVOTED(null);setFLASH('提交失败，请再点一次。');view.render();}
 }
 export async function money(kind){
   const m=mySeat();if(m<0)return;
   const p=S.seats[m];
-  if(kind==='cash'&&p.stack-p.qCash*BUY+p.qBuy*BUY<BUY){setFLASH('筹码不足 200，不能退一手。');render();return;}
+  if(kind==='cash'&&p.stack-p.qCash*BUY+p.qBuy*BUY<BUY){setFLASH('筹码不足 200，不能退一手。');view.render();return;}
   setFLASH('');
   if(S.mode==='bots'){
     if(kind==='buy'&&PLAY_MODE==='normal'){
       const session=SESSION,table=S;
       const ok=await reserveDailyBuy(()=>SESSION===session&&S===table&&PLAY_MODE==='normal');
-      if(!ok){if(SESSION===session&&S===table)render();return;}
+      if(!ok){if(SESSION===session&&S===table)view.render();return;}
     }
     if(kind==='buy')p.qBuy++;else p.qCash++;
     applyMoney(p);commit();maybeStart();return;
@@ -138,16 +136,16 @@ export async function money(kind){
     if(kind==='buy'){setLOCAL_B(Math.max(LOCAL_B,Number(d.buyN)||0)+1);await myRef.update({buyN:LOCAL_B});}
     else{setLOCAL_C(Math.max(LOCAL_C,Number(d.cashN)||0)+1);await myRef.update({cashN:LOCAL_C});}
   }catch(e){setFLASH('提交失败，请再试一次。');}
-  render();
+  view.render();
 }
 export let LOCAL_T=0;
 export async function tidy(){
   const m=mySeat();if(m<0)return;
   const p=S.seats[m];setPUSH(Z());setFLASH('');cancelAction();
-  if(M.host){if(tidyChips(p))commit();else renderHero();return;}
+  if(M.host){if(tidyChips(p))commit();else view.renderHero();return;}
   try{LOCAL_T=Math.max(LOCAL_T,Number((MYDOC||{}).tidyN)||0)+1;await myRef.update({tidyN:LOCAL_T});}
   catch(e){setFLASH('整理失败，请再试一次。');}
-  render();
+  view.render();
 }
 export function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);

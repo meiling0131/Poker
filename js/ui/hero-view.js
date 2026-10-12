@@ -5,7 +5,7 @@ import {BUY_CHIPS,CCLS,DV,Z,chipBreakdown,csum} from '../chips.js';
 import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {heroResult} from '../fx.js';
 import {PLAY_MODE,SHOW_HAND,dailyAllowance} from '../settings.js';
-import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SUBMITTED,VOTED,setPUSH,setPUSH_TURN} from '../state.js';
+import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SUBMITTED,VOTED,setPUSH,setPUSH_TURN,view} from '../state.js';
 import {bookKey,canAct,handLive,isKicked,lockedIn,maxRaiseTo,mySeat,myTurn,names,netOf} from '../table.js';
 import {EMOJIS,EMO_OPEN,avatarOf} from '../talk.js';
 import {miniStack,miniStackC,pilesC} from './chips-view.js';
@@ -137,3 +137,4 @@ export function renderHeroInner(){
       </div>
     </div>${zone}${mine||csum(p.chips)>0?railHTML(p,mine):''}<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
 }
+view.renderHero=renderHero;
