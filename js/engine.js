@@ -78,7 +78,7 @@ export async function startHandInner(){
       const n=BOT_STYLE[p.name]?.type==='whale'?2:1;p.stack+=BUY*n;p.chips=Z();for(let k=0;k<n;k++)cadd(p.chips,BUY_CHIPS());
       ledger(p,'buy',BUY*n);if(n>1)botSay(p,'rebuy',1);}});
   const elig=P.map((p,i)=>i).filter(i=>P[i].stack>0);
-  S.board=[];S.board2=null;S.runout=null;S.potChips=Z();S.msg=[];S.enc={};
+  S.board=[];S.board2=null;S.runout=null;S.pfAgg=-1;S.potChips=Z();S.msg=[];S.enc={};
   P.forEach(p=>{p.inHand=p.stack>0;if(!p.inHand&&p.kind==='human')p.last='未买入';});
   const need=needToStart();
   if(!heroReady()){S.msg=[BOTS_WAIT];S.sbPos=S.bbPos=-1;commit();return;}
@@ -146,7 +146,7 @@ export function resumeTurn(){
   if(S.runout&&S.runout.stage==='deal'&&H.some(h=>h&&h.length)){commit();later(runoutStep,900);return;}
   if(!BETTING.includes(S.street)||!H.some(h=>h&&h.length))return startHand();
   if(live().length===1)return winByFold();
-  if(roundComplete()){commit();return endLater(500);}
+  if(roundComplete()){S.actor=-1;commit();return endLater(500);}
   const p=S.seats[S.actor];
   if(!p||!(canAct(p)&&(!p.acted||p.bet<S.currentBet)))return proceed();
   if(isRemote(p)){
@@ -182,7 +182,7 @@ export function doAction(p,type,to,picked){
   if(type==='check'&&toCall>0)type='fold';
   if(type==='raise'&&!canRaise(p))type='call';
   if(type==='call'&&toCall===0)type='check';
-  if(S.street==='preflop'){if(type==='raise')p.vp=p.pr=true;else if(type==='call')p.vp=true;}
+  if(S.street==='preflop'){if(type==='raise'){p.vp=p.pr=true;S.pfAgg=S.seats.indexOf(p);}else if(type==='call')p.vp=true;}
   if(type==='fold'){p.folded=true;p.last='弃牌';}
   else if(type==='check'){p.last='过牌';}
   else if(type==='call'){const a=put(p,toCall,picked);p.last=p.allIn?`全下 ${fmt(p.bet)}`:`跟注 ${fmt(a)}`;}

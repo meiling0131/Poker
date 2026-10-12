@@ -23,15 +23,20 @@ export function startingStrength(hole){
 export function rangeEquity(hole,board,opponents,iters){
   if(!opponents.length)return 1;
   const known=new Set(hole.concat(board)),deck=Array.from({length:52},(_,c)=>c).filter(c=>!known.has(c));
+  // how tight each opponent's range is: bigger public bets → stronger; a player who raises everything
+  // preflop → wider. The preflop read can only widen a range after the flop (it says nothing about
+  // how they shove later).
+  const potNow=potTotal(),raises=Math.min(.18,Math.max(0,(S.raises||0)-1)*.06),pre=board.length===0;
+  const tights=opponents.map(q=>{
+    const pressure=q.bet>BB?Math.min(1,q.bet/Math.max(BB,potNow-q.bet)):0,adj=(.15-read(q).af)*1.1;
+    return Math.max(.05,Math.min(.85,.25+pressure*.45+raises+(pre?adj:Math.min(0,adj))));
+  });
   let wins=0;
   for(let t=0;t<iters;t++){
     const pool=deck.slice(),hands=[];
     const draw=()=>pool.splice(Math.floor(Math.random()*pool.length),1)[0];
-    for(const q of opponents){
-      // Larger public bets imply a stronger range, with room for bluffs.
-      const pressure=q.bet>BB?Math.min(1,q.bet/Math.max(BB,potTotal()-q.bet)):0;
-      // a player who raises everything has a wide range; one who almost never raises, a narrow one
-      const tight=Math.max(.05,Math.min(.85,.25+pressure*.45+Math.min(.18,Math.max(0,(S.raises||0)-1)*.06)+(.15-read(q).af)*1.1));
+    for(let o=0;o<opponents.length;o++){
+      const tight=tights[o];
       let h;
       for(let attempt=0;attempt<8;attempt++){
         h=[draw(),draw()];let strength=startingStrength(h);
@@ -106,9 +111,9 @@ function decideCore(p,i){
   // he won't put in big money (over half the pot, over 15% of his stack, or into a raise).
   if(type==='whale'){
     const r=Math.random(),big=pre?strength>.85:eq>.80;
-    const made=pre?0:Math.floor(best7(hole.concat(S.board))/Math.pow(16,5));
     if(canR&&big&&r<(toCall?.35:.5))return raise(.6);
     if(!toCall)return {type:'check'};
+    const made=pre?0:Math.floor(best7(hole.concat(S.board))/Math.pow(16,5));
     if(S.board.length===5&&made<2&&eq<.5)return {type:'fold'};          // river: two pair or a real chance
     if(pre){                                                              // sees most flops, but not for a fortune
       const bbs=toCall/BB;
@@ -152,11 +157,11 @@ function decideCore(p,i){
   // against calling stations: thinner value bets, bigger sizes, almost no bluffs
   const value=eq>(opp===1?(station?.55:.62):opp===2?(station?.45:.49):.40);
   const bluffy=station?.2:1;
-  const r=Math.random(),size=station?Math.max(.8,eq>.82?1:.8):tag?(eq>.82?1:.8):eq>.82?.85:.45+aggr*.22;
+  const r=Math.random(),size=(station||tag)?(eq>.82?1:.8):eq>.82?.85:.45+aggr*.22;
   if(!toCall){
     if(canR&&value&&r<.65+aggr*.3)return raise(size);
-    // Joe continues as the preflop raiser when he still has something
-    if(tag&&canR&&p.pr&&opp<=2&&eq>.40&&r<.6)return raise(.55);
+    // Joe c-bets the flop when he was the last preflop raiser and still has something
+    if(tag&&canR&&S.board.length===3&&S.pfAgg===i&&opp<=2&&eq>.40&&r<.6)return raise(.55);
     if(!tag&&canR&&opp<=2&&draw&&eq>.22&&r<(.12+aggr*.18)*bluffy)return raise(.55);
     if(!tag&&canR&&opp===1&&position>.7&&eq<.25&&r<(.035+aggr*.035)*bluffy)return raise(.5);
     return {type:'check'};
