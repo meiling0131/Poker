@@ -1044,10 +1044,13 @@ function syncDoc(p){ // pull cumulative buy/cash counters from the player's own 
   }
   p.qBuy+=ok;p.qCash+=nc;p.seenB+=nb;p.seenC+=nc;applyMoney(p);return true;
 }
+// 人机模式：你买入之前（或输光之后）牌桌一直等你，不让机器人自己打
+const BOTS_WAIT='买一手 +200 就开始发牌';
+const heroReady=()=>S.mode!=='bots'||S.seats.some(p=>p.kind==='human'&&(p.stack>0||p.qBuy>0));
 function eligibleCount(){return S.seats.filter(p=>p.kind==='bot'||p.stack>0||p.qBuy>0).length;}
 function maybeStart(){
   if(!S||!M.host||S.street!=='idle'||STARTING)return;
-  if(eligibleCount()>=needToStart())later(startHand,1200);
+  if(heroReady()&&eligibleCount()>=needToStart())later(startHand,1200);
 }
 
 /* ---------- persistence ---------- */
@@ -1092,6 +1095,7 @@ function newBotsTable(){
   S=baseTable('bots');
   S.seats.push(freshHuman('local'));
   for(let i=1;i<7;i++)S.seats.push(freshBot(i));
+  S.msg=[BOTS_WAIT];
 }
 function newOnlineTable(keepSeated){
   const old=S&&S.mode==='online'?S:null;
@@ -1141,6 +1145,7 @@ async function startHandInner(){
   S.board=[];S.board2=null;S.runout=null;S.potChips=Z();S.msg=[];S.enc={};
   P.forEach(p=>{p.inHand=p.stack>0;if(!p.inHand&&p.kind==='human')p.last='未买入';});
   const need=needToStart();
+  if(!heroReady()){S.msg=[BOTS_WAIT];S.sbPos=S.bbPos=-1;commit();return;}
   if(elig.length<need){
     S.msg=[S.mode==='online'?`等待玩家：已有 ${elig.length} 人买入，满 ${need} 人自动开局`:'至少需要两位有筹码的玩家才能开局'];
     S.sbPos=S.bbPos=-1;commit();return;
@@ -1367,7 +1372,7 @@ function finish(){
   S.street='done';S.actor=-1;S.deadline=0;clearTimeout(TT);clearTimeout(RT);if(S.runout)S.runout.stage='over';
   S.seats.forEach(p=>{p.bet=0;applyMoney(p);});
   if(S.mode==='online'){applySeatChanges();}
-  const auto=S.mode==='online'||S.seats[0].stack===0;
+  const auto=S.mode==='online';
   if(auto){S.nextAt=Date.now()+NEXT_MS;later(startHand,NEXT_MS);}else S.nextAt=0;
   commit();
 }
