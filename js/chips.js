@@ -57,26 +57,17 @@ export function giveChips(p,amt){p.stack+=amt;cadd(p.chips,greedyC(amt));}
 // pay a winner out of the pot's own chips: win ten 10s, keep ten 10s
 export function giveFromPot(p,amt,pool){p.stack+=amt;p.won=(p.won||0)+amt;cadd(p.chips,takeChips(pool,amt));}
 // 整理筹码: rebuild a stack into the buy-in mix (白10 红6 蓝6 绿4 per 200) so it can be bet in small steps
-// 整理筹码 only ever breaks big chips into smaller ones — it never merges small chips into big ones.
-// The aim is the buy-in mix (白10 红6 蓝6 绿4 per 200); an amount short of a full 200 is filled
-// small chips first. Wherever a denomination is short of that aim, larger chips held above their
-// own aim are broken to fill it.
+// 整理筹码: whatever the stack holds, rebuild it as 白10 红6 蓝6 first, the rest in 绿25;
+// a remainder too small for a 25 tops up the smaller chips. Small chips are merged upward and big
+// ones broken down as needed — only the total is kept.
+export const TIDY_KEEP=[[1,10],[5,6],[10,6]];
 export function tidyTarget(total){
-  const sets=Math.floor(total/BUY),out=Z();let r=total-sets*BUY;
-  BUY_SET.forEach(([v,n])=>out[v]+=n*sets);
-  for(const [d,n] of [[1,10],[5,6],[10,6],[25,4]]){const k=Math.min(n,Math.floor(r/d));out[d]+=k;r-=k*d;}
+  const out=Z();let r=total;
+  for(const [d,n] of TIDY_KEEP){const k=Math.min(n,Math.floor(r/d));out[d]=k;r-=k*d;}
+  out[25]=Math.floor(r/25);r-=out[25]*25;
   return cadd(out,greedyC(r));
 }
-export function tidied(chips){
-  const aim=tidyTarget(csum(chips)),out=Z();let carry=0; // carry: value of broken chips not yet placed
-  for(const d of DV){ // 25 → 10 → 5 → 1
-    let have=chips[d]||0;
-    if(carry&&d>1){const add=Math.min(Math.floor(carry/d),Math.max(0,aim[d]-have));have+=add;carry-=add*d;}
-    if(d===1){out[1]=have+carry;carry=0;break;}
-    out[d]=Math.min(have,aim[d]);carry+=(have-out[d])*d;
-  }
-  return out;
-}
+export const tidied=chips=>tidyTarget(csum(chips));
 export function tidyChips(p){const t=tidied(p.chips);const same=DV.every(d=>t[d]===p.chips[d]);if(!same)p.chips=t;return !same;}
 // choose chips from what a seat owns that add up to at least `amt`, as close as possible
 export function pickChips(owned,amt){

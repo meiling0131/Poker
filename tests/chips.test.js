@@ -37,43 +37,24 @@ test('paying with pushed chips returns the change from those chips', () => {
   assert.equal(csum(p.chips), 35); // 45 - 10
 });
 
-test('tidy rebuilds 8×25 into the buy-in mix', () => {
+test('tidy: 白10 红6 蓝6 first, the rest in 绿25', () => {
   const p = { chips: chips({ 25: 8 }) };
   assert.equal(tidyChips(p), true);
-  assert.deepEqual(p.chips, BUY_CHIPS());
-  assert.equal(tidyChips(p), false); // already tidy
+  assert.deepEqual(p.chips, BUY_CHIPS());                                // 200 → the buy-in mix
+  assert.equal(tidyChips(p), false);                                     // already tidy
+  assert.deepEqual(tidied(chips({ 1: 60 })), chips({ 1: 10, 5: 6, 10: 2 }));           // many whites merge up
+  assert.deepEqual(tidied(chips({ 1: 120 })), chips({ 1: 10, 5: 6, 10: 8 }));                // 20 left: two more 10s
+  assert.deepEqual(tidied(chips({ 1: 1, 5: 1, 10: 5, 25: 8 })), chips({ 1: 11, 5: 7, 10: 6, 25: 6 })); // 256
+  assert.deepEqual(tidied(chips({ 10: 100 })), chips({ 1: 10, 5: 6, 10: 6, 25: 36 }));  // 1000
 });
 
-test('tidy never merges small chips into big ones', () => {
-  // 60 white chips stay 60; the two 25s are broken into 10s, nothing is merged upward
-  assert.deepEqual(tidied(chips({ 1: 60, 25: 2 })), chips({ 1: 60, 10: 5 }));
-  const p = { chips: chips({ 1: 60, 10: 5 }) };
-  assert.equal(tidyChips(p), false);                          // already tidy: unchanged
-});
-
-test('tidy breaks big chips for a short stack too', () => {
-  assert.deepEqual(tidied(chips({ 25: 3 })), chips({ 1: 10, 5: 7, 10: 3 })); // 75 → small chips
-  assert.deepEqual(tidied(chips({ 10: 1 })), chips({ 1: 10 }));               // 10 → 10 whites
-});
-
-test('tidy keeps what is already small and only breaks the surplus', () => {
-  // 256 = 8×25 + 5×10 + 1×5 + 1×1: two 25s and some 10s are broken toward 白10 红6 蓝6
-  const out = tidied(chips({ 25: 8, 10: 5, 5: 1, 1: 1 }));
-  assert.equal(csum(out), 256);
-  assert.ok(out[1] >= 1 && out[5] >= 1 && out[10] >= 5);
-  assert.ok(out[25] < 8);
-});
-
-test('fuzz: tidy conserves value, never merges, and is stable', () => {
+test('fuzz: tidy keeps the total and is stable', () => {
   for (let k = 0; k < 3000; k++) {
-    const c = chips({ 1: rnd(40), 5: rnd(20), 10: rnd(20), 25: rnd(20) });
+    const c = chips({ 1: rnd(60), 5: rnd(20), 10: rnd(20), 25: rnd(20) });
     const t = tidied(c);
     assert.equal(csum(t), csum(c));
-    for (const d of [5, 10, 25]) {                          // value held in chips ≥ d never goes up
-      const big = x => [5, 10, 25].filter(e => e >= d).reduce((a, e) => a + e * x[e], 0);
-      assert.ok(big(t) <= big(c), JSON.stringify({ c, t, d }));
-    }
-    assert.deepEqual(tidied(t), t);                            // a second tap changes nothing
+    assert.deepEqual(tidied(t), t);
+    if (csum(c) >= 100) assert.ok(t[1] >= 10 && t[5] >= 6 && t[10] >= 6, JSON.stringify(t));
   }
 });
 
