@@ -671,6 +671,17 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
 .rail .tidy{flex:none;align-self:center}
 .rail .tidy:disabled{opacity:.35;cursor:default}
 @media(max-width:700px){.betmenu{gap:4px}.betmenu button{font-size:12px;min-height:44px}.confirmbar .btn{min-height:46px;font-size:14px}.rail .tidy{padding:4px 7px;font-size:10.5px}}
+
+/* Host inbox: buy-in requests */
+.requests{display:flex;flex-direction:column;gap:6px;border:1px solid #c9b68566;border-radius:12px;padding:8px 10px;background:#2b3330}
+.req{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.req span{flex:1;min-width:0}
+.req .mini{flex:none;white-space:nowrap;padding:5px 12px}
+.req b{color:var(--win);font-weight:600}
+.mini.ok{border-color:#8fd3a866;color:#bfe8cd;background:#3f8a5f33}
+.person .kick{margin-left:6px;background:none;border:1px solid #d9675d66;color:#f0a59a;border-radius:999px;font:inherit;font-size:11px;padding:1px 8px;cursor:pointer}
+.person .kick.warn{background:#b3443b;color:#fff3ef;border-color:#b3443b}
+.person [data-unkick]{border-color:var(--line2);color:var(--mute)}
 </style>
 </head>
 <body>
@@ -727,7 +738,7 @@ const sgn=n=>(n>0?'+':n<0?'−':'')+fmt(Math.abs(n));
 const STREET_CN={idle:'等待',dealing:'发牌',preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',done:'结算'};
 const BETTING=['preflop','flop','turn','river'];
 let SB=1,BB=2;
-const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=5,ONLINE_MAX=10;
+const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=2,ONLINE_MAX=10;
 const BUY_SET=[[25,4],[10,6],[5,6],[1,10]];
 const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 const BOTS=[['阿杰',{loose:.30,aggr:.70}],['小雨',{loose:.65,aggr:.30}],['老周',{loose:.15,aggr:.25}],
@@ -964,6 +975,7 @@ const live=()=>S.seats.filter(p=>p.inHand&&!p.folded);
 const potTotal=()=>S?S.seats.reduce((a,p)=>a+p.total,0):0;
 const isRemote=p=>p.kind==='human'&&p.uid!==M.me;
 const who=p=>p.kind==='bot'?p.name:`@@${p.uid}@@`;
+const isKicked=u=>!!(S&&S.kicked&&S.kicked[u]);
 const bookKey=p=>p.kind==='bot'?'bot:'+p.name:p.uid;
 function nameOfUid(uid){if(uid===M.me)return '你';const n=S&&S.names&&S.names[uid];return n||(uid===S?.ownerUid?'房主':'玩家');}
 const nameOfKey=k=>k.startsWith('bot:')?k.slice(4):nameOfUid(k);
@@ -1016,7 +1028,14 @@ function syncDoc(p){ // pull cumulative buy/cash counters from the player's own 
   const nt=(Number(d.tidyN)||0)-(p.seenT||0);
   if(nt>0){p.seenT=Number(d.tidyN);tidyChips(p);if(!nb&&!nc)return true;}
   if(!nb&&!nc)return false;
-  p.qBuy+=nb;p.qCash+=nc;p.seenB+=nb;p.seenC+=nc;applyMoney(p);return true;
+  // 联机：入座时的第一手自动生效，之后每次买入都要房主同意（房主自己除外）
+  let ok=nb;
+  if(S.mode==='online'&&p.uid!==S.ownerUid&&nb>0){
+    const first=p.seenB===0&&!((S.book[p.uid]||{}).in>0)?1:0;
+    ok=first;p.askB=(p.askB||0)+nb-first;
+    if(nb-first>0)log(`${who(p)} 申请买一手（等房主同意）`,'h');
+  }
+  p.qBuy+=ok;p.qCash+=nc;p.seenB+=nb;p.seenC+=nc;applyMoney(p);return true;
 }
 function eligibleCount(){return S.seats.filter(p=>p.kind==='bot'||p.stack>0||p.qBuy>0).length;}
 function maybeStart(){
@@ -1065,7 +1084,7 @@ function applySeatChanges(){ // online only; never during a live hand
     else keep.push(p);
   });
   S.seats=keep;
-  const pend=Object.keys(SEATDOCS).filter(u=>SEATDOCS[u].join&&SEATDOCS[u].pub&&(Number(SEATDOCS[u].buyN)||0)>0&&!S.seats.some(p=>p.uid===u))
+  const pend=Object.keys(SEATDOCS).filter(u=>SEATDOCS[u].join&&SEATDOCS[u].pub&&(Number(SEATDOCS[u].buyN)||0)>0&&!isKicked(u)&&!S.seats.some(p=>p.uid===u))
     .sort((a,b)=>(SEATDOCS[a].t||0)-(SEATDOCS[b].t||0));
   for(const u of pend){
     if(S.seats.length>=ONLINE_MAX)break;
@@ -1440,13 +1459,13 @@ function onSeatDocs(snap){
   S.names=S.names||{};
   for(const u in SEATDOCS){const nm=String(SEATDOCS[u].name||'').replace(/\s+/g,' ').trim().slice(0,16);if(nm&&S.names[u]!==nm){S.names[u]=nm;changed=true;}}
   S.seats.forEach(p=>{
-    const d=SEATDOCS[p.uid],stay=!!(d&&d.join);
+    const d=SEATDOCS[p.uid],stay=!!(d&&d.join)&&!isKicked(p.uid);
     if(p.leaving===stay){p.leaving=!stay;changed=true;}
     if(syncDoc(p))changed=true;
   });
   if(!handLive()){if(applySeatChanges())changed=true;}
   else{
-    const pend=Object.keys(SEATDOCS).filter(u=>SEATDOCS[u].join&&SEATDOCS[u].pub&&(Number(SEATDOCS[u].buyN)||0)>0&&!S.seats.some(p=>p.uid===u));
+    const pend=Object.keys(SEATDOCS).filter(u=>SEATDOCS[u].join&&SEATDOCS[u].pub&&(Number(SEATDOCS[u].buyN)||0)>0&&!isKicked(u)&&!S.seats.some(p=>p.uid===u));
     if(JSON.stringify(pend)!==JSON.stringify(S.pending)){S.pending=pend;changed=true;}
   }
   if(BETTING.includes(S.street)){
@@ -1568,6 +1587,41 @@ async function money(kind){
     else{LOCAL_C=Math.max(LOCAL_C,Number(d.cashN)||0)+1;await myRef.update({cashN:LOCAL_C});}
   }catch(e){FLASH='提交失败，请再试一次。';}
   render();
+}
+/* ---------- host: buy approvals and kicking (online) ---------- */
+function approveBuy(uid,yes){
+  if(!M.host||!S)return;
+  const p=S.seats.find(q=>q.uid===uid);if(!p||!(p.askB>0))return;
+  p.askB--;
+  if(yes){p.qBuy++;applyMoney(p);log(`房主同意 ${who(p)} 买一手`,'h');}
+  else log(`房主拒绝了 ${who(p)} 的买入`,'h');
+  commit();maybeStart();
+}
+let CONFIRM_KICK=null;
+function kick(uid){
+  if(!M.host||!S||S.mode!=='online'||uid===M.me)return;
+  if(CONFIRM_KICK!==uid){CONFIRM_KICK=uid;render();setTimeout(()=>{if(CONFIRM_KICK===uid){CONFIRM_KICK=null;if(M.mode)render();}},4000);return;}
+  CONFIRM_KICK=null;
+  S.kicked=S.kicked||{};S.kicked[uid]=Date.now();
+  S.pending=(S.pending||[]).filter(u=>u!==uid);
+  const p=S.seats.find(q=>q.uid===uid);
+  log(`房主请 ${who({kind:'human',uid})} 离开了房间`,'h');
+  if(p){p.leaving=true;p.askB=0;
+    if(!handLive())applySeatChanges();
+    else if(BETTING.includes(S.street)&&S.seats[S.actor]===p){clearTimeout(TT);doAction(p,'fold');commit();proceed();return;}
+  }
+  commit();
+}
+function unkick(uid){
+  if(!M.host||!S||!S.kicked)return;
+  delete S.kicked[uid];log(`房主允许 ${who({kind:'human',uid})} 重新加入`,'h');commit();
+}
+function hostRequestsHTML(){
+  if(!M.host||!S||S.mode!=='online')return '';
+  const asks=S.seats.filter(p=>p.askB>0);
+  if(!asks.length)return '';
+  return `<div class="requests">${asks.map(p=>`<div class="req"><span><b>${esc(seatName(p))}</b> 申请买一手 +200${p.askB>1?` ×${p.askB}`:''}</span>
+    <button class="mini" data-deny="${esc(p.uid)}">拒绝</button><button class="mini ok" data-approve="${esc(p.uid)}">同意</button></div>`).join('')}</div>`;
 }
 let LOCAL_T=0;
 async function tidy(){
@@ -1743,7 +1797,7 @@ function renderMenu(){
     <div class="mode online${canOnline?'':' disabled'}">
       <span class="mk">好友模式</span>
       <span class="mt">5–10 人 · 全是真人</span>
-      <span class="md">创建房间，邀请朋友入座。每次买入 200，满 5 人开局。房主需保持页面开启。</span>
+      <span class="md">创建房间，邀请朋友入座。每次买入 200，2–10 人，满 2 人开局。房主需保持页面开启。</span>
       <div class="form">
         <label for="nick">昵称</label><input id="nick" maxlength="16" placeholder="朋友们看到的名字" value="${prevNick}" autocomplete="nickname"${canOnline?'':' disabled'}>
         <label for="roomIn">房间号</label><input id="roomIn" maxlength="8" placeholder="比如 K7Q2M" value="${pre}" autocapitalize="characters" autocomplete="off"${canOnline?'':' disabled'}>
@@ -1762,7 +1816,7 @@ function renderTable(){
   else if(S.actor>=0&&S.actor!==m&&BETTING.includes(S.street))result=`${esc(seatName(S.seats[S.actor]))} 思考中…`;
   if(S.mode==='online'&&S.street==='idle'){
     const bought=S.seats.filter(p=>p.stack>0).length;
-    result=`等待玩家 <b class="cnt">${bought}/${needToStart()}</b><br>${S.started?'有人买入后继续':'买一手入座，满 5 人自动开局'}<br><span class="roomcode">房间号 ${esc(M.room)}</span>`;
+    result=`等待玩家 <b class="cnt">${bought}/${needToStart()}</b><br>${S.started?'有人买入后继续':'买一手入座，满 2 人自动开局'}<br><span class="roomcode">房间号 ${esc(M.room)}</span>`;
   }
   const R=S.runout,twice=R&&R.times===2&&R.stage!=='vote';
   let board2='';
@@ -1783,6 +1837,7 @@ function cashierHTML(p){
   const canCash=p.stack-pendC*BUY+pendB*BUY>=BUY;
   let lbl=p.stack===0&&!pendB?'筹码为 0，买一手才能上牌':locked?'这一手结束后生效':'';
   if(pendB||pendC)lbl=`待生效：${pendB?`买 ${pendB} 手`:''}${pendB&&pendC?' · ':''}${pendC?`退 ${pendC} 手`:''}`;
+  if(p.askB>0)lbl=(lbl?lbl+' · ':'')+`买 ${p.askB} 手，等房主同意`;
   const daily=S.mode==='bots'&&PLAY_MODE==='normal'?dailyAllowance():null;
   if(daily)lbl+=(lbl?' · ':'')+`今日剩余买入 ${fmt(daily.remaining)}`;
   return `<div class="cashier">${lbl?`<span class="lbl">${lbl}</span>`:''}
@@ -1836,11 +1891,12 @@ function renderHeroInner(){
     const queued=MYDOC&&MYDOC.join;
     let ctl;
     const full=S.seats.length>=ONLINE_MAX;
-    if(queued)ctl=`<div class="wait">已买一手，${handLive()?'这一手结束后入座。':full?'座位已满，有人离开后入座。':'马上入座…'}</div><div class="main"><button class="btn fold small" data-a="leave">取消（退回这一手）</button></div>`;
+    if(isKicked(M.me))ctl=`<div class="wait">你已被房主请出这个房间。</div>`;
+    else if(queued)ctl=`<div class="wait">已买一手，${handLive()?'这一手结束后入座。':full?'座位已满，有人离开后入座。':'马上入座…'}</div><div class="main"><button class="btn fold small" data-a="leave">取消（退回这一手）</button></div>`;
     else if(!M.keys)ctl=`<div class="wait">正在连接…</div>`;
     else ctl=`<div class="wait">${S.seats.length} 人在座${full?' · 已满 10 人，可以先排队':''}${handLive()?' · 牌局进行中，买入后这一手结束入座':''}</div><div class="main"><button class="btn next" data-a="join">${miniStackC(BUY_CHIPS())} 买一手并入座 +200</button></div>`;
     if(FLASH)ctl+=`<div class="flash">${esc(FLASH)}</div>`;
-    el.innerHTML=`<div class="controls">${ctl}</div>`;
+    el.innerHTML=`<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
     return;
   }
   const p=S.seats[m];
@@ -1910,8 +1966,9 @@ function renderHeroInner(){
         <div class="money"><b>${fmt(p.stack-(mine?csum(PUSH):0))}</b>${mine&&csum(PUSH)?`<span class="pushed">→ ${fmt(csum(PUSH))}</span>`:''}</div>
         <div class="sub">${p.bet>0?`本轮已下 ${fmt(p.bet)} · `:''}盈亏 <span class="${nb.net>0?'pos':nb.net<0?'neg':''}">${sgn(nb.net)}</span> <button class="linkbtn inline" data-view="records">账本</button></div>
       </div>
-    </div>${zone}${mine||csum(p.chips)>0?railHTML(p,mine):''}<div class="controls">${ctl}</div>`;
+    </div>${zone}${mine||csum(p.chips)>0?railHTML(p,mine):''}<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
 }
+const kickBtn=u=>`<button class="kick${CONFIRM_KICK===u?' warn':''}" data-kick="${esc(u)}">${CONFIRM_KICK===u?'确认请出？':'请出'}</button>`;
 function renderRecords(){
   const el=$('records');
   const tm=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
@@ -1925,7 +1982,8 @@ function renderRecords(){
       <div class="invite"><code id="linktxt">${esc(roomLink())}</code><button class="mini" data-copy="1">复制链接</button></div>
       <p>朋友打开链接、填个昵称就能进来，不需要注册账号。</p></section>`:'';
   const people=S.mode==='online'?`<section class="panel"><h2>玩家 <span>${S.seats.length} 在座${(S.pending||[]).length?` · ${S.pending.length} 排队`:''} · 上限 10</span></h2>
-      <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队</span>`).join('')||''}</div>
+      <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}${p.leaving?' · 离座中':''}${M.host&&p.uid!==M.me&&!isKicked(p.uid)?kickBtn(p.uid):''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队${M.host?kickBtn(u):''}</span>`).join('')||''}</div>
+      ${M.host&&S.kicked&&Object.keys(S.kicked).length?`<div class="people">${Object.keys(S.kicked).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 已请出<button class="kick" data-unkick="${esc(u)}">允许回来</button></span>`).join('')}</div>`:''}
       <p>${M.host?'你是房主：发牌在你这个页面上进行，页面关掉牌局就暂停。':'发牌由房主的页面负责。你的底牌只发给你，用你浏览器里的密钥加密。'}</p></section>`:'';
   el.innerHTML=`${invite}${people}
     <section class="panel"><h2>账本 <span>一手 200 · 白10 红6 蓝6 绿4</span></h2>
@@ -1989,6 +2047,10 @@ document.addEventListener('click',e=>{
   }
   if(t.dataset.m){money(t.dataset.m);return;}
   if(t.dataset.tidy){tidy();return;}
+  if(t.dataset.approve){approveBuy(t.dataset.approve,true);return;}
+  if(t.dataset.deny){approveBuy(t.dataset.deny,false);return;}
+  if(t.dataset.kick){kick(t.dataset.kick);return;}
+  if(t.dataset.unkick){unkick(t.dataset.unkick);return;}
   const a=t.dataset.a;
   if(a==='next'){if(M.host&&S.street==='done')startHand();return;}
   if(a==='join'){joinTable();return;}
@@ -2090,6 +2152,7 @@ async function startOnline(){
       if(S&&(S.v!==6||S.mode!=='online'||!Array.isArray(S.seats)))S=null;
       if(!S&&!M.ready2){M.ready2=true;}
       if(S&&SUBMITTED>=0&&SUBMITTED<S.turn)SUBMITTED=-1;
+      if(S&&isKicked(M.me)&&MYDOC&&MYDOC.join)myRef.update({join:false}).catch(()=>{});
       render();decryptMine();
     },e=>{console.warn(e);}));
     setTimeout(()=>{if(g===SESSION&&!M.ready){M.ready=true;render();}},6000);
