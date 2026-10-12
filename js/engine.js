@@ -123,10 +123,12 @@ export function roundComplete(){
 }
 export function proceed(){
   if(live().length===1)return winByFold();
-  if(roundComplete()){S.deadline=0;commit();return endLater(needRunout()?500:Math.max(300,SPEED*0.7));}
+  // Round over: nobody acts until the next street is dealt (otherwise the last player's buttons
+  // come back for that pause and a second tap would act again).
+  if(roundComplete()){S.actor=-1;S.deadline=0;commit();return endLater(needRunout()?500:Math.max(300,SPEED*0.7));}
   const n=N();let i=S.actor,found=-1;
   for(let k=0;k<n;k++){i=(i+1)%n;const p=S.seats[i];if(canAct(p)&&(!p.acted||p.bet<S.currentBet)){found=i;break;}}
-  if(found<0){commit();return endLater(300);}
+  if(found<0){S.actor=-1;commit();return endLater(300);}
   S.actor=found;S.turn++;S.deadline=0;
   const p=S.seats[found];
   if(isRemote(p)){

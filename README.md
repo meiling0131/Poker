@@ -35,6 +35,8 @@ js/
                     依赖方向只有一个：ui/ 用游戏逻辑，游戏逻辑不引用 ui/（重画走 state.js 的 view）
 tests/              node:test 单元测试
 tools/stamp.js      按文件内容给每个模块加版本号，防止更新时新旧文件混用
+tools/simulate.js   无界面模拟人机局：npm run sim -- 300 maniac 1（--check 查筹码守恒，--trace=奶龙 看大输的手）
+tools/benchmark.js  让机器人对 4 种陪练（fold/station/maniac/nit）各打多局，比较强弱：npm run bench
 ```
 
 ## 本地运行
