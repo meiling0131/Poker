@@ -630,15 +630,6 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
   .actions .btn small{font-size:10px}
 }
 
-#actionConfirm{position:fixed;inset:0;margin:auto;width:min(380px,calc(100vw - 32px));max-height:calc(100dvh - 36px);overflow:auto;padding:22px;border:1px solid #c8b38280;border-radius:20px;color:#f1ede4;background:linear-gradient(140deg,#35454c,#222d33);box-shadow:0 24px 80px #0008}
-#actionConfirm::backdrop{background:#081410a6;backdrop-filter:blur(4px)}
-#confirmForm{display:flex;flex-direction:column;gap:14px}#confirmTitle{font-size:20px;margin:0}
-#confirmAmountRow{font-size:12px;color:#c2ced0;display:flex;flex-direction:column;gap:8px}
-#confirmAmount{width:100%;min-height:46px;border:1px solid #c8b38280;border-radius:10px;background:#152c29;color:#fff4dc;font:600 22px var(--num);padding:8px 12px}
-#confirmDetail{font-size:14px;line-height:1.7;margin:0}#confirmError{font-size:12px;line-height:1.5;color:#ffb6a7;margin:0}#confirmError:empty{display:none}
-.confirmButtons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.confirmButtons button{min-height:46px;border-radius:10px;font:600 15px var(--body);cursor:pointer}
-#cancelAction{background:#384951;color:#e3eaeb;border:1px solid #c5d4dc40}#submitAction{background:#d5bf8c;color:#272116;border:0}#submitAction:disabled{opacity:.4;cursor:default}
-.confirmHint{font-size:11px;color:#aebdc0;text-align:center;margin:0}@media(pointer:coarse){.confirmHint{display:none}}
 
 /* Face values sit inside the original coloured chip artwork. */
 .chip-d::before{position:absolute;inset:18%;display:grid;place-items:center;z-index:2;font:800 calc(var(--cs)*.32)/1 var(--num);font-style:normal;color:#fff5e4;text-shadow:0 1px 1px #0006;pointer-events:none}
@@ -660,6 +651,26 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
 
 .actions .btn.raise{overflow-wrap:anywhere}
 @media(max-width:700px){.actions .btn.raise{font-size:11px;letter-spacing:-.02em}}
+
+/* In-place confirmation: two long buttons replace the four actions. */
+.confirmbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.confirmbar.one{grid-template-columns:1fr}
+.confirmbar .btn{min-height:50px;font-size:15px}
+.btn.cancel{background:#3a4644;border-color:#ffffff1c;color:#e2e6e2}
+.btn.go.green{background:#3f8a5f;border-color:#8fd3a840;color:#f4fbf6}
+.btn.go.red{background:#b3443b;border-color:#f0a59a40;color:#fff3ef}
+.confirmInfo{font-size:12px;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums;min-height:15px}
+.confirmInfo.err{color:#ffb6a7}
+.betmenu{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.betmenu button{min-height:46px;line-height:1.2;font-weight:600;background:#22302d;border-color:#ffffff22}
+.betmenu button small{display:block;font:500 10.5px var(--num);color:var(--mute);margin-top:2px}
+.betmenu button:disabled{opacity:.35;cursor:default}
+.custom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text)}
+.custom input{flex:1 1 120px;min-width:0;min-height:44px;border:1px solid #c8b38280;border-radius:10px;background:#152c29;color:#fff4dc;font:600 20px var(--num);padding:6px 12px}
+.custom span{flex-basis:100%;font-size:11px;color:var(--mute)}
+.rail .tidy{flex:none;align-self:center}
+.rail .tidy:disabled{opacity:.35;cursor:default}
+@media(max-width:700px){.betmenu{gap:4px}.betmenu button{font-size:12px;min-height:44px}.confirmbar .btn{min-height:46px;font-size:14px}.rail .tidy{padding:4px 7px;font-size:10.5px}}
 </style>
 </head>
 <body>
@@ -693,18 +704,6 @@ body{background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed
   <section id="records"></section>
 </div>
 
-<dialog id="actionConfirm" aria-labelledby="confirmTitle">
-  <form id="confirmForm" novalidate>
-    <h2 id="confirmTitle">确认操作</h2>
-    <label id="confirmAmountRow" for="confirmAmount">本次投入（不含本轮已下注）
-      <input id="confirmAmount" type="number" inputmode="numeric" step="1" autocomplete="off">
-    </label>
-    <p id="confirmDetail" aria-live="polite"></p>
-    <p id="confirmError" role="alert"></p>
-    <div class="confirmButtons"><button type="button" id="cancelAction">返回修改</button><button type="submit" id="submitAction">确认</button></div>
-    <p class="confirmHint">Enter 确认 · Esc 返回</p>
-  </form>
-</dialog>
 <script>
 (function(){
 const $=id=>document.getElementById(id);
@@ -808,25 +807,47 @@ const csum=c=>c?(c[1]||0)+5*(c[5]||0)+10*(c[10]||0)+25*(c[25]||0):0;
 function cadd(a,b){for(const d of DV)a[d]=(a[d]||0)+((b&&b[d])||0);return a;}
 function greedyC(x){const c=Z();for(const d of DV){c[d]=Math.floor(x/d);x-=c[d]*d;}return c;}
 const BUY_CHIPS=()=>({1:10,5:6,10:6,25:4});
-// take `amt` worth of chips out of a seat; honours the chips the player pushed when they cover it,
-// otherwise pays largest-first and breaks one chip for change (the dealer makes change from the bank)
+// Chips are the money: every payment moves real chips, and change is only made when no exact set exists.
+// exactPick: chips from `pool` worth exactly `amt`, preferring the largest denominations; null if impossible.
+function exactPick(pool,amt){
+  let guard=0;
+  for(let a=Math.min(pool[25]||0,Math.floor(amt/25));a>=0;a--){
+    const r1=amt-25*a;
+    for(let b=Math.min(pool[10]||0,Math.floor(r1/10));b>=0;b--){
+      if(++guard>200000)return null;
+      const r2=r1-10*b,c=Math.min(pool[5]||0,Math.floor(r2/5)),e=r2-5*c;
+      if(e<=(pool[1]||0))return {1:e,5:c,10:b,25:a};
+    }
+  }
+  return null;
+}
+// take exactly `amt` out of `pool` (mutates it); breaks one chip at a time into smaller ones when needed
+function takeChips(pool,amt){
+  for(let k=0;k<500;k++){
+    const r=exactPick(pool,amt);
+    if(r){for(const d of DV)pool[d]-=r[d];return r;}
+    const d=[5,10,25].find(x=>pool[x]>0);if(!d)break;
+    pool[d]--;cadd(pool,d===25?{10:2,5:1}:d===10?{5:2}:{1:5});
+  }
+  for(const d of DV)pool[d]=0;return greedyC(amt);
+}
+// take `amt` worth of chips out of a seat; honours the chips the player pushed when they cover it
 function payChips(p,amt,picked){
   const c=p.chips;
   if(picked){
     let ok=true;for(const d of DV){const k=Number(picked[d])||0;if(k<0||k>c[d]||k!==Math.floor(k))ok=false;}
-    const s=csum(picked);
-    if(ok&&s>=amt&&amt>0){
-      for(const d of DV)c[d]-=Number(picked[d])||0;
-      if(s===amt){const o=Z();for(const d of DV)o[d]=Number(picked[d])||0;return o;}
-      cadd(c,greedyC(s-amt));return greedyC(amt);
+    if(ok&&csum(picked)>=amt&&amt>0){
+      const hand=Z();for(const d of DV){hand[d]=Number(picked[d])||0;c[d]-=hand[d];}
+      const out=takeChips(hand,amt);cadd(c,hand);return out;
     }
   }
-  let rem=amt;const out=Z();
-  for(const d of DV){const k=Math.min(c[d],Math.floor(rem/d));c[d]-=k;out[d]+=k;rem-=k*d;}
-  if(rem>0){for(const d of [1,5,10,25]){if(c[d]>0){c[d]--;cadd(c,greedyC(d-rem));cadd(out,greedyC(rem));rem=0;break;}}}
-  return out;
+  return takeChips(c,amt);
 }
 function giveChips(p,amt){p.stack+=amt;cadd(p.chips,greedyC(amt));}
+// pay a winner out of the pot's own chips: win ten 10s, keep ten 10s
+function giveFromPot(p,amt,pool){p.stack+=amt;cadd(p.chips,takeChips(pool,amt));}
+// 整理筹码: rebuild a stack into the buy-in mix (白10 红6 蓝6 绿4 per 200) so it can be bet in small steps
+function tidyChips(p){const t=chipBreakdown(csum(p.chips));const same=DV.every(d=>t[d]===p.chips[d]);if(!same)p.chips=t;return !same;}
 // choose chips from what a seat owns that add up to at least `amt`, as close as possible
 function pickChips(owned,amt){
   const out=Z();let rem=amt;
@@ -950,7 +971,7 @@ const names=t=>esc(t).replace(/@@([^@]+)@@/g,(_,u)=>esc(nameOfUid(u)));
 function log(t,cls){S.log.unshift({t,cls:cls||''});if(S.log.length>80)S.log.length=80;}
 function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false};}
 function freshBot(i){return Object.assign({kind:'bot',uid:null,name:BOTS[i-1][0],stack:0,chips:Z(),qBuy:0,qCash:0,seenB:0,seenC:0,leaving:false},handFields());}
-function freshHuman(uid,seenB,seenC){return Object.assign({kind:'human',uid,stack:0,chips:Z(),qBuy:0,qCash:0,seenB:seenB||0,seenC:seenC||0,leaving:false},handFields());}
+function freshHuman(uid,seenB,seenC,seenT){return Object.assign({kind:'human',uid,stack:0,chips:Z(),qBuy:0,qCash:0,seenB:seenB||0,seenC:seenC||0,seenT:seenT||0,leaving:false},handFields());}
 function put(p,amt,picked){amt=Math.max(0,Math.min(amt,p.stack));if(amt>0)cadd(p.betChips,payChips(p,amt,picked));p.stack-=amt;p.bet+=amt;p.total+=amt;if(p.stack===0)p.allIn=true;return amt;}
 function raiseWord(n,pre){if(pre)return n<=2?'Open-Raise':`${n}-bet`;return n<=1?'下注':n===2?'加注':`${n}-bet`;}
 const nextRaiseWord=()=>raiseWord((S.raises||0)+1,S.street==='preflop');
@@ -992,6 +1013,8 @@ function applyMoney(p){
 function syncDoc(p){ // pull cumulative buy/cash counters from the player's own seat doc
   const d=SEATDOCS[p.uid];if(!d)return false;
   const nb=Math.max(0,Math.min(50,(Number(d.buyN)||0)-p.seenB)),nc=Math.max(0,Math.min(50,(Number(d.cashN)||0)-p.seenC));
+  const nt=(Number(d.tidyN)||0)-(p.seenT||0);
+  if(nt>0){p.seenT=Number(d.tidyN);tidyChips(p);if(!nb&&!nc)return true;}
   if(!nb&&!nc)return false;
   p.qBuy+=nb;p.qCash+=nc;p.seenB+=nb;p.seenC+=nc;applyMoney(p);return true;
 }
@@ -1030,7 +1053,7 @@ function newBotsTable(){
 function newOnlineTable(keepSeated){
   const old=S&&S.mode==='online'?S:null;
   S=baseTable('online');
-  if(old&&keepSeated)old.seats.forEach(p=>{const d=SEATDOCS[p.uid];S.seats.push(freshHuman(p.uid,d&&d.buyN,d&&d.cashN));});
+  if(old&&keepSeated)old.seats.forEach(p=>{const d=SEATDOCS[p.uid];S.seats.push(freshHuman(p.uid,d&&d.buyN,d&&d.cashN,d&&d.tidyN));});
 }
 function applySeatChanges(){ // online only; never during a live hand
   if(S.mode!=='online')return false;
@@ -1254,7 +1277,7 @@ function runoutStep(){
 function winByFold(){
   collectBets();
   const w=live()[0],amt=potTotal();
-  giveChips(w,amt);w.win=true;S.potChips=Z();
+  w.stack+=amt;cadd(w.chips,S.potChips);w.win=true;S.potChips=Z();
   S.msg=[`${who(w)} 赢得 ${fmt(amt)}，其他人都弃牌了`];
   log(S.msg[0],'w');finish();
 }
@@ -1279,16 +1302,16 @@ function showdown(){
     log(`${who(p)} 亮牌 ${p.shown.map(cardTxt).join(' ')} · ${p.handName}`);}});
   const pots=buildPots(),contested=pots.filter(x=>x.elig.length>1).length;
   const order=[];for(let k=1;k<=n;k++)order.push((S.dealer+k)%n);
-  let c=0;const back=[];
+  let c=0;const back=[],pool=Object.assign(Z(),S.potChips);
   pots.forEach(pot=>{
-    if(pot.elig.length===1){const w=S.seats[pot.elig[0]];giveChips(w,pot.amount);back.push(`${who(w)} 收回未被跟的 ${fmt(pot.amount)}`);return;}
+    if(pot.elig.length===1){const w=S.seats[pot.elig[0]];giveFromPot(w,pot.amount,pool);back.push(`${who(w)} 收回未被跟的 ${fmt(pot.amount)}`);return;}
     const label=contested>1?(c===0?'主池':`边池${c}`):'底池';c++;
     const parts=boards.length===2?[Math.ceil(pot.amount/2),Math.floor(pot.amount/2)]:[pot.amount];
     parts.forEach((amt,k)=>{
       const sc=scores[k],best=Math.max(...pot.elig.map(i=>sc[i]));
       const ws=order.filter(i=>pot.elig.includes(i)&&sc[i]===best);
       const share=Math.floor(amt/ws.length);let rem=amt-share*ws.length;
-      ws.forEach(i=>{giveChips(S.seats[i],share+(rem>0?1:0));if(rem>0)rem--;S.seats[i].win=true;});
+      ws.forEach(i=>{giveFromPot(S.seats[i],share+(rem>0?1:0),pool);if(rem>0)rem--;S.seats[i].win=true;});
       S.msg.push(`${boards.length===2?(k===0?'第一次 · ':'第二次 · '):''}${ws.map(i=>who(S.seats[i])).join('、')} ${ws.length>1?'平分':'赢得'}${label} ${fmt(amt)} · ${handName(best)}`);
     });
   });
@@ -1439,75 +1462,76 @@ function onSeatDocs(snap){
 /* ---------- player actions ---------- */
 const mySeat=()=>S?S.seats.findIndex(p=>p.uid===M.me):-1;
 function myTurn(){const m=mySeat();return m>=0&&S.actor===m&&BETTING.includes(S.street)&&canAct(S.seats[m]);}
-let PENDING_ACTION=null;
-function cancelAction(){
-  PENDING_ACTION=null;
-  const dialog=$('actionConfirm');if(dialog.open)dialog.close();
-}
-function pendingIsCurrent(){
-  return PENDING_ACTION&&S&&PENDING_ACTION.session===SESSION&&PENDING_ACTION.hand===S.hand
-    &&PENDING_ACTION.turn===S.turn&&myTurn()&&(M.host||SUBMITTED!==S.turn);
-}
+let PENDING_ACTION=null,BET_MENU=null,CUSTOM_VAL='';
+// Actions are confirmed in place: the four buttons turn into 取消 + 确认 …; Check goes straight through.
+function cancelAction(){PENDING_ACTION=null;BET_MENU=null;}
+const stillMyTurn=x=>x&&S&&x.session===SESSION&&x.hand===S.hand&&x.turn===S.turn&&myTurn()&&(M.host||SUBMITTED!==S.turn);
+const pendingIsCurrent=()=>stillMyTurn(PENDING_ACTION);
 function confirmationPlan(){
   if(!pendingIsCurrent())return {error:'牌局已变化，请重新选择操作。'};
   const p=S.seats[mySeat()],a=PENDING_ACTION;
   const call=Math.min(p.stack,Math.max(0,S.currentBet-p.bet));
   let amount=0,to=0;
   if(a.type==='raise'){
-    amount=Number($('confirmAmount').value);
-    if(!Number.isSafeInteger(amount)||amount<=0)return {error:'请输入有效的整数金额。'};
+    to=a.custom?Number(CUSTOM_VAL):a.to;
+    if(!Number.isSafeInteger(to)||to<=0)return {error:'请输入有效的整数金额。'};
     if(!canRaise(p))return {error:'当前不能再加注。'};
-    if(amount>p.stack)return {error:'金额超过剩余筹码。'};
-    to=p.bet+amount;
-    if(to<minRaiseTo(p))return {error:`本次至少投入 ${fmt(minRaiseTo(p)-p.bet)}，本轮加注到 ${fmt(minRaiseTo(p))}。`};
+    if(to>maxRaiseTo(p))return {error:`最多到 ${fmt(maxRaiseTo(p))}（All in）。`};
+    if(to<minRaiseTo(p))return {error:`最少到 ${fmt(minRaiseTo(p))}。`};
+    amount=to-p.bet;
   }else if(a.type==='call')amount=call;
-  else if(a.type==='check'&&call>0)return {error:'当前需要跟注，请重新选择。'};
   const selected=a.chips;
   const valid=selected&&DV.every(d=>Number.isInteger(selected[d])&&selected[d]>=0&&selected[d]<=p.chips[d]);
-  const chips=amount?(valid&&csum(selected)>=amount?Object.assign({},selected):pickChips(p.chips,amount)):null;
+  const chips=amount&&valid&&csum(selected)>=amount?Object.assign({},selected):null;
   const change=chips?csum(chips)-amount:0;
-  return {type:a.type,to,amount,chips,change,total:p.bet+amount};
+  return {type:a.type,to,amount,chips,change,total:p.bet+amount,allIn:amount>0&&amount>=p.stack};
 }
-function updateConfirmation(){
-  const plan=confirmationPlan();
-  if(!plan.error){
-    const p=S.seats[mySeat()];
-    $('confirmTitle').textContent=plan.type==='fold'?'确认 Fold':plan.type==='check'?'确认 Check':plan.amount===p.stack?'确认 All in':`确认 ${plan.type==='raise'?actionLabels(p).word:'Call'}`;
-  }
-  $('confirmError').textContent=plan.error||'';
-  $('submitAction').disabled=!!plan.error;
-  $('confirmDetail').textContent=plan.error?'':plan.type==='fold'?'确认弃掉这一手牌？'
-    :plan.type==='check'?'本次过牌，不投入筹码。'
-    :`本次投入 ${fmt(plan.amount)} · 本轮合计 ${fmt(plan.total)}${plan.change?` · 自动找零 ${fmt(plan.change)}`:''}`;
-  return plan;
+function confirmLabel(p,plan){
+  if(plan.type==='fold')return '确认 Fold';
+  if(plan.allIn)return `确认 All in ${fmt(plan.amount)}`;
+  if(plan.type==='call')return `确认 Call ${fmt(plan.amount)}`;
+  return `确认 ${actionLabels(p).word} ${fmt(plan.to)}`;
 }
-function requestAction(type,to=0,chips=null){
+function confirmDetail(plan){
+  if(plan.type==='fold')return '弃掉这一手牌';
+  return `本次投入 ${fmt(plan.amount)} · 本轮合计 ${fmt(plan.total)}${plan.change?` · 找零 ${fmt(plan.change)}`:''}`;
+}
+function requestAction(type,to=0,chips=null,custom=false){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
-  const p=S.seats[mySeat()];
-  PENDING_ACTION={type,session:SESSION,hand:S.hand,turn:S.turn,chips:chips?Object.assign({},chips):null};
-  const amount=type==='raise'?to-p.bet:Math.min(p.stack,Math.max(0,S.currentBet-p.bet));
-  const allIn=amount===p.stack&&amount>0;
-  $('confirmTitle').textContent=type==='fold'?'确认 Fold':type==='check'?'确认 Check':allIn?'确认 All in':`确认 ${type==='raise'?actionLabels(p).word:'Call'}`;
-  $('confirmAmountRow').hidden=type!=='raise';
-  $('confirmAmount').value=String(amount);
-  $('confirmAmount').min=String(minRaiseTo(p)-p.bet);
-  $('confirmAmount').max=String(p.stack);
-  updateConfirmation();
-  const dialog=$('actionConfirm');if(!dialog.open)dialog.showModal();
-  // Keep the mobile keyboard closed until the amount is tapped explicitly.
-  $('submitAction').focus();
+  if(type==='check'){cancelAction();act('check');return;}
+  PENDING_ACTION={type,to,custom,session:SESSION,hand:S.hand,turn:S.turn,chips:chips?Object.assign({},chips):null};
+  BET_MENU=null;
+  if(custom)CUSTOM_VAL=String(to);
+  renderHero();
+  const inp=$('betAmt');if(inp&&custom){inp.focus();inp.select();}
+}
+function openBetMenu(){
+  if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
+  PENDING_ACTION=null;BET_MENU={session:SESSION,hand:S.hand,turn:S.turn};renderHero();
+}
+// 常用下注：raise-to totals, null when below the minimum; anything past the stack becomes All in
+function betPresets(p){
+  const toCall=Math.max(0,S.currentBet-p.bet),pot=potTotal(),minTo=minRaiseTo(p),maxTo=maxRaiseTo(p);
+  return [['1BB',BB],['3BB',3*BB],['1/2 Pot',S.currentBet+Math.round((pot+toCall)/2)],['Pot',S.currentBet+pot+toCall]]
+    .map(([k,t])=>({k,to:t<minTo?null:Math.min(t,maxTo)}));
 }
 function confirmAction(){
-  const plan=updateConfirmation();if(plan.error)return;
+  const plan=confirmationPlan();
+  if(plan.error){renderHero();return;}
   cancelAction(); // Clear before dispatch so double clicks / held Enter cannot repeat.
   act(plan.type,plan.to,plan.chips);
 }
-$('confirmForm').addEventListener('submit',e=>{e.preventDefault();confirmAction();});
-$('confirmAmount').addEventListener('input',updateConfirmation);
-$('cancelAction').addEventListener('click',cancelAction);
-$('actionConfirm').addEventListener('cancel',e=>{e.preventDefault();cancelAction();});
-$('actionConfirm').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!e.isComposing){e.preventDefault();if(!e.repeat)confirmAction();}
+document.addEventListener('input',e=>{
+  if(e.target.id!=='betAmt')return;
+  CUSTOM_VAL=e.target.value;
+  const plan=confirmationPlan(),go=$('confirmGo'),info=$('confirmInfo');
+  if(go){go.disabled=!!plan.error;if(!plan.error){go.textContent=confirmLabel(S.seats[mySeat()],plan);go.classList.toggle('red',plan.allIn);go.classList.toggle('green',!plan.allIn);}}
+  if(info){info.textContent=plan.error||confirmDetail(plan);info.classList.toggle('err',!!plan.error);}
+});
+document.addEventListener('keydown',e=>{
+  if(!pendingIsCurrent()&&!stillMyTurn(BET_MENU))return;
+  if(e.key==='Escape'){e.preventDefault();cancelAction();renderHero();}
+  else if(e.key==='Enter'&&!e.isComposing&&pendingIsCurrent()){e.preventDefault();if(!e.repeat)confirmAction();}
 });
 async function act(type,to,chips){
   if(!myTurn())return;
@@ -1543,6 +1567,15 @@ async function money(kind){
     if(kind==='buy'){LOCAL_B=Math.max(LOCAL_B,Number(d.buyN)||0)+1;await myRef.update({buyN:LOCAL_B});}
     else{LOCAL_C=Math.max(LOCAL_C,Number(d.cashN)||0)+1;await myRef.update({cashN:LOCAL_C});}
   }catch(e){FLASH='提交失败，请再试一次。';}
+  render();
+}
+let LOCAL_T=0;
+async function tidy(){
+  const m=mySeat();if(m<0)return;
+  const p=S.seats[m];PUSH=Z();FLASH='';cancelAction();
+  if(M.host){if(tidyChips(p))commit();else renderHero();return;}
+  try{LOCAL_T=Math.max(LOCAL_T,Number((MYDOC||{}).tidyN)||0)+1;await myRef.update({tidyN:LOCAL_T});}
+  catch(e){FLASH='整理失败，请再试一次。';}
   render();
 }
 async function joinTable(){
@@ -1764,7 +1797,8 @@ function towerHTML(d,count,enabled,pushed){
 }
 function railHTML(p,enabled){
   const avail=Z();for(const d of DV)avail[d]=p.chips[d]-(enabled?PUSH[d]:0);
-  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div></div>`;
+  const t=chipBreakdown(csum(p.chips)),tidy=DV.every(d=>t[d]===p.chips[d]);
+  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div><button class="mini tidy" data-tidy="1"${tidy?' disabled':''} title="把大面值筹码拆开，按 白10 红6 蓝6 绿4 每 200 重新配">整理</button></div>`;
 }
 function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
@@ -1777,7 +1811,7 @@ function actionLabels(p){
   r.callChange=pushed>toCall&&toCall>0&&!(to>=minTo||allIn)?pushed-toCall:0;
   if(r.callChange)r.callLbl=`Call ${fmt(toCall)}<small>找零 ${fmt(r.callChange)}</small>`;
   if(!canR){r.raise=null;}
-  else if(pushed===0){r.raise={lbl:`${word}<small>最少到 ${fmt(minTo)}</small>`,mode:'fill'};}
+  else if(pushed===0){r.raise={lbl:`${word}<small>自定义</small>`,mode:'fill'};}
   else if(allIn){r.raise={lbl:`${word}<small>All in · ${fmt(p.bet+p.stack)}</small>`,mode:'go'};}
   else if(to>=minTo){r.raise={lbl:word==='Bet'?`Bet<small>${fmt(to)}</small>`:`${word}<small>到 ${fmt(to)}</small>`,mode:'go'};}
   else{r.raise={lbl:`${word}<small>还差 ${fmt(minTo-to)}</small>`,mode:'off'};}
@@ -1791,6 +1825,11 @@ function commitAllIn(p){
   else requestAction('raise',p.bet+p.stack,chips);
 }
 function renderHero(){
+  const focus=document.activeElement&&document.activeElement.id==='betAmt';
+  renderHeroInner();
+  const inp=focus&&$('betAmt');if(inp){inp.focus();const n=inp.value.length;try{inp.setSelectionRange(n,n);}catch(e){}}
+}
+function renderHeroInner(){
   const el=$('hero'),m=mySeat();
   if(m<0){
     el.classList.remove('win');
@@ -1821,12 +1860,24 @@ function renderHero(){
       <div class="bz-chips">${L.pushed?DV.filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join(''):'<span class="hint">点下面的筹码推到这里</span>'}</div>
       <div class="bz-sum">${L.pushed?`<b>${fmt(L.pushed)}</b><button class="mini" data-clear="1">撤回</button>`:`<span class="need">${L.toCall?`跟注 ${fmt(L.toCall)}`:'可过牌'}</span>`}</div>
     </div>`;
-    ctl+=`<div class="main actions">
+    if(pendingIsCurrent()){
+      const plan=confirmationPlan(),a=PENDING_ACTION,red=plan.type==='fold'||plan.allIn;
+      if(a.custom)ctl+=`<label class="custom">${L.word} 到<input id="betAmt" type="number" inputmode="numeric" step="1" min="${L.minTo}" max="${maxRaiseTo(p)}" value="${esc(CUSTOM_VAL)}" autocomplete="off"><span>最少 ${fmt(L.minTo)} · 最多 ${fmt(maxRaiseTo(p))}</span></label>`;
+      ctl+=`<div class="confirmbar">
+        <button class="btn cancel" data-a="cancel">取消</button>
+        <button class="btn go ${red?'red':'green'}" id="confirmGo" data-a="confirm"${plan.error?' disabled':''}>${plan.error&&!a.custom?'确认':confirmLabel(p,plan)}</button>
+      </div><div class="confirmInfo${plan.error?' err':''}" id="confirmInfo">${esc(plan.error||confirmDetail(plan))}</div>`;
+    }else if(stillMyTurn(BET_MENU)&&L.canR){
+      ctl+=`<div class="presets betmenu">${betPresets(p).map(x=>`<button data-preset="${x.to||''}"${x.to?'':' disabled'}>${x.k}<small>${x.to?(x.to>=maxRaiseTo(p)?'All in':fmt(x.to)):'—'}</small></button>`).join('')}<button data-preset="custom">Custom<small>自定义</small></button></div>
+        <div class="confirmbar one"><button class="btn cancel" data-a="cancel">取消</button></div>`;
+    }else{
+      ctl+=`<div class="main actions">
       <button class="btn fold" data-a="fold"${dis}>Fold</button>
       <button class="btn call" data-a="call"${dis}>${L.callLbl}</button>
       ${L.raise?`<button class="btn raise${L.raise.mode==='off'?' off':''}" data-a="raise" data-rmode="${L.raise.mode}"${dis||(L.raise.mode==='off'?' disabled':'')}>${L.raise.lbl}</button>`:`<button class="btn raise" disabled>${L.word}</button>`}
       <button class="btn allin" data-a="allin"${dis||(!L.canAllIn?' disabled':'')}>All in<small>${fmt(p.stack)}</small></button>
     </div>`;
+    }
     if(S.deadline&&!M.host)ctl+=`<div class="wait">剩余 <span class="cd" data-until="${S.deadline}"></span>${waiting?' · 已提交，等房主确认…':''}</div>`;
   }else if(R&&R.stage==='vote'&&R.voters.includes(m)){
     const mv=R.votes[m]||(VOTED&&VOTED.hand===S.hand&&VOTED.turn===R.turn?VOTED.n:0);
@@ -1937,6 +1988,7 @@ document.addEventListener('click',e=>{
     log('牌桌已重置，账本清零，所有人筹码回到 0','h');commit();maybeStart();return;
   }
   if(t.dataset.m){money(t.dataset.m);return;}
+  if(t.dataset.tidy){tidy();return;}
   const a=t.dataset.a;
   if(a==='next'){if(M.host&&S.street==='done')startHand();return;}
   if(a==='join'){joinTable();return;}
@@ -1944,6 +1996,14 @@ document.addEventListener('click',e=>{
   if(t.dataset.vote){vote(Number(t.dataset.vote));return;}
   if(!myTurn()){return;}
   const p=S.seats[mySeat()];
+  if(a==='cancel'){cancelAction();renderHero();return;}
+  if(a==='confirm'){confirmAction();return;}
+  if(t.dataset.preset){
+    if(t.dataset.preset==='custom')requestAction('raise',minRaiseTo(p),null,true);
+    else requestAction('raise',Number(t.dataset.preset));
+    return;
+  }
+  if(pendingIsCurrent()||stillMyTurn(BET_MENU))cancelAction();
   if(t.dataset.push){const d=Number(t.dataset.push);if(PUSH[d]<p.chips[d]){PUSH[d]++;renderHero();}return;}
   if(t.dataset.pull){const d=Number(t.dataset.pull);if(PUSH[d]>0){PUSH[d]--;renderHero();}return;}
   if(t.dataset.clear){PUSH=Z();renderHero();return;}
@@ -1963,7 +2023,7 @@ document.addEventListener('click',e=>{
   }
   if(a==='raise'){
     const L=actionLabels(p);if(!L.raise)return;
-    if(L.raise.mode==='fill'){requestAction('raise',L.minTo);return;}
+    if(L.raise.mode==='fill'){openBetMenu();return;}
     if(L.raise.mode==='go')requestAction('raise',L.allIn?p.bet+p.stack:L.to,Object.assign({},PUSH));
     return;
   }
