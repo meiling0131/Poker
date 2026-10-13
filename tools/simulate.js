@@ -24,7 +24,8 @@ if (process.argv.includes('--behaviour')) globalThis.__botTrace = (p, d, c) => {
 };
 const { enterBots } = await import('../js/modes.js');
 const { doAction, proceed, startHand, castVote } = await import('../js/engine.js');
-const { botDecide } = await import('../js/bots.js');
+const BOTS = await import('../js/bots.js'), { botDecide } = BOTS;
+const CARDS = await import('../js/cards.js');
 const state = await import('../js/state.js');
 const { setSPEED } = state;
 const { BETTING } = await import('../js/config.js');
@@ -38,6 +39,18 @@ const HEROES = {
   nit: p => { const h = state.H[0], r = h.map(c => c % 13 + 2); const pair = r[0] === r[1] && r[0] >= 10, ak = Math.min(...r) >= 13;
     return pair || ak ? (canRaise(p) ? { type: 'raise', to: maxRaiseTo(p) } : { type: 'call' }) : { type: 'fold' }; },  // only QQ+/AK, shoves
   bot: (p) => botDecide(p, 0),                                      // a plain default-style bot
+  // a sensible regular: opens the top 20%, 3-bets the top 5%, calls raises with the top 15%, c-bets
+  // 60% as the raiser, bets top pair or better for 2/3 pot, calls bets with a pair or a draw
+  tag: p => { const s = state.S, h = state.H[0], pre = !s.board.length, toCall = s.currentBet - p.bet;
+    const { startingStrength, topT, draws } = BOTS, st = startingStrength(h);
+    const raise = f => canRaise(p) ? { type: 'raise', to: Math.min(maxRaiseTo(p), Math.max(minRaiseTo(p), pre ? (s.raises >= 2 ? s.currentBet * 3 : 5) : s.currentBet + Math.round((potTotal() + toCall) * f))) } : { type: 'call' };
+    if (pre) { if (s.raises >= 3) return st >= topT(.04) ? raise(1) : st >= topT(.08) ? { type: 'call' } : { type: 'fold' };
+      if (s.raises === 2) return st >= topT(.05) ? raise(1) : st >= topT(.15) ? { type: 'call' } : { type: 'fold' };
+      return st >= topT(.20) ? raise(1) : toCall === 0 ? { type: 'check' } : { type: 'fold' }; }
+    const { best7 } = CARDS, cat = Math.floor(best7(h.concat(s.board)) / Math.pow(16, 5));
+    const bmax = Math.max(...s.board.map(c => c % 13 + 2)), topPair = cat >= 1 && (h.some(c => c % 13 + 2 >= bmax) || cat >= 2), d = draws(h, s.board).draw;
+    if (!toCall) { if (topPair) return raise(.66); if (s.pfAgg === 0 && s.board.length === 3 && Math.random() < .6) return raise(.5); return { type: 'check' }; }
+    return topPair ? (cat >= 2 && Math.random() < .5 ? raise(.8) : { type: 'call' }) : (cat >= 1 || d) && toCall <= potTotal() * .6 ? { type: 'call' } : { type: 'fold' }; },
 };
 const heroPlay = HEROES[HERO]; if (!heroPlay) throw new Error('hero: ' + Object.keys(HEROES).join('|'));
 

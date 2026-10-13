@@ -33,6 +33,16 @@
 
 **Real chips.** Your stack is actual chips (1, 5, 10 and 25). Tap chips to push them over the line and build a bet. Payouts come back in exact change, and **整理 (Tidy)** sorts your stack. You can also use the buttons: Fold, Check/Call, Bet/Raise with presets or a custom amount, and All in. Every action asks for a quick confirmation, so a stray tap never costs you.
 
+**How the bots play.** All six share one solver-style core, and each personality bends it without breaking it:
+
+- *Ranges by position.* First-in raises from about 15% of hands in the earliest seat to 45% last; 3-bets are polarised (the top 5% for value, suited blockers as bluffs); 4-bets and jams only with premiums; short stacks push or fold.
+- *Opponents as ranges, not cards.* Every player's range is built from their public actions this hand (limp, open, 3-bet, every bet, raise or call after the flop) and shifted by their table stats (raise rate, VPIP, postflop aggression). Equity is run against those ranges, so a raise on the river from a tight player is read as strength, and a station's call is not.
+- *Pot odds and minimum defence.* Calls follow pot odds against the range, with a discount out of position; the bots never fold more than pot ÷ (pot + bet) to a balanced bettor, call lighter against players who bet everything, and tighter against ones who seldom do.
+- *Bet sizes and bluffs.* Small range-bets on dry flops, bigger on wet ones; barrels, probes and donk leads where solvers use them; river bets polarised (overbets with the nuts and some air); bluffs in proportion to the size, fewer into a crowd or a calling station.
+- *Personality on top.* The core returns a distribution over the legal actions; the personality shifts weight between options the core already allows at a fair price. 奶龙 turns close folds into calls, sc turns raises into calls, Joe sizes up, Kmetsch runs bluffs in spots where a bluff makes sense.
+
+`npm run bench` plays the bots against six sparring styles (fold everything, calling station, maniac, nit, a sensible TAG regular and a plain bot) and prints each bot's chips per 100 hands.
+
 **Bots with personalities**
 
 | Bot | Style |
@@ -120,7 +130,7 @@ wrangler.jsonc      Cloudflare config: one Worker serves the page and the server
 tests/              node:test unit tests
 tools/stamp.js      versions every module by content so an update never mixes old and new files
 tools/simulate.js   headless bot games: npm run sim -- 300 maniac 1 (--check for chip conservation)
-tools/benchmark.js  bots against four sparring styles (fold/station/maniac/nit): npm run bench
+tools/benchmark.js  bots against six sparring styles (fold/station/maniac/nit/tag/bot): npm run bench
 ```
 
 ### Run it locally
