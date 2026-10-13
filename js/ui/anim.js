@@ -16,13 +16,17 @@ let prev=null;          // the table as last drawn: values copied (S is changed 
 let deal={hand:-1};     // {hand,t0,start:Map(seat -> [ms, ms])}
 let flips={hand:-1,t:{}};
 let queue=[];           // chips to fly once the new table is on screen
+export const GREW=new Set();   // seats whose bet went up in this redraw (the chips pop out of the stack)
+let rolls=[];           // numbers to count up or down once the new table is on screen: [selector, from, to, delay]
 
 // Called before the table is drawn: what changed since the last drawing?
 export function sync(){
+  GREW.clear();rolls=[];
   if(!S){prev=null;return;}
   const now=Date.now();
   // nothing drawn for a while (another tab, the records page): just show the table as it is now
   if(!prev||reduced()||now-prev.t>4000){return;}
+  S.seats.forEach((p,i)=>{if((p.bet||0)>(prev.bets[i]||0)&&prev.hand===S.hand)GREW.add(i);});
   if(S.hand!==prev.hand){
     flips={hand:S.hand,t:{}};
     if(BETTING.includes(S.street)&&!S.board.length)startDeal(now);
@@ -35,10 +39,21 @@ export function sync(){
   const grow=(key,len,was)=>{for(let k=was;k<len;k++){flips.t[key+k]=at;at+=FLIP_STEP;flipped=true;}};
   grow('a',S.board.length,prev.board);
   if(S.board2)grow('b',S.board2.length,prev.board2!=null?prev.board2:(S.runout&&S.runout.base?S.runout.base.length:0));
+  let winAt=0;
   if(prev.street!=='done'&&S.street==='done'){
     const delay=Math.max(0,at-now)+(flipped?FLIP_DUR:0)+(collected?120:0);
     S.seats.forEach((p,i)=>{if(p.win)queue.push({kind:'pot',to:i,delay,amount:p.won||prev.pot});});
+    winAt=delay+TO_WINNER*.6;
   }
+  // stacks and the pot count to their new values (a winner's stack waits for the chips to arrive)
+  S.seats.forEach((p,i)=>{const was=prev.stacks[i];if(was!=null&&was!==p.stack)rolls.push([`[data-i="${i}"] .stk .num`,was,p.stack,p.win?winAt:0]);});
+  const pot=potTotal();if(prev.pot!==pot&&pot>0)rolls.push(['#table .pot .num',prev.pot,pot,collected?COLLECT-80:0]);
+}
+function roll(sel,from,to,delay){
+  const el=document.querySelector(sel);if(!el||reduced())return;
+  const ms=Math.min(700,300+Math.abs(to-from)),t0=performance.now()+delay;
+  const step=t=>{if(!el.isConnected)return;const k=Math.min(1,Math.max(0,(t-t0)/ms)),e=1-Math.pow(1-k,3);el.textContent=fmt(Math.round(from+(to-from)*e));if(k<1)requestAnimationFrame(step);};
+  requestAnimationFrame(step);
 }
 function startDeal(now){
   const n=S.seats.length,order=[];
@@ -92,13 +107,14 @@ export function after(){
     }
   }
   queue=[];
+  for(const r of rolls.splice(0))roll(...r);
   // the table as drawn now
   const betAt={},betHTML={};
   document.querySelectorAll('[data-bet-seat]').forEach(el=>{
     const r=el.getBoundingClientRect();if(!r.width)return;
     betAt[el.dataset.betSeat]={x:r.left+r.width/2,y:r.top+r.height/2};betHTML[el.dataset.betSeat]=el.outerHTML;
   });
-  prev={t:Date.now(),hand:S.hand,street:S.street,board:S.board.length,board2:S.board2?S.board2.length:null,pot:potTotal(),bets:S.seats.map(p=>p.bet||0),betAt,betHTML};
+  prev={t:Date.now(),hand:S.hand,street:S.street,board:S.board.length,board2:S.board2?S.board2.length:null,pot:potTotal(),bets:S.seats.map(p=>p.bet||0),stacks:S.seats.map(p=>p.stack),betAt,betHTML};
 }
 let layer=null;
 function fly(html,from,to,delay,dur){

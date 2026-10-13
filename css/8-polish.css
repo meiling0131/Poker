@@ -1,0 +1,63 @@
+/* 牌桌细节：轮到谁的呼吸灯和倒计时环、数字滚动时的样式、下注弹出、手机上的底池筹码堆、
+   手机的下注抽屉、更大的筹码塔点击区、按钮按下的手感。动画的时间由 js/ui/anim.js 算好。 */
+
+/* ---- 轮到谁：座位牌呼吸；联机计时的人外面有一圈 45 秒的弧线 ---- */
+@property --p{syntax:'<percentage>';inherits:false;initial-value:100%}
+.seat.turn .plate,.me.turn .plate{animation:turnpulse 1.6s ease-in-out infinite;animation-delay:var(--ph,0ms)}
+@keyframes turnpulse{0%,100%{box-shadow:0 0 0 2px #c9b68533,0 0 14px #c9b68530}50%{box-shadow:0 0 0 3px #c9b68588,0 0 24px #c9b68770}}
+.ring{position:absolute;inset:-5px;z-index:0;border-radius:17px;padding:3px;pointer-events:none;
+  background:conic-gradient(var(--brass) var(--p),#ffffff1a 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
+  animation:ringdown linear forwards}
+.me .plate .ring{border-radius:999px}
+@keyframes ringdown{from{--p:100%}to{--p:0%}}
+.tbar{height:3px;border-radius:2px;margin:2px 0;background:linear-gradient(var(--brass),var(--brass)) no-repeat,#ffffff14;background-size:var(--p) 100%;animation:ringdown linear forwards}
+
+/* ---- 下注的筹码从筹码堆里弹出来 ---- */
+.bet.pop{animation:betpop .32s cubic-bezier(.3,1.5,.6,1)}
+@keyframes betpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.stk .num,.pot .num{font-variant-numeric:tabular-nums}
+
+/* ---- 底池筹码堆（侧视，手机用；电脑上还是正面的筹码堆） ---- */
+.potstack{display:none;align-items:flex-end;gap:2px;margin-right:5px}
+.pcol{display:flex;flex-direction:column-reverse;align-items:center}
+.pcol .disc{--dw:14px;height:3px;margin-top:-.5px}
+.pcol.w{--c:var(--chip-w);--e:var(--chip-w-edge)}
+.pcol.r{--c:var(--chip-r);--e:var(--chip-r-edge)}
+.pcol.b{--c:var(--chip-b);--e:var(--chip-b-edge)}
+.pcol.g{--c:var(--chip-g);--e:var(--chip-g-edge)}
+
+/* ---- 下注抽屉：电脑上还是嵌在操作区里，手机上从底部滑出 ---- */
+.sheet-wrap{display:contents}
+.sheet-bg{display:none}
+.sheet{display:flex;flex-direction:column;gap:8px}
+.sheet-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--mute)}
+.sheet-h b{font-size:14px;color:var(--cream)}
+@keyframes sheetup{from{transform:translateY(100%)}}
+@keyframes fadein{from{opacity:0}}
+
+/* ---- 按钮按下去缩一点 ---- */
+.btn:not(:disabled):active,.betmenu button:active,.cbtn:not(:disabled):active{transform:scale(.97)}
+
+@media(max-width:700px){
+  .potstack{display:flex}
+  .sheet-wrap{display:block;position:fixed;inset:0;z-index:40}
+  .sheet-bg{display:block;position:absolute;inset:0;border:0;background:#00000088;animation:fadein .25s}
+  .sheet{position:absolute;left:0;right:0;bottom:0;gap:10px;padding:8px 14px calc(16px + env(safe-area-inset-bottom,0px));border-radius:22px 22px 0 0;
+    background:var(--panel);border-top:1px solid #c9b68566;box-shadow:0 -12px 40px #0008;animation:sheetup .3s cubic-bezier(.2,.8,.3,1)}
+  .sheet::before{content:"";display:block;width:38px;height:4px;border-radius:2px;background:#ffffff33;margin:0 auto 4px}
+  .sheet-h b{font-size:16px}
+  .sheet .betmenu{grid-template-columns:1fr 1fr;gap:8px}
+  .sheet .betmenu button{min-height:58px;font-size:16px}
+  .sheet .betmenu button small{font-size:12px}
+  .sheet .confirmbar .btn{min-height:52px;font-size:15px}
+  .sheet .custom{font-size:14px}
+  .sheet .custom input{font-size:24px;min-height:54px}
+  /* 筹码塔：更高的点击区，按下会抬起来 */
+  .hero .tower{min-height:52px;padding:2px 0;border-radius:10px}
+  .hero .tw{height:48px}
+  .hero .towers{gap:6px}
+  .rail.live .tower:not(:disabled):active{background:#ffffff14;transform:translateY(-3px)}
+}
+@media(prefers-reduced-motion:reduce){.seat.turn .plate,.me.turn .plate,.bet.pop,.sheet,.sheet-bg{animation:none}}

@@ -88,6 +88,7 @@ css/                styles, loaded in numeric order; later files override earlie
   5-skins.css       table skins: first-floor meeting room, second-floor lounge
   6-lobby.css       lobby: floors beside the title, stakes, mode cards, button colours
   7-table.css       table layout (one screen, cards scale with the table) and the animations
+  8-polish.css      turn pulse and countdown ring, bet pop, phone pot stack, phone bet sheet, chip tower targets
 js/
   main.js           entry: connect to the Verve server, restore the last mode
   config.js         constants and the server address
@@ -129,7 +130,7 @@ Modules don't load from `file://`, so serve the folder:
 ```
 npm run serve                    # page only: http://localhost:8000
 
-mkdir -p dist && cp -r index.html css js dist/
+mkdir -p dist && cp -r index.html css js manifest.webmanifest icons dist/
 npx wrangler dev                 # page + Verve server: http://127.0.0.1:8787/?server=http://127.0.0.1:8787
 ```
 

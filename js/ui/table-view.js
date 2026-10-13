@@ -1,13 +1,13 @@
 // The felt: seats, board, pot.
 import {SUITS,best5,cardTxt,rankOf,rankStr,suitOf} from '../cards.js';
-import {BETTING,BOT_BLURB,STREET_CN} from '../config.js';
+import {ACT_MS,BETTING,BOT_BLURB,STREET_CN} from '../config.js';
 import {H,M,MYHOLE,PROFILE,S} from '../state.js';
 import {N,bookKey,mySeat,nameOfUid,names,needToStart,potTotal} from '../table.js';
 import {avatarOf} from '../talk.js';
-import {miniStack,miniStackC,pilesC,topChip} from './chips-view.js';
+import {miniStack,miniStackC,pilesC,potStack,topChip} from './chips-view.js';
 import {$,esc,fmt} from '../util.js';
 import {canSwapNow} from '../seats.js';
-import {after,dealCard,flipCard,sync} from './anim.js';
+import {GREW,after,dealCard,flipCard,sync} from './anim.js';
 
 // Every action redraws the table; a bubble pops in only the first time it is drawn, then stays still.
 const SHOWN=new Set();
@@ -29,7 +29,9 @@ export function myHoleCards(){
   return MYHOLE.hand===S.hand?MYHOLE.c:null;
 }
 export function seatName(p){return p.kind==='bot'?p.name:nameOfUid(p.uid);}
-export const betHTML=(a,c,i)=>`<div class="bet"${i!=null?` data-bet-seat="${i}"`:''}>${c?miniStackC(c):miniStack(a)}${fmt(a)}</div>`;
+export const betHTML=(a,c,i)=>`<div class="bet${i!=null&&GREW.has(i)?' pop':''}"${i!=null?` data-bet-seat="${i}"`:''}>${c?miniStackC(c):miniStack(a)}${fmt(a)}</div>`;
+// a player on the clock (online): a ring round the plate drains over their time to act
+export const ringHTML=()=>S.deadline?`<i class="ring" style="animation-duration:${ACT_MS}ms;animation-delay:-${Math.max(0,ACT_MS-(S.deadline-Date.now()))}ms"></i>`:'';
 // Where the seats go, in % of the table, going clockwise from the seat on your left.
 // Wide screens: round an ellipse, leaving the bottom middle for your own seat.
 // Phones: rows along the top and down both sides, clear of the board in the middle.
@@ -72,10 +74,11 @@ export function seatHTML(i,pos,compact){
   else if(S.actor===i&&S.deadline&&p.kind==='human')act=`<div class="act">思考中 <span class="cd" data-until="${S.deadline}"></span></div>`;
   else if(p.bet>0&&!p.shown)act=betHTML(p.bet,p.betChips,i);
   else act=`<div class="act">${esc((p.shown?p.handName:p.last)||(p.qBuy?'买入待生效':''))||'&nbsp;'}</div>`;
-  return `<div class="${cls.join(' ')}" data-i="${i}" style="--x:${pos.x.toFixed(2)}%;--y:${pos.y.toFixed(2)}%;--px:${pos.mx}%;--py:${pos.my}%">
+  const ring=S.actor===i&&p.kind==='human'?ringHTML():'';
+  return `<div class="${cls.join(' ')}" data-i="${i}" style="--x:${pos.x.toFixed(2)}%;--y:${pos.y.toFixed(2)}%;--px:${pos.mx}%;--py:${pos.my}%;--ph:-${Date.now()%1600}ms">
     <div class="mc">${cards}</div>
     ${bubbleHTML(p)}
-    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}${tag?`<div class="blind" title="${tag}">${tag==='小盲'?'小':'大'}</div>`:''}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}</div><div class="stk">${topChip(p.stack)}${fmt(p.stack)}</div></div>
+    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${ring}${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}${tag?`<div class="blind" title="${tag}">${tag==='小盲'?'小':'大'}</div>`:''}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}</div><div class="stk">${topChip(p.stack)}<span class="num">${fmt(p.stack)}</span></div></div>
     ${act}
   </div>`;
 }
@@ -114,7 +117,7 @@ export function renderTable(){
   if(R&&R.stage==='vote')result=`全下！跑几次？<span class="cd" data-until="${R.deadline}"></span>`;
   let seats='';
   for(let k=seated?1:0;k<n;k++){const i=seated?(m+k)%n:k;seats+=seatHTML(i,pos[k],compact);}
-  tb.innerHTML=`<div class="center${twice?' twice':''}"><div class="pot">${twice?'':pilesC(S.potChips,{size:13,max:5})}<span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b>${fmt(potTotal())}</b></div><div class="board${twice?' one':''}${HOT.size?' showdown':''}">${twice?'<span class="bl">1</span>':''}${boardCards(S.board,'a',twice?'bd sm':'bd')}</div>${board2}
+  tb.innerHTML=`<div class="center${twice?' twice':''}"><div class="pot">${twice?'':pilesC(S.potChips,{size:13,max:5})+potStack(S.potChips)}<span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b class="num">${fmt(potTotal())}</b></div><div class="board${twice?' one':''}${HOT.size?' showdown':''}">${twice?'<span class="bl">1</span>':''}${boardCards(S.board,'a',twice?'bd sm':'bd')}</div>${board2}
       <div class="result${S.street==='done'?' done':''}">${result}</div></div>
     ${seats}
     ${profileHTML()}`;
