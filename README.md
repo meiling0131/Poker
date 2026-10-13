@@ -12,6 +12,8 @@ css/                样式，按编号顺序加载，后面的会覆盖前面的
   2-layout.css      手机一屏布局、筹码轨、下注区
   3-theme.css       牌桌外观和 iPhone 尺寸
   4-features.css    确认按钮、房主审批、提前操作、头像表情、统计
+  5-skins.css       牌桌皮肤：一楼会议室、二楼休息区
+  6-lobby.css       主页：标题两边选楼层、盲注、模式卡片和按钮颜色
 js/
   main.js           入口：连接 Firebase，恢复上次的模式
   config.js         常量和 Firebase 配置

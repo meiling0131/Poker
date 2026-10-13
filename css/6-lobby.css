@@ -1,0 +1,80 @@
+/* 大厅（主页）：楼层放在标题两边，下面是盲注、两种人机模式、好友房。
+   iPhone 14（390×664 的 Safari 可视区）一屏放下。按钮两种颜色：琥珀色（主要）和青绿色（次要）。 */
+:root{
+  --amber:linear-gradient(180deg,#f8d68f,#e3a64b);--amber-ink:#2b1a05;--amber-glow:#e3a64b55;
+  --teal:linear-gradient(180deg,#3cc2b0,#1c8f84);--teal-ink:#f4fffd;--teal-glow:#1c8f8455;
+}
+
+/* ---- 标题栏：一楼 · Verve Poker · 二楼 ---- */
+.top .flr{display:none}
+body[data-view="menu"] .top .row{width:min(640px,100%);margin-inline:auto;gap:10px}
+body[data-view="menu"] .top h1{flex:1;text-align:center;font-size:24px}
+body[data-view="menu"] .top .right{display:none}
+body[data-view="menu"] .top .flr{display:flex}
+.flr{align-items:center;gap:8px;flex:none;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid var(--sk-edge,#ffffff22);
+  background:#0000002e;color:var(--text);font:inherit;cursor:pointer;opacity:.7;transition:opacity .15s,box-shadow .15s,background .15s}
+.flr:hover{opacity:.9}
+.flr.on{opacity:1;background:var(--sk-flat,#202b27);border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 4px 12px #0005}
+.flr i{width:30px;height:30px;border-radius:50%;box-shadow:inset 0 0 0 1px #ffffff33}
+.flr.f1 i{background:repeating-linear-gradient(176deg,#ffffff12 0 2px,transparent 2px 6px),linear-gradient(115deg,#a9673d,#8f532f 45%,#b07040)}
+.flr.f2 i{background:linear-gradient(180deg,#7a5238 0 30%,#1d6a8e 30% 62%,#a26b4c 62%)}
+.flr span{display:grid;text-align:left;line-height:1.15}
+.flr b{font-size:14px;font-weight:600}
+.flr small{font-size:10.5px;color:var(--mute)}
+
+/* ---- 主页内容 ---- */
+#menu{display:grid;gap:12px;width:min(640px,100%);align-self:center;padding:16px 0 24px}
+#menu .why{margin:0}
+#lobbyError:empty{display:none}
+.lobby-options,.mode{background:var(--sk-card,var(--panel));border:1px solid var(--sk-edge,var(--line));border-radius:16px;
+  box-shadow:inset 0 1px 0 #ffffff14,0 8px 22px #0003}
+
+.lobby-options{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px}
+.stake{display:flex;align-items:center;gap:7px;min-width:0}
+.stake b{font-size:14px;font-weight:600;margin-right:3px;white-space:nowrap;flex:none}
+.stake i{font-style:normal;color:var(--mute)}
+.stake input{width:52px;font:600 16px var(--num);text-align:center;color:var(--cream);background:var(--sk-deep,var(--panel2));
+  border:1px solid var(--line2);border-radius:9px;padding:6px 4px}
+.stake small{font-size:11px;color:var(--mute);margin-left:4px;white-space:nowrap}
+.lobby-options .hintToggle{gap:8px;white-space:nowrap}
+
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode{display:grid;align-content:start;gap:6px;padding:16px;text-align:left;color:var(--text);font:inherit}
+button.mode{cursor:pointer;grid-template-rows:auto auto 1fr auto;transition:transform .15s,border-color .15s}
+button.mode:hover{border-color:#ffffff40}
+button.mode:active{transform:translateY(1px)}
+.mode .mk{font-size:19px;font-weight:700;color:var(--cream);letter-spacing:.02em}
+.mode .mt{font:600 12px var(--num);color:var(--brass)}
+.mode .md{font-size:12.5px;line-height:1.6;color:var(--mute)}
+.mode .mh{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.mode.online{cursor:default}
+.mode.disabled{opacity:.55}
+
+/* 按钮 */
+.mode .go{display:block;margin-top:6px;padding:11px 8px;border:0;border-radius:11px;text-align:center;font:700 15px var(--body);letter-spacing:.04em;cursor:pointer;
+  box-shadow:inset 0 1px 0 #ffffff59,inset 0 -2px 0 #00000026,0 6px 14px var(--glow);transition:filter .15s,transform .15s}
+.mode .go.amber{background:var(--amber);color:var(--amber-ink);--glow:var(--amber-glow)}
+.mode .go.teal{background:var(--teal);color:var(--teal-ink);--glow:var(--teal-glow);text-shadow:0 1px 0 #0003}
+button.mode:hover .go,.mode button.go:hover:not(:disabled){filter:brightness(1.08)}
+.mode button.go:active:not(:disabled){transform:translateY(1px)}
+.mode .go:disabled{filter:grayscale(.8) brightness(.7);cursor:default}
+
+.mode .form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:4px}
+.mode .form label{display:grid;gap:4px;font-size:11px;color:var(--mute)}
+.mode .form input{min-width:0;min-height:42px;background:var(--sk-deep,var(--panel2));border:1px solid var(--line2);border-radius:10px;color:var(--cream);font:500 16px var(--body);padding:8px 10px}
+.mode .form input#roomIn{font-family:var(--num);letter-spacing:.12em;text-transform:uppercase}
+.mode .form input:focus,.stake input:focus{outline:2px solid var(--brass);outline-offset:1px}
+.mode .form .go{margin-top:2px}
+
+@media(max-width:700px){
+  body[data-view="menu"] .top{padding-bottom:8px}
+  body[data-view="menu"] .top h1{font-size:clamp(17px,5.2vw,22px)}
+  .flr{padding:4px 10px 4px 4px;gap:6px}.flr i{width:26px;height:26px}.flr b{font-size:13px}.flr small{font-size:10px}
+  #menu{gap:10px;padding:10px 0 16px}
+  .modes{gap:10px}
+  .mode{padding:13px}
+  .mode .mk{font-size:17px}
+  .mode .md{font-size:12px;line-height:1.55}
+  .lobby-options{padding:9px 12px;gap:8px}.stake{gap:5px}.stake input{width:46px}
+}
+@media(max-width:370px){.stake small{display:none}.flr small{display:none}}
