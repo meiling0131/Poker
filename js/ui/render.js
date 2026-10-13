@@ -17,7 +17,8 @@ export function render(){
   renderHeader();
   if(!M.mode){renderMenu();return;}
   if(!S){
-    $('table').innerHTML=`<div class="felt"></div><div class="result" style="top:44%">${M.ready?`房间 ${esc(M.room||'')} 还没开，或者房主不在线。<br>确认房间号没错，等房主打开就会自动出现。`:'正在连接牌桌…'}</div>`;
+    $('table').innerHTML=`<div class="center"><div class="result">${M.ready?`房间 ${esc(M.room||'')} 还没开，或者房主不在线。<br>确认房间号没错，等房主打开就会自动出现。`:'正在连接牌桌…'}</div></div>`;
+    $('meSeat').innerHTML='';
     $('hero').innerHTML=`<div class="wait">${M.ready?'牌桌还没开。':'连接中…'}${FLASH?`<br>${esc(FLASH)}`:''}</div>`;
     $('records').innerHTML='';return;
   }

@@ -15,11 +15,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <link rel="stylesheet" href="css/0-tokens.css?v=dfd73eea">
 <link rel="stylesheet" href="css/1-base.css?v=765bec26">
-<link rel="stylesheet" href="css/2-layout.css?v=00346bc8">
-<link rel="stylesheet" href="css/3-theme.css?v=6d0a1210">
+<link rel="stylesheet" href="css/2-layout.css?v=5ebdfe1a">
+<link rel="stylesheet" href="css/3-theme.css?v=24c8dfe5">
 <link rel="stylesheet" href="css/4-features.css?v=f3843a06">
-<link rel="stylesheet" href="css/5-skins.css?v=3906f49f">
+<link rel="stylesheet" href="css/5-skins.css?v=ce360a78">
 <link rel="stylesheet" href="css/6-lobby.css?v=b3ddbcf7">
+<link rel="stylesheet" href="css/7-table.css?v=e4231255">
 </head>
 <body>
 <div class="wrap">
@@ -50,7 +51,10 @@
   <div class="banner" id="away" hidden>房主暂时不在线，牌局暂停。房主回来后从当前这一步继续。</div>
   <section id="menu"></section>
   <section id="game">
-    <div class="table" id="table"></div>
+    <div class="stage" id="stage">
+      <div class="table" id="table"></div>
+      <div class="me-seat" id="meSeat"></div>
+    </div>
     <section class="hero" id="hero"></section>
   </section>
   <section id="records"></section>
@@ -61,11 +65,11 @@
   "imports": {
     "./js/actions.js": "./js/actions.js?v=2256c095",
     "./js/bots.js": "./js/bots.js?v=1a2638c0",
-    "./js/cards.js": "./js/cards.js?v=3d84d67a",
+    "./js/cards.js": "./js/cards.js?v=1bcc6e31",
     "./js/chips.js": "./js/chips.js?v=3f7919fa",
-    "./js/config.js": "./js/config.js?v=2e6e1b9a",
+    "./js/config.js": "./js/config.js?v=dce0aea5",
     "./js/crypto.js": "./js/crypto.js?v=8944b73f",
-    "./js/engine.js": "./js/engine.js?v=a5d01120",
+    "./js/engine.js": "./js/engine.js?v=506260dd",
     "./js/fx.js": "./js/fx.js?v=14ba4118",
     "./js/main.js": "./js/main.js?v=08f2b60a",
     "./js/modes.js": "./js/modes.js?v=8e5ecdcb",
@@ -78,13 +82,14 @@
     "./js/stats.js": "./js/stats.js?v=5fb8bcce",
     "./js/table.js": "./js/table.js?v=0b9c1d7f",
     "./js/talk.js": "./js/talk.js?v=5951a82a",
+    "./js/ui/anim.js": "./js/ui/anim.js?v=b4bc45f3",
     "./js/ui/chips-view.js": "./js/ui/chips-view.js?v=e28b578a",
     "./js/ui/events.js": "./js/ui/events.js?v=c53dc1b2",
-    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=1b9b830f",
+    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=905621d2",
     "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=ed6a2423",
     "./js/ui/records-view.js": "./js/ui/records-view.js?v=a2161570",
-    "./js/ui/render.js": "./js/ui/render.js?v=a88c2e34",
-    "./js/ui/table-view.js": "./js/ui/table-view.js?v=caad0817",
+    "./js/ui/render.js": "./js/ui/render.js?v=a61c8a23",
+    "./js/ui/table-view.js": "./js/ui/table-view.js?v=127acede",
     "./js/util.js": "./js/util.js?v=3449b6dd"
   }
 }

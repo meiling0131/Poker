@@ -15,9 +15,6 @@ h1{text-overflow:ellipsis}
 .more{position:absolute;right:0;top:calc(100% + 6px);z-index:20;display:flex;flex-direction:column;gap:8px;align-items:stretch;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5);min-width:150px}
 .more .ghost{padding:8px 12px;font-size:13px;text-align:left}
 .more .seg button{flex:1;padding:8px 0;font-size:13px}
-.table{flex:1 1 auto}
-.table.big{height:auto;min-height:360px}
-@media (min-width:480px){.table{height:auto}.table.big{height:auto}}
 .result{font-size:12px}
 /* seats */
 .mc .card .r{font-size:12px}
@@ -47,7 +44,6 @@ h1{text-overflow:ellipsis}
 .cashier .lbl{flex-basis:100%;font-size:11px}
 .cbtn{padding:8px 10px;min-height:38px}
 .linkbtn{min-height:24px}
-@media (max-height:640px){.card.big{--w:40px;--h:56px}}
 #records{padding-bottom:12px}
 @media (max-height:620px){
   .top .pills{display:none}
@@ -95,9 +91,6 @@ h1{text-overflow:ellipsis}
 .card.bd.sm{--w:clamp(28px,8.6vw,38px)}
 .card.bd.sm .r{font-size:clamp(13px,4vw,18px)}
 .card.bd.sm .s{font-size:clamp(11px,3.2vw,14px)}
-/* hero sizing with the rail */
-.table{min-height:262px}
-@media (max-height:620px){.table{min-height:220px}}
 @media (max-height:620px){
   .info .sub{display:none}
 }

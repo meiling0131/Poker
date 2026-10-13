@@ -14,6 +14,7 @@ css/                样式，按编号顺序加载，后面的会覆盖前面的
   4-features.css    确认按钮、房主审批、提前操作、头像表情、统计
   5-skins.css       牌桌皮肤：一楼会议室、二楼休息区
   6-lobby.css       主页：标题两边选楼层、盲注、模式卡片和按钮颜色
+  7-table.css       牌桌排版（一屏放下，牌按桌子大小缩放）和发牌、翻牌、筹码、赢家的动画
 js/
   main.js           入口：连接 Firebase，恢复上次的模式
   config.js         常量和 Firebase 配置
@@ -36,6 +37,7 @@ js/
   seats.js          换座位：人机局直接换；联机向房主申请
   modes.js          菜单 / 人机 / 联机 之间切换
   ui/               各块界面（牌桌、操作区、记录页、大厅）和事件处理
+                    anim.js：牌桌动画，按开始时间算，牌桌重画时动画接着放，不会重来
                     依赖方向只有一个：ui/ 用游戏逻辑，游戏逻辑不引用 ui/（重画走 state.js 的 view）
 server/             Verve 服务器（Cloudflare Worker + 每个房间一个 Durable Object）
   worker.js         入口：/room/<房间号> 转给这个房间的 Durable Object
