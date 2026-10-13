@@ -7,13 +7,16 @@ import { runNextTimer } from '../tools/headless.js';
 class FakeSocket {
   constructor() { this.msgs = []; }
   send(m) { this.msgs.push(JSON.parse(m)); }
-  close() {}
+  accept() {}
+  close() { this.closed = true; }
   last(t) { for (let i = this.msgs.length - 1; i >= 0; i--) if (this.msgs[i].t === t) return this.msgs[i]; return null; }
 }
-globalThis.WebSocketPair = class { constructor() { return [new FakeSocket(), new FakeSocket()]; } };
-globalThis.Response = class { constructor(body, init = {}) { this.status = init.status || 200; this.webSocket = init.webSocket; } };
+let lastPair = null;
+globalThis.WebSocketPair = class { constructor() { return (lastPair = [new FakeSocket(), new FakeSocket()]); } };
+globalThis.Response = class { constructor(body, init = {}) { this.body = body; this.status = init.status || 200; this.webSocket = init.webSocket; } json() { return JSON.parse(this.body); } };
 
 const { Room } = await import('../server/room.js');
+const { Lobby } = await import('../server/lobby.js');
 const { BETTING } = await import('../js/config.js');
 
 function fakeCtx(store = new Map()) {
@@ -21,8 +24,9 @@ function fakeCtx(store = new Map()) {
   return {
     store,
     storage: {
-      get: async keys => new Map(keys.filter(k => store.has(k)).map(k => [k, structuredClone(store.get(k))])),
+      get: async keys => (Array.isArray(keys) ? new Map(keys.filter(k => store.has(k)).map(k => [k, structuredClone(store.get(k))])) : structuredClone(store.get(keys))),
       put: async (k, v) => { if (typeof k === 'object') for (const [a, b] of Object.entries(k)) store.set(a, structuredClone(b)); else store.set(k, structuredClone(v)); },
+      deleteAll: async () => store.clear(),
     },
     blockConcurrencyWhile: fn => fn(),
     acceptWebSocket: (ws, tags) => { ws.tags = tags; sockets.push(ws); },
@@ -30,8 +34,8 @@ function fakeCtx(store = new Map()) {
     getTags: ws => ws.tags,
   };
 }
-async function connect(room, code, uid, create) {
-  const q = `uid=${uid}&token=${uid}-secret-token-xyz${create ? '&create=1&sb=1&bb=2' : ''}`;
+async function connect(room, code, uid, create, pw = '') {
+  const q = `uid=${uid}&token=${uid}-secret-token-xyz${create ? '&create=1&sb=1&bb=2' : ''}${pw ? `&pw=${pw}` : ''}`;
   const res = await room.fetch({ url: `https://verve.test/room/${code}?${q}` });
   assert.equal(res.status, 101);
   const ws = room.ctx.getWebSockets().at(-1);
@@ -94,11 +98,64 @@ test('only the owner can send owner commands', async () => {
   assert.ok(r.c.S.kicked.guest01);
 });
 
+// a refused browser gets a socket that says why and hangs up
+async function refused(room, url) {
+  const before = room.ctx.getWebSockets().length;
+  const res = await room.fetch({ url });
+  assert.equal(room.ctx.getWebSockets().length, before, 'not let in');
+  assert.ok(lastPair[1].closed);
+  return res.status === 101 && lastPair[1].last('error')?.code;
+}
+
 test('a seat cannot be taken over with another token', async () => {
   const r = new Room(fakeCtx(), {});
   await connect(r, 'DDDDD', 'owner02', true);
-  const res = await r.fetch({ url: 'https://verve.test/room/DDDDD?uid=owner02&token=someone-elses-token' });
-  assert.equal(res.status, 403);
+  assert.equal(await refused(r, 'https://verve.test/room/DDDDD?uid=owner02&token=someone-elses-token'), 'identity');
+});
+
+test('rooms: a password is asked once, codes are not shared, unknown rooms say so', async () => {
+  const r = new Room(fakeCtx(), {});
+  await connect(r, 'PWROOM', 'owner03', true, 'hash-of-secret');
+  assert.equal(await refused(r, 'https://verve.test/room/PWROOM?uid=guest03&token=guest03-secret-token-xyz'), 'password');
+  assert.equal(await refused(r, 'https://verve.test/room/PWROOM?uid=guest03&token=guest03-secret-token-xyz&pw=wrong'), 'password');
+  await connect(r, 'PWROOM', 'guest03', false, 'hash-of-secret');
+  // back later (reload, network drop): the token is enough
+  const res = await r.fetch({ url: 'https://verve.test/room/PWROOM?uid=guest03&token=guest03-secret-token-xyz' });
+  assert.equal(res.status, 101); assert.equal(lastPair[1].last('error'), null);
+  // someone else cannot create a room under a code that is in use; its owner just comes back in
+  assert.equal(await refused(r, 'https://verve.test/room/PWROOM?uid=other03&token=other03-secret-token-xyz&create=1'), 'taken');
+  await connect(r, 'PWROOM', 'owner03', true);
+  assert.equal(r.c.S.ownerUid, 'owner03');
+  const empty = new Room(fakeCtx(), {});
+  assert.equal(await refused(empty, 'https://verve.test/room/NOPE1?uid=guest03&token=guest03-secret-token-xyz'), 'noroom');
+});
+
+test('rooms: a code frees up after the room has sat empty for long enough', async () => {
+  const ctx = fakeCtx(), r = new Room(ctx, {});
+  await connect(r, 'OLDROOM', 'owner04', true, 'old-pw');
+  ctx.getWebSockets().length = 0;                         // everyone left
+  r.seen = Date.now() - 13 * 3600e3;
+  await connect(r, 'OLDROOM', 'newbie4', true);
+  assert.equal(r.c.S.ownerUid, 'newbie4');
+  assert.equal(r.pw, '');
+  assert.deepEqual(Object.keys(r.tokens), ['newbie4']);
+});
+
+test('rooms are listed while somebody is connected, with seats, stakes and the lock', async () => {
+  const lobby = new Lobby(fakeCtx());
+  const env = { LOBBY: { idFromName: () => 'lobby', get: () => ({ fetch: (u, init) => lobby.fetch(new Request(u, init)) }) } };
+  const list = async () => (await lobby.fetch(new Request('https://lobby/list'))).json();
+  const ctx = fakeCtx(), r = new Room(ctx, env);
+  const a = await connect(r, 'LISTED', 'owner05', true, 'pw-hash');
+  for (let i = 0; i < 20 && !r.c.S.seats.length; i++) runNextTimer();
+  await new Promise(res => setImmediate(res));   // timers are faked; let the report reach the lobby
+  const [room] = await list();
+  assert.equal(room.code, 'LISTED'); assert.equal(room.pw, true); assert.equal(room.n, 1); assert.equal(room.online, 1);
+  assert.equal(room.sb, 1); assert.equal(room.bb, 2); assert.equal(room.host, 'owner05');
+  ctx.getWebSockets().length = 0;
+  r.webSocketClose(a.ws);
+  await new Promise(res => setImmediate(res));   // timers are faked; let the report reach the lobby
+  assert.deepEqual(await list(), []);
 });
 
 test('a room restarted from storage carries on with the same hand', async () => {

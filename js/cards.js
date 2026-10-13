@@ -31,6 +31,11 @@ export function best7(cs){const n=cs.length;let best=-1;
   for(let a=0;a<n-4;a++)for(let b=a+1;b<n-3;b++)for(let c=b+1;c<n-2;c++)for(let d=c+1;d<n-1;d++)for(let e=d+1;e<n;e++){
     const v=eval5(cs[a],cs[b],cs[c],cs[d],cs[e]);if(v>best)best=v;}
   return best;}
+// the five cards behind best7 (the winner's cards to light up at showdown)
+export function best5(cs){const n=cs.length;let best=-1,pick=null;
+  for(let a=0;a<n-4;a++)for(let b=a+1;b<n-3;b++)for(let c=b+1;c<n-2;c++)for(let d=c+1;d<n-1;d++)for(let e=d+1;e<n;e++){
+    const v=eval5(cs[a],cs[b],cs[c],cs[d],cs[e]);if(v>best){best=v;pick=[cs[a],cs[b],cs[c],cs[d],cs[e]];}}
+  return pick;}
 export function handName(s){
   const d=[];let x=s;for(let i=0;i<6;i++){d.unshift(x%16);x=Math.floor(x/16);}
   const k=d.slice(1).map(rankStr);

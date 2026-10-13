@@ -6,11 +6,11 @@ import {SOUND,beep,setSOUND} from '../fx.js';
 import {enterBots,enterOnline,toMenu} from '../modes.js';
 import {approveBuy,commit,joinTable,kick,leaveTable,newRoomCode,normRoom,roomLink,unkick} from '../online.js';
 import {SHOW_HAND,readStakeForm,setSHOW_HAND,setSkin} from '../settings.js';
-import {CONFIRM_RESET,GEN,M,PROFILE,PUSH,S,TT,setCONFIRM_RESET,setFLASH,setGEN,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
+import {CONFIRM_RESET,GEN,LOBBY,M,PROFILE,PUSH,S,TT,setCONFIRM_RESET,setFLASH,setGEN,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
 import {bookKey,isOwner,log,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
 import {renderHero} from './hero-view.js';
-import {renderMenu} from './menu-view.js';
+import {renderMenu,renderRooms} from './menu-view.js';
 import {render} from './render.js';
 import {$,store} from '../util.js';
 import {approveSwap,requestSwap} from '../seats.js';
@@ -23,6 +23,13 @@ document.addEventListener('change',e=>{
     setSHOW_HAND(e.target.checked);store.set('poker.showHand',SHOW_HAND?'on':'off');
     $('handHints').checked=SHOW_HAND;if(S)renderHero();
   }
+});
+// Enter in the room boxes does what the button next to them does
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.isComposing)return;
+  const id=e.target.id;
+  const b=id==='rjName'||id==='rjPw'?document.querySelector('[data-enter-room]'):id==='cpPw'?document.querySelector('[data-confirm-create]'):null;
+  if(b){e.preventDefault();b.click();}
 });
 document.addEventListener('click',e=>{
   const mo=$('more');if(mo&&!mo.hidden&&!e.target.closest('.morewrap'))mo.hidden=true;
@@ -39,10 +46,33 @@ document.addEventListener('click',e=>{
     const nick=($('nick')&&$('nick').value||'').replace(/\s+/g,' ').trim().slice(0,16);
     if(!nick){setFLASH('先填一个昵称');renderMenu();$('nick')&&$('nick').focus();return;}
     M.nick=nick;store.set('poker.nick',nick);setFLASH('');
-    if(t.dataset.room==='create'){if(!readStakeForm())return;enterOnline(newRoomCode(),true);return;}
-    const code=normRoom($('roomIn')&&$('roomIn').value);
+    const typed=(($('roomIn')&&$('roomIn').value)||'').trim(),code=normRoom(typed);
+    if(t.dataset.room==='create'){
+      if(!readStakeForm())return;
+      const room=typed?code:newRoomCode();
+      if(room.length<3){setFLASH('房间号要 3–8 位字母或数字。');renderMenu();return;}
+      LOBBY.open=null;LOBBY.confirm={code:room,typed:!!typed};renderMenu();$('cpPw')&&$('cpPw').focus();return;
+    }
     if(!code){setFLASH('填一下房间号，或者新开一个房间');renderMenu();return;}
+    if(code.length<3){setFLASH('房间号要 3–8 位字母或数字。');renderMenu();return;}
     enterOnline(code,false);return;
+  }
+  if(t.dataset.confirmCreate){
+    if(!LOBBY.confirm||!readStakeForm())return;
+    enterOnline(LOBBY.confirm.code,true,($('cpPw')&&$('cpPw').value)||'');return;
+  }
+  if(t.dataset.cancelCreate){if(LOBBY.confirm&&LOBBY.confirm.typed)M.prefill=LOBBY.confirm.code;LOBBY.confirm=null;setFLASH('');renderMenu();return;}
+  if(t.dataset.openRoom){
+    const c=t.dataset.openRoom;LOBBY.open=LOBBY.open===c?null:c;setFLASH('');renderRooms();
+    const name=$('rjName'),pw=$('rjPw');
+    if(name&&!name.value)name.focus();else if(pw)pw.focus();
+    return;
+  }
+  if(t.dataset.enterRoom){
+    const name=(($('rjName')&&$('rjName').value)||'').replace(/\s+/g,' ').trim().slice(0,16);
+    if(!name){setFLASH('先填一个名字');renderRooms();$('rjName')&&$('rjName').focus();return;}
+    M.nick=name;store.set('poker.nick',name);setFLASH('');
+    enterOnline(t.dataset.enterRoom,false,($('rjPw')&&$('rjPw').value)||'');return;
   }
   if(t.dataset.copy){
     const txt=roomLink();

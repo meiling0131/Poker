@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 280" width="440" height="280" role="img" aria-label="A pair of aces: the ace of spades and the ace of hearts">
+  <title>Pocket aces</title>
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#000" flood-opacity=".32"/>
+    </filter>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf8ef"/>
+      <stop offset="1" stop-color="#efe9da"/>
+    </linearGradient>
+    <!-- suits drawn as paths so they look the same everywhere (no emoji fonts) -->
+    <path id="spade" d="M0,-21 C-6,-11 -22,-4 -20,6 C-18,15 -7,15 -3,9 C-3,15 -6,19 -10,22 L10,22 C6,19 3,15 3,9 C7,15 18,15 20,6 C22,-4 6,-11 0,-21 Z"/>
+    <path id="heart" d="M0,20 C-20,4 -23,-9 -14,-17 C-7,-23 -1,-18 0,-12 C1,-18 7,-23 14,-17 C23,-9 20,4 0,20 Z"/>
+    <!-- a serif capital A -->
+    <path id="ace" d="M-2.2,-24 L2.2,-24 L18,19 L22,19 L22,24 L6,24 L6,19 L10,19 L6.4,8.5 L-6.4,8.5 L-10,19 L-6,19 L-6,24 L-22,24 L-22,19 L-18,19 Z M-4.6,3 L4.6,3 L0,-10.5 Z"/>
+  </defs>
+
+  <!-- two chips resting behind the cards -->
+  <g transform="translate(374 230)">
+    <circle r="27" fill="#1f7a45"/>
+    <circle r="27" fill="none" stroke="#f3ece0" stroke-width="7" stroke-dasharray="10.6 10.6"/>
+    <circle r="18" fill="#1f7a45" stroke="#f3ece0" stroke-width="1.5"/>
+    <text y="6" text-anchor="middle" font-family="Menlo, 'SF Mono', Consolas, monospace" font-weight="800" font-size="16" fill="#fff5e4">25</text>
+  </g>
+  <g transform="translate(406 204)">
+    <circle r="27" fill="#b8232f"/>
+    <circle r="27" fill="none" stroke="#f3ece0" stroke-width="7" stroke-dasharray="10.6 10.6"/>
+    <circle r="18" fill="#b8232f" stroke="#f3ece0" stroke-width="1.5"/>
+    <text y="6" text-anchor="middle" font-family="Menlo, 'SF Mono', Consolas, monospace" font-weight="800" font-size="16" fill="#fff5e4">5</text>
+  </g>
+
+  <!-- ace of spades -->
+  <g transform="translate(156 140) rotate(-10)" filter="url(#shadow)">
+    <rect x="-72" y="-100" width="144" height="200" rx="16" fill="url(#face)" stroke="#fffaf0" stroke-width="2"/>
+    <rect x="-72" y="-100" width="144" height="200" rx="16" fill="none" stroke="#c5beac" stroke-width="1"/>
+    <g fill="#212923">
+      <use href="#ace" transform="translate(-48 -70) scale(.62)"/>
+      <use href="#spade" transform="translate(-48 -38) scale(.5)"/>
+      <use href="#spade" transform="scale(1.9)"/>
+      <g transform="rotate(180)">
+        <use href="#ace" transform="translate(-48 -70) scale(.62)"/>
+        <use href="#spade" transform="translate(-48 -38) scale(.5)"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ace of hearts -->
+  <g transform="translate(276 136) rotate(9)" filter="url(#shadow)">
+    <rect x="-72" y="-100" width="144" height="200" rx="16" fill="url(#face)" stroke="#fffaf0" stroke-width="2"/>
+    <rect x="-72" y="-100" width="144" height="200" rx="16" fill="none" stroke="#c5beac" stroke-width="1"/>
+    <g fill="#b52b39">
+      <use href="#ace" transform="translate(-48 -70) scale(.62)"/>
+      <use href="#heart" transform="translate(-48 -38) scale(.5)"/>
+      <use href="#heart" transform="scale(1.9)"/>
+      <g transform="rotate(180)">
+        <use href="#ace" transform="translate(-48 -70) scale(.62)"/>
+        <use href="#heart" transform="translate(-48 -38) scale(.5)"/>
+      </g>
+    </g>
+  </g>
+</svg>

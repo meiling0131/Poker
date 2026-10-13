@@ -15,9 +15,6 @@ h1{text-overflow:ellipsis}
 .more{position:absolute;right:0;top:calc(100% + 6px);z-index:20;display:flex;flex-direction:column;gap:8px;align-items:stretch;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5);min-width:150px}
 .more .ghost{padding:8px 12px;font-size:13px;text-align:left}
 .more .seg button{flex:1;padding:8px 0;font-size:13px}
-.table{flex:1 1 auto}
-.table.big{height:auto;min-height:360px}
-@media (min-width:480px){.table{height:auto}.table.big{height:auto}}
 .result{font-size:12px}
 /* seats */
 .mc .card .r{font-size:12px}
@@ -47,7 +44,6 @@ h1{text-overflow:ellipsis}
 .cashier .lbl{flex-basis:100%;font-size:11px}
 .cbtn{padding:8px 10px;min-height:38px}
 .linkbtn{min-height:24px}
-@media (max-height:640px){.card.big{--w:40px;--h:56px}}
 #records{padding-bottom:12px}
 @media (max-height:620px){
   .top .pills{display:none}
@@ -95,9 +91,6 @@ h1{text-overflow:ellipsis}
 .card.bd.sm{--w:clamp(28px,8.6vw,38px)}
 .card.bd.sm .r{font-size:clamp(13px,4vw,18px)}
 .card.bd.sm .s{font-size:clamp(11px,3.2vw,14px)}
-/* hero sizing with the rail */
-.table{min-height:262px}
-@media (max-height:620px){.table{min-height:220px}}
 @media (max-height:620px){
   .info .sub{display:none}
 }
@@ -105,17 +98,6 @@ h1{text-overflow:ellipsis}
 .seat.show .mc .card{box-shadow:0 2px 6px rgba(0,0,0,.6)}
 /* standalone page skeleton */
 [hidden]{display:none!important}
-/* online room form */
-.mode.online{grid-template-columns:1fr;grid-template-areas:"k" "t" "d" "f";cursor:default}
-.mode.online:hover{border-color:var(--line)}
-.mode.disabled{opacity:.55}
-.mode .form{grid-area:f;display:grid;align-items:center;margin-top:10px}
-.mode .form label{font-size:12px;color:var(--mute)}
-.mode .form input{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;color:var(--cream);font:500 16px var(--body);padding:9px 10px;min-width:0}
-.mode .form input#roomIn{font-family:var(--num);letter-spacing:.12em;text-transform:uppercase}
-.mode .form input:focus{outline:2px solid var(--brass);outline-offset:1px}
-.formbtns{grid-column:1/-1;display:flex;gap:8px;margin-top:8px}
-.formbtns .btn{min-height:44px;font-size:14px}
 .invite{display:flex;gap:8px;align-items:center;min-width:0}
 .invite code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font:500 12px var(--num);color:var(--cream);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;user-select:all;-webkit-user-select:all}
 .roomcode{font:600 12px var(--num);color:var(--brass);letter-spacing:.1em}

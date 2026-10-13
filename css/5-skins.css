@@ -1,18 +1,6 @@
 /* 牌桌皮肤（设置 → 牌桌），照着 Verve 的实景：一楼会议室、二楼休息区。
    body[data-skin] 让这里的规则压过 3-theme 里各个尺寸下的牌桌形状。 */
 
-/* 大厅：选楼层 */
-.floorpick{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.floor{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"i b" "i s";align-items:center;gap:2px 12px;text-align:left;
-  padding:14px;border-radius:16px;border:1px solid #ffffff22;background:#18221fcc;color:var(--text);font:inherit;cursor:pointer}
-.floor i{grid-area:i;width:54px;height:40px;border-radius:9px;box-shadow:inset 0 0 0 1px #ffffff26}
-.floor.f1 i{background:repeating-linear-gradient(176deg,#ffffff0d 0 3px,transparent 3px 8px),linear-gradient(115deg,#a9673d,#8f532f 45%,#b07040)}
-.floor.f2 i{background:linear-gradient(180deg,#7a5238 0 30%,#1d6a8e 30% 62%,#a26b4c 62%)}
-.floor b{grid-area:b;font-size:16px}
-.floor span{grid-area:s;font-size:12px;color:var(--mute)}
-.floor.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 6px 18px #0005;background:#202b27}
-@media(max-width:700px){.floorpick{gap:8px}.floor{padding:10px;gap:2px 8px}.floor i{width:40px;height:32px}.floor b{font-size:14px}.floor span{font-size:11px}}
-
 /* 设置菜单里的皮肤选择 */
 .skinpick{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text)}
 .more{min-width:190px}
@@ -23,14 +11,14 @@ body[data-skin="f1"]{background:
     linear-gradient(90deg,#2e3a44 0,#1d5f80 22%,#1b5877 78%,#2e3a44 100%) fixed}
 body[data-skin="f1"] .top{border-bottom-color:#ffffff22}
 /* walnut table: long rounded rectangle, warm grain */
-body[data-skin="f1"] #game::before{border-radius:28px;border-width:6px;border-color:#7a4526;
+body[data-skin="f1"] .stage::before{border-radius:28px;border-width:6px;border-color:#7a4526;
   background:
     radial-gradient(ellipse 18% 9% at 32% 46%,#ffffff12,transparent 70%),
     radial-gradient(ellipse 30% 12% at 66% 60%,#00000014,transparent 70%),
     repeating-linear-gradient(176deg,#ffffff08 0 3px,transparent 3px 9px,#0000000d 9px 11px,transparent 11px 19px),
     linear-gradient(115deg,#a9673d 0%,#8f532f 35%,#b07040 55%,#8a4e2b 80%,#9b5c34 100%);
   box-shadow:0 0 0 1px #c48a5a,0 18px 40px #0009,inset 0 0 0 1px #ffffff1a,inset 0 0 40px #3b1d0c55}
-body[data-skin="f1"] #game::after{border-radius:20px;border-color:#ffe2bf1f}
+body[data-skin="f1"] .stage::after{border-radius:20px;border-color:#ffe2bf1f}
 /* houndstooth armchair behind each seat (back + two arms) */
 body[data-skin="f1"] .table .seat::before{content:"";position:absolute;z-index:-1;left:50%;top:-14px;transform:translateX(-50%);
   width:calc(100% + 14px);height:62%;border-radius:22px 22px 10px 10px;
@@ -45,12 +33,12 @@ body[data-skin="f2"]{background-color:#173f57;background-image:
   background-size:100% 3px,100% 76px,100% 100%;background-position:0 7px,0 0,0 0;background-repeat:no-repeat;background-attachment:fixed}
 body[data-skin="f2"] .top{border-bottom-color:#00000033}
 /* dark stone square table */
-body[data-skin="f2"] #game::before{border-radius:20px;border-width:8px;border-color:#3a3d42;
+body[data-skin="f2"] .stage::before{border-radius:20px;border-width:8px;border-color:#3a3d42;
   background:
     linear-gradient(135deg,#ffffff10 0%,transparent 35%,transparent 65%,#ffffff08 100%),
     radial-gradient(ellipse at 50% 40%,#3a3e44 0%,#2c2f34 60%,#23262a 100%);
   box-shadow:0 0 0 1px #6b707866,0 20px 44px #000a,inset 0 0 0 1px #ffffff14,inset 0 0 50px #0006}
-body[data-skin="f2"] #game::after{border-radius:12px;border-color:#ffffff12}
+body[data-skin="f2"] .stage::after{border-radius:12px;border-color:#ffffff12}
 /* brown leather sofa: back with cushion seams, arms drawn as two lower copies */
 body[data-skin="f2"] .table .seat::before{content:"";position:absolute;z-index:-1;left:50%;top:-12px;transform:translateX(-50%);
   width:calc(100% + 28px);height:60%;border-radius:12px 12px 6px 6px;
@@ -69,11 +57,6 @@ body[data-skin="f1"]{--panel:#3f2414;--panel2:#33200f;--line:#6b4a33;--line2:#7d
   --sk-card:linear-gradient(145deg,#5c3621,#3b2112);--sk-flat:#4a2b19;--sk-deep:#2f1b0e;--sk-edge:#e7b98a33;--sk-plate:#3a2112f0}
 body[data-skin="f2"]{--panel:#2b2e32;--panel2:#232528;--line:#44484e;--line2:#53585f;
   --sk-card:linear-gradient(145deg,#3a3d42,#26282c);--sk-flat:#33363a;--sk-deep:#1f2124;--sk-edge:#ffffff1f;--sk-plate:#26292cf0}
-/* lobby */
-body[data-skin] .mode,body[data-skin] .mode.online,body[data-skin] .lobby-options{background:var(--sk-card);border-color:var(--sk-edge)}
-body[data-skin] .lobby-options input[type=number],body[data-skin] .mode .form input{background:var(--sk-deep);border-color:var(--line2)}
-body[data-skin] .floor{background:var(--sk-card);border-color:var(--sk-edge)}
-body[data-skin] .floor.on{background:var(--sk-flat);border-color:var(--brass)}
 /* table, your station, menus, panels */
 body[data-skin] .plate{background:var(--sk-plate);border-color:var(--sk-edge)}
 body[data-skin] .hero,body[data-skin] .hero.win{background:var(--sk-card);border-color:var(--sk-edge);border-top-color:#c9b68566}
@@ -90,7 +73,7 @@ body[data-skin] .seg button.on{background:var(--line2)}
 body[data-skin] .nav button.on{background:var(--line2)}
 
 /* ======== 收拾干净：少一点线框、少一点重复的字 ======== */
-body[data-skin] #game::after{border-color:transparent}                       /* no inner ring on the table */
+body[data-skin] .stage::after{border-color:transparent}                       /* no inner ring on the table */
 body[data-skin] .card.empty{border-color:#ffffff1c;background:#00000012;box-shadow:none}
 .bz-chips .hint,.hero .bz-chips .hint{opacity:.7;font-size:11px}
 .hero .betzone{border-bottom-color:#ffffff14}
@@ -101,5 +84,5 @@ body[data-skin] .card.empty{border-color:#ffffff1c;background:#00000012;box-shad
 .hero .wait{color:#d6cfc0}
 .seat .act{opacity:.85}
 @media(max-width:700px){
-  .table .result.done{display:none}                                           /* your station already says who won */
+  /* the result line stays on the table (it sits under the board now); the panel below drops its copy */
 }

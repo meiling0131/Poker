@@ -1,0 +1,115 @@
+/* 大厅（主页）：楼层放在标题两边，下面是房间列表、盲注、两种人机模式、好友房。
+   iPhone 14（390×664 的 Safari 可视区）一屏放下。按钮两种颜色：琥珀色（主要）和青绿色（次要）。 */
+:root{
+  --amber:linear-gradient(180deg,#f8d68f,#e3a64b);--amber-ink:#2b1a05;--amber-glow:#e3a64b55;
+  --teal:linear-gradient(180deg,#3cc2b0,#1c8f84);--teal-ink:#f4fffd;--teal-glow:#1c8f8455;
+}
+
+/* ---- 标题栏：一楼 · Verve Poker · 二楼 ---- */
+.top .flr{display:none}
+body[data-view="menu"] .top .row{width:min(640px,100%);margin-inline:auto;gap:10px}
+body[data-view="menu"] .top h1{flex:1;text-align:center;font-size:24px}
+body[data-view="menu"] .top .right{display:none}
+body[data-view="menu"] .top .flr{display:flex}
+.flr{align-items:center;gap:8px;flex:none;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid var(--sk-edge,#ffffff22);
+  background:#0000002e;color:var(--text);font:inherit;cursor:pointer;opacity:.7;transition:opacity .15s,box-shadow .15s,background .15s}
+.flr:hover{opacity:.9}
+.flr.on{opacity:1;background:var(--sk-flat,#202b27);border-color:var(--brass);box-shadow:0 0 0 1px var(--brass),0 4px 12px #0005}
+.flr i{width:30px;height:30px;border-radius:50%;box-shadow:inset 0 0 0 1px #ffffff33}
+.flr.f1 i{background:repeating-linear-gradient(176deg,#ffffff12 0 2px,transparent 2px 6px),linear-gradient(115deg,#a9673d,#8f532f 45%,#b07040)}
+.flr.f2 i{background:linear-gradient(180deg,#7a5238 0 30%,#1d6a8e 30% 62%,#a26b4c 62%)}
+.flr span{display:grid;text-align:left;line-height:1.15}
+.flr b{font-size:14px;font-weight:600}
+.flr small{font-size:10.5px;color:var(--mute)}
+
+/* ---- 主页内容 ---- */
+#menu{display:flex;flex-direction:column;gap:12px;width:min(640px,100%);align-self:center;padding:16px 0 24px}
+.lobby-bottom{display:grid;gap:12px}
+#menu .why{margin:0;color:#ffc2b4;font-size:12px}
+#lobbyError:empty{display:none}
+.lobby-options,.mode,.rooms{background:var(--sk-card,var(--panel));border:1px solid var(--sk-edge,var(--line));border-radius:16px;
+  box-shadow:inset 0 1px 0 #ffffff14,0 8px 22px #0003}
+
+.lobby-options{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px}
+.stake{display:flex;align-items:center;gap:7px;min-width:0}
+.stake b{font-size:14px;font-weight:600;margin-right:3px;white-space:nowrap;flex:none}
+.stake i{font-style:normal;color:var(--mute)}
+.stake input{width:52px;font:600 16px var(--num);text-align:center;color:var(--cream);background:var(--sk-deep,var(--panel2));
+  border:1px solid var(--line2);border-radius:9px;padding:6px 4px}
+.stake small{font-size:11px;color:var(--mute);margin-left:4px;white-space:nowrap}
+.lobby-options .hintToggle{gap:8px;white-space:nowrap}
+
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode{display:grid;align-content:start;gap:6px;padding:16px;text-align:left;color:var(--text);font:inherit}
+button.mode{cursor:pointer;grid-template-rows:auto auto 1fr auto;transition:transform .15s,border-color .15s}
+button.mode:hover{border-color:#ffffff40}
+button.mode:active{transform:translateY(1px)}
+.mode .mk{font-size:19px;font-weight:700;color:var(--cream);letter-spacing:.02em}
+.mode .mt{font:600 12px var(--num);color:var(--brass)}
+.mode .md{font-size:12.5px;line-height:1.6;color:var(--mute)}
+.mode .mh{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.mode.online{cursor:default}
+.mode.disabled{opacity:.55}
+
+/* 按钮 */
+#menu .go{display:block;margin-top:6px;padding:11px 8px;border:0;border-radius:11px;text-align:center;font:700 15px var(--body);letter-spacing:.04em;cursor:pointer;
+  box-shadow:inset 0 1px 0 #ffffff59,inset 0 -2px 0 #00000026,0 6px 14px var(--glow);transition:filter .15s,transform .15s}
+#menu .go.amber{background:var(--amber);color:var(--amber-ink);--glow:var(--amber-glow)}
+#menu .go.teal{background:var(--teal);color:var(--teal-ink);--glow:var(--teal-glow);text-shadow:0 1px 0 #0003}
+button.mode:hover .go,#menu button.go:hover:not(:disabled){filter:brightness(1.08)}
+#menu button.go:active:not(:disabled){transform:translateY(1px)}
+#menu .go.plain{background:#ffffff14;color:var(--text);box-shadow:inset 0 0 0 1px #ffffff26;--glow:transparent}
+#menu .go:disabled{filter:grayscale(.8) brightness(.7);cursor:default}
+
+.mode .form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:4px}
+.mode .form label{display:grid;gap:4px;font-size:11px;color:var(--mute)}
+.mode .form input{min-width:0;min-height:42px;background:var(--sk-deep,var(--panel2));border:1px solid var(--line2);border-radius:10px;color:var(--cream);font:500 16px var(--body);padding:8px 10px}
+.mode .form input#roomIn{font-family:var(--num);letter-spacing:.12em;text-transform:uppercase}
+#menu input:focus{outline:2px solid var(--brass);outline-offset:1px}
+.mode .form .go{margin-top:2px}
+
+/* 创建房间：确认房间号，设密码（可不填） */
+.confirm{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;padding:10px;border-radius:12px;background:#0000002b;border:1px dashed #e3a64b99}
+.confirm p{grid-column:1/-1;display:flex;align-items:baseline;gap:6px;margin:0;font-size:13px}
+.confirm p span{margin-left:auto;font-size:12px;color:var(--mute)}
+.confirm .code{font:700 15px var(--num);letter-spacing:.1em;color:#f8d68f;margin-left:4px}
+.confirm label{grid-column:1/-1}
+.confirm .go{margin-top:0}
+
+/* ---- 房间列表：点一下展开，填名字（有密码再填密码）就进 ---- */
+.rooms{display:grid;gap:8px;padding:10px 12px}
+.rooms-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rooms-h b{font-size:14px;font-weight:600}
+.rooms-h small{font-size:11px;color:var(--mute)}
+.rlist{display:grid;gap:6px;max-height:190px;overflow-y:auto;overscroll-behavior:contain}
+.room{border-radius:11px;background:#0000002b;border:1px solid #ffffff14}
+.room.open{border-color:var(--brass);background:#00000040}
+.rrow{width:100%;display:flex;align-items:center;gap:8px;padding:9px 10px;background:none;border:0;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.rc{font:700 15px var(--num);letter-spacing:.08em;color:var(--cream)}
+.lock{font-size:12px;line-height:1}
+.rm{flex:1;min-width:0;font-size:11.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{font-size:18px;line-height:1;color:var(--mute);transition:transform .15s}
+.room.open .chev{transform:rotate(90deg)}
+.rjoin{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;padding:0 10px 10px}
+.rjoin.nopw{grid-template-columns:1fr auto}
+.rjoin input{min-width:0;min-height:40px;background:var(--sk-deep,var(--panel2));border:1px solid var(--line2);border-radius:10px;color:var(--cream);font:500 16px var(--body);padding:7px 10px}
+#menu .rjoin .go{margin:0;padding:0 18px}
+.rjoin .why{grid-column:1/-1}
+.rempty{margin:0;font-size:12px;color:var(--mute)}
+
+@media(max-width:700px){
+  /* 模式卡片和按钮贴着屏幕下方，手指好够 */
+  body[data-view="menu"] .wrap{min-height:calc(100dvh - max(6px,env(safe-area-inset-top)) - max(6px,env(safe-area-inset-bottom)))}
+  #menu{flex:1}
+  .lobby-bottom{margin-top:auto;gap:10px}
+  body[data-view="menu"] .top{padding-bottom:8px}
+  body[data-view="menu"] .top h1{font-size:clamp(17px,5.2vw,22px)}
+  .flr{padding:4px 10px 4px 4px;gap:6px}.flr i{width:26px;height:26px}.flr b{font-size:13px}.flr small{font-size:10px}
+  #menu{gap:10px;padding:10px 0 16px}
+  .modes{gap:10px}
+  .mode{padding:13px}
+  .mode .mk{font-size:17px}
+  .mode .md{font-size:12px;line-height:1.55}
+  .lobby-options{padding:9px 12px;gap:8px}.stake{gap:5px}.stake input{width:46px}
+}
+@media(max-width:370px){.stake small{display:none}.flr small{display:none}}

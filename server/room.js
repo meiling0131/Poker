@@ -1,6 +1,6 @@
 // One Durable Object per room. It runs the same game engine as the browser (js/engine.js) and is the
 // only place the deck and everyone's hole cards live: each player receives the public table plus their
-// own two cards. Players send what the Firebase version wrote to their seat doc (join, buy-ins, actions,
+// own two cards. Players send their seat doc (join, buy-ins, actions,
 // emoji, seat requests); the owner (房主) also sends commands (approve buy-ins, remove players, reset).
 //
 // Several rooms can share one isolate and the engine keeps its state in module variables, so every event
@@ -24,23 +24,35 @@ globalThis.setTimeout = (fn, ms, ...args) => {
 view.render = () => { if (CURRENT) CURRENT.dirty = true; };   // engine's commit() → push to players
 
 const NAME_MAX = 16;
+// a room nobody has been connected to for this long can be created afresh under the same code
+const EXPIRE = 12 * 3600e3;
 const clone = v => (v == null ? v : JSON.parse(JSON.stringify(v)));
 
 export class Room {
   constructor(ctx, env) {
     this.ctx = ctx;
-    this.c = { S: null, H: [], DECK: [], SEATDOCS: {}, TT: null, GEN: 0, SESSION: 1, RT: null };
-    this.tokens = {};
-    this.code = '';
+    this.env = env || {};
+    this.fresh();
     ctx.blockConcurrencyWhile(async () => {
-      const saved = await ctx.storage.get(['S', 'H', 'DECK', 'SEATDOCS', 'tokens', 'code']);
+      const saved = await ctx.storage.get(['S', 'H', 'DECK', 'SEATDOCS', 'tokens', 'code', 'pw', 'seen']);
       if (saved.get('S')) {
         Object.assign(this.c, { S: saved.get('S'), H: saved.get('H') || [], DECK: saved.get('DECK') || [], SEATDOCS: saved.get('SEATDOCS') || {} });
         this.tokens = saved.get('tokens') || {};
         this.code = saved.get('code') || '';
+        this.pw = saved.get('pw') || '';
+        this.seen = saved.get('seen') || 0;
         await this.run(() => resumeTurn());   // woke up after an eviction: carry on where the hand was
       }
     });
+  }
+
+  fresh() {
+    this.c = { S: null, H: [], DECK: [], SEATDOCS: {}, TT: null, GEN: 0, SESSION: 1, RT: null };
+    this.tokens = {};
+    this.code = '';
+    this.pw = '';      // SHA-256 of the room password (hashed in the browser); '' = no password
+    this.seen = 0;     // when somebody was last connected
+    this.reported = '';
   }
 
   // ---- running engine code inside this room ----
@@ -70,6 +82,7 @@ export class Room {
     if (!c.S) return;
     this.ctx.storage.put({ S: c.S, H: c.H, DECK: c.DECK, SEATDOCS: c.SEATDOCS, tokens: this.tokens, code: this.code });
     if (this.dirty) this.broadcast();
+    this.report();
   }
   // everyone gets the public table; each seated player also gets their own two cards
   broadcast() {
@@ -83,16 +96,37 @@ export class Room {
   }
 
   // ---- connections ----
+  open() { return this.ctx.getWebSockets().filter(ws => ws.readyState === undefined || ws.readyState === 1); }
+  // tell the browser why it cannot come in, then hang up (a refused handshake would not carry a reason)
+  reject(code) {
+    const pair = new WebSocketPair();
+    pair[1].accept();
+    pair[1].send(JSON.stringify({ t: 'error', code }));
+    pair[1].close(4000, code);
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
   async fetch(req) {
     const url = new URL(req.url), code = url.pathname.split('/').pop();
     const uid = String(url.searchParams.get('uid') || ''), token = String(url.searchParams.get('token') || '');
     if (!/^[A-Za-z0-9_-]{6,40}$/.test(uid) || token.length < 16) return new Response('bad identity', { status: 400 });
+    const create = url.searchParams.get('create') === '1', pw = String(url.searchParams.get('pw') || '').slice(0, 128);
+    if (create && this.c.S && this.c.S.ownerUid !== uid) {
+      // the code is someone else's room; it only frees up once that room has sat empty for a long time
+      if (this.open().length || Date.now() - this.seen < EXPIRE) return this.reject('taken');
+      this.fresh();
+      await this.ctx.storage.deleteAll();
+    }
+    if (!this.c.S && !create) return this.reject('noroom');
     // a uid is bound to the first token it arrives with, so nobody can play someone else's seat
-    if (this.tokens[uid] && this.tokens[uid] !== token) return new Response('identity mismatch', { status: 403 });
+    if (this.tokens[uid] && this.tokens[uid] !== token) return this.reject('identity');
+    // the password is asked once; after that this browser's token is enough
+    if (!this.tokens[uid] && this.c.S && this.pw && pw !== this.pw) return this.reject('password');
     if (!this.tokens[uid]) { this.tokens[uid] = token; this.ctx.storage.put('tokens', this.tokens); }
-    if (!this.c.S && url.searchParams.get('create') === '1') {
+    if (!this.c.S) {
       const sb = Number(url.searchParams.get('sb')), bb = Number(url.searchParams.get('bb'));
       this.code = code;
+      this.pw = pw;
+      this.ctx.storage.put('pw', pw);
       this.run(() => {
         newOnlineTable(false);
         Object.assign(st.S, { ownerUid: uid, hostUid: uid, room: code, stakes: validStake(sb, bb) ? { sb, bb } : { sb: 1, bb: 2 } });
@@ -103,7 +137,26 @@ export class Room {
     this.ctx.acceptWebSocket(pair[1], [uid]);
     pair[1].send(JSON.stringify({ t: 'seat', doc: this.c.SEATDOCS[uid] || null }));
     this.sendTable(pair[1], uid);
+    this.touch();
     return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+  touch() {
+    this.seen = Date.now();
+    this.ctx.storage.put('seen', this.seen);
+    this.report();
+  }
+  // keep the room list up to date: listed while anyone is connected, gone when the last one leaves
+  report() {
+    const lobby = this.env.LOBBY, S = this.c.S;
+    if (!lobby || !this.code) return;
+    const online = this.open().length;
+    const info = online && S
+      ? { code: this.code, n: S.seats.length, online, pw: !!this.pw, sb: S.stakes && S.stakes.sb, bb: S.stakes && S.stakes.bb, host: (this.c.SEATDOCS[S.ownerUid] || {}).name || '' }
+      : { code: this.code, gone: true };
+    const body = JSON.stringify(info);
+    if (body === this.reported) return;
+    this.reported = body;
+    lobby.get(lobby.idFromName('lobby')).fetch('https://lobby/update', { method: 'POST', body }).catch(() => { this.reported = ''; });
   }
 
   webSocketMessage(ws, raw) {
@@ -138,5 +191,6 @@ export class Room {
       });
     }
   }
-  webSocketClose(ws) { try { ws.close(); } catch (e) { /* already closed */ } }
+  webSocketClose(ws) { try { ws.close(); } catch (e) { /* already closed */ } this.touch(); }
+  webSocketError(ws) { this.webSocketClose(ws); }
 }

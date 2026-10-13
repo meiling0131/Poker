@@ -10,21 +10,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600;6..96,700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <link rel="stylesheet" href="css/0-tokens.css?v=dfd73eea">
-<link rel="stylesheet" href="css/1-base.css?v=d100eaec">
-<link rel="stylesheet" href="css/2-layout.css?v=f8824e8f">
-<link rel="stylesheet" href="css/3-theme.css?v=1726471a">
+<link rel="stylesheet" href="css/1-base.css?v=c2e73f37">
+<link rel="stylesheet" href="css/2-layout.css?v=5ebdfe1a">
+<link rel="stylesheet" href="css/3-theme.css?v=24c8dfe5">
 <link rel="stylesheet" href="css/4-features.css?v=f3843a06">
-<link rel="stylesheet" href="css/5-skins.css?v=b57c1f01">
+<link rel="stylesheet" href="css/5-skins.css?v=ce360a78">
+<link rel="stylesheet" href="css/6-lobby.css?v=b3ddbcf7">
+<link rel="stylesheet" href="css/7-table.css?v=e4231255">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="row">
+      <button class="flr f1" data-skin="f1" aria-label="Verve 一楼 · 会议室"><i aria-hidden="true"></i><span><b>一楼</b><small>会议室</small></span></button>
       <h1>Verve Poker</h1>
+      <button class="flr f2" data-skin="f2" aria-label="Verve 二楼 · 休息区"><i aria-hidden="true"></i><span><b>二楼</b><small>休息区</small></span></button>
       <div class="right">
       <div class="nav" id="nav" hidden><button data-view="table" class="on">牌桌</button><button data-view="records">记录</button></div>
       <button class="ghost icon" id="homeBtn" hidden aria-label="回到主页">主页</button>
@@ -44,10 +45,12 @@
     </div>
     <div class="pills" id="pills"></div>
   </header>
-  <div class="banner" id="away" hidden>房主暂时不在线，牌局暂停。房主回来后从当前这一步继续。</div>
   <section id="menu"></section>
   <section id="game">
-    <div class="table" id="table"></div>
+    <div class="stage" id="stage">
+      <div class="table" id="table"></div>
+      <div class="me-seat" id="meSeat"></div>
+    </div>
     <section class="hero" id="hero"></section>
   </section>
   <section id="records"></section>
@@ -56,36 +59,36 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/actions.js": "./js/actions.js?v=2256c095",
+    "./js/actions.js": "./js/actions.js?v=8fa89d64",
     "./js/bots.js": "./js/bots.js?v=1a2638c0",
-    "./js/cards.js": "./js/cards.js?v=3d84d67a",
+    "./js/cards.js": "./js/cards.js?v=1bcc6e31",
     "./js/chips.js": "./js/chips.js?v=3f7919fa",
-    "./js/config.js": "./js/config.js?v=adb5b6de",
-    "./js/crypto.js": "./js/crypto.js?v=8944b73f",
-    "./js/engine.js": "./js/engine.js?v=a5d01120",
+    "./js/config.js": "./js/config.js?v=515e945b",
+    "./js/engine.js": "./js/engine.js?v=e9b025d5",
     "./js/fx.js": "./js/fx.js?v=14ba4118",
-    "./js/main.js": "./js/main.js?v=08f2b60a",
-    "./js/modes.js": "./js/modes.js?v=2e16650a",
-    "./js/net.js": "./js/net.js?v=8c0f8717",
-    "./js/online.js": "./js/online.js?v=b7ad315b",
+    "./js/main.js": "./js/main.js?v=d04fb650",
+    "./js/modes.js": "./js/modes.js?v=8e5ecdcb",
+    "./js/net.js": "./js/net.js?v=0d2cd3ea",
+    "./js/online.js": "./js/online.js?v=598bd6a2",
     "./js/pots.js": "./js/pots.js?v=8f05ccbd",
     "./js/seats.js": "./js/seats.js?v=92b28207",
     "./js/settings.js": "./js/settings.js?v=d5e2f333",
-    "./js/state.js": "./js/state.js?v=62dc0d1d",
+    "./js/state.js": "./js/state.js?v=5ab5373e",
     "./js/stats.js": "./js/stats.js?v=5fb8bcce",
-    "./js/table.js": "./js/table.js?v=0b9c1d7f",
+    "./js/table.js": "./js/table.js?v=a6986cbd",
     "./js/talk.js": "./js/talk.js?v=5951a82a",
+    "./js/ui/anim.js": "./js/ui/anim.js?v=b4bc45f3",
     "./js/ui/chips-view.js": "./js/ui/chips-view.js?v=e28b578a",
-    "./js/ui/events.js": "./js/ui/events.js?v=a221011e",
-    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=1b9b830f",
-    "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=99bd7f0c",
-    "./js/ui/records-view.js": "./js/ui/records-view.js?v=a2161570",
-    "./js/ui/render.js": "./js/ui/render.js?v=a88c2e34",
-    "./js/ui/table-view.js": "./js/ui/table-view.js?v=caad0817",
+    "./js/ui/events.js": "./js/ui/events.js?v=8c01ed81",
+    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=7b6b2199",
+    "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=09a58af6",
+    "./js/ui/records-view.js": "./js/ui/records-view.js?v=d8d5ab82",
+    "./js/ui/render.js": "./js/ui/render.js?v=46f28dd3",
+    "./js/ui/table-view.js": "./js/ui/table-view.js?v=127acede",
     "./js/util.js": "./js/util.js?v=3449b6dd"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=08f2b60a"></script>
+<script type="module" src="js/main.js?v=d04fb650"></script>
 </body>
 </html>
