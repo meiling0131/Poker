@@ -103,3 +103,27 @@ body[data-skin] .card.empty{border-color:#ffffff1c;background:#00000012;box-shad
 @media(max-width:700px){
   .table .result.done{display:none}                                           /* your station already says who won */
 }
+
+/* ======== 操作按钮跟皮肤走：一楼深棕 + 奶油白，二楼石灰 + 冷白；只有 All in 保留红色 ======== */
+body[data-skin="f1"]{--btn-fold:#2b180c;--btn-fold-ink:#e9dcc9;--btn-call:#efe4cb;--btn-call-ink:#2a1a0e;--btn-raise:#d0ad68;--btn-raise-ink:#241a0c;--btn-allin:#a8463c;--btn-allin-ink:#fff1ea}
+body[data-skin="f2"]{--btn-fold:#1b1e21;--btn-fold-ink:#dfe3e7;--btn-call:#e7ebef;--btn-call-ink:#1b1f24;--btn-raise:#c9b685;--btn-raise-ink:#231f15;--btn-allin:#a8463c;--btn-allin-ink:#fff1ea}
+body[data-skin] .btn.fold,body[data-skin] .btn.cancel{background:var(--btn-fold);color:var(--btn-fold-ink);border-color:#ffffff14}
+body[data-skin] .btn.call,body[data-skin] .btn.go.green{background:var(--btn-call);color:var(--btn-call-ink);border-color:transparent}
+body[data-skin] .btn.raise:not(.off),body[data-skin] .btn.next{background:var(--btn-raise);color:var(--btn-raise-ink);border-color:transparent}
+body[data-skin] .btn.allin,body[data-skin] .btn.go.red{background:var(--btn-allin);color:var(--btn-allin-ink);border-color:#ffffff1c}
+body[data-skin] .btn small{opacity:.75}
+body[data-skin] .mini.ok{border-color:var(--brass);color:var(--win);background:#c9b68526}
+body[data-skin] .preacts button.on{background:#c9b68530;border-color:var(--brass);color:var(--win)}
+body[data-skin] .preacts button.on i{background:var(--brass);border-color:var(--brass)}
+body[data-skin] .cbtn.primary{border-color:var(--brass)}
+
+/* folded seats: the cards and the "弃牌" fade, the name and stack stay readable */
+body[data-skin] .seat.dim{opacity:1}
+body[data-skin] .seat.dim .mc,body[data-skin] .seat.dim .act{opacity:.45}
+body[data-skin] .seat.dim::before{opacity:.7}
+body[data-skin] .seat.dim .plate{opacity:.82}
+body[data-skin] .seat.dim .nm,body[data-skin] .seat.dim .stk{color:#d8d2c4}
+
+/* 二楼：the header sits on a dark plate so the title is not fighting the slatted ceiling */
+body[data-skin="f2"] .top{background:#0f1e28cc;border-radius:0 0 18px 18px;padding-inline:18px;border-bottom:1px solid #ffffff14;box-shadow:0 10px 30px #0004}
+@media(max-width:700px){body[data-skin="f2"] .top{padding:4px 10px 6px;border-radius:0 0 14px 14px}}

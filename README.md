@@ -6,12 +6,15 @@
 
 ```
 index.html          页面骨架，以及 import map（由 tools/stamp.js 生成）
+manifest.webmanifest, icons/   「添加到主屏幕」后全屏运行要用的清单和图标
 css/                样式，按编号顺序加载，后面的会覆盖前面的
   0-tokens.css      颜色、字体变量（只在这里定义）
   1-base.css        牌桌、座位、牌、操作区、面板
   2-layout.css      手机一屏布局、筹码轨、下注区
   3-theme.css       牌桌外观和 iPhone 尺寸
   4-features.css    确认按钮、房主审批、提前操作、头像表情、统计
+  5-skins.css       一楼 / 二楼皮肤，按钮配色跟着皮肤走
+  6-motion.css      动效：倒计时环、赢家高亮、底池筹码堆、结果卡、手机下注抽屉
 js/
   main.js           入口：连接 Firebase，恢复上次的模式
   config.js         常量和 Firebase 配置
@@ -34,6 +37,7 @@ js/
   seats.js          换座位：人机局直接换；联机向房主申请
   modes.js          菜单 / 人机 / 联机 之间切换
   ui/               各块界面（牌桌、操作区、记录页、大厅）和事件处理
+    motion.js       动画：重画前后量带 data-k 的元素（FLIP），发牌、推筹码、收池、数字滚动
                     依赖方向只有一个：ui/ 用游戏逻辑，游戏逻辑不引用 ui/（重画走 state.js 的 view）
 server/             Verve 服务器（Cloudflare Worker + 每个房间一个 Durable Object）
   worker.js         入口：/room/<房间号> 转给这个房间的 Durable Object

@@ -1,10 +1,11 @@
 // The felt: seats, board, pot.
 import {SUITS,cardTxt,rankOf,rankStr,suitOf} from '../cards.js';
-import {BETTING,BOT_BLURB,STREET_CN} from '../config.js';
+import {ACT_MS,BETTING,BOT_BLURB,STREET_CN} from '../config.js';
 import {H,M,MYHOLE,PROFILE,S} from '../state.js';
 import {N,bookKey,mySeat,nameOfUid,names,needToStart,potTotal} from '../table.js';
 import {avatarOf} from '../talk.js';
-import {miniStack,miniStackC,pilesC,topChip} from './chips-view.js';
+import {miniStack,miniStackC,potStack,topChip} from './chips-view.js';
+import {playTable,snap} from './motion.js';
 import {$,esc,fmt} from '../util.js';
 import {canSwapNow} from '../seats.js';
 
@@ -16,11 +17,12 @@ export function bubbleHTML(p,cls=''){
   if(fresh){SHOWN.add(k);if(SHOWN.size>200)SHOWN.clear();}
   return `<div class="bubble${cls?' '+cls:''}${fresh?'':' still'}" data-bubble-until="${p.say.until}">${esc(p.say.t)}</div>`;
 }
-export function cardHTML(c,size){
+export function cardHTML(c,size,key){
+  const k=key?` data-k="${key}"`:'';
   if(c===undefined)return `<div class="card ${size} empty"></div>`;
-  if(c===null)return `<div class="card ${size} back"></div>`;
+  if(c===null)return `<div class="card ${size} back"${k}></div>`;
   const s=suitOf(c),red=s===1||s===2;
-  return `<div class="card faceup ${size}${red?' red':''}" role="img" aria-label="${cardTxt(c)}"><span class="r" aria-hidden="true">${rankStr(rankOf(c))}</span><span class="s" aria-hidden="true">${SUITS[s]}</span></div>`;
+  return `<div class="card faceup ${size}${red?' red':''}"${k} role="img" aria-label="${cardTxt(c)}"><span class="r" aria-hidden="true">${rankStr(rankOf(c))}</span><span class="s" aria-hidden="true">${SUITS[s]}</span></div>`;
 }
 export function myHoleCards(){
   const m=mySeat();if(m<0)return null;
@@ -28,7 +30,7 @@ export function myHoleCards(){
   return MYHOLE.hand===S.hand?MYHOLE.c:null;
 }
 export function seatName(p){return p.kind==='bot'?p.name:nameOfUid(p.uid);}
-export const betHTML=(a,c)=>`<div class="bet">${c?miniStackC(c):miniStack(a)}${fmt(a)}</div>`;
+export const betHTML=(a,c,i)=>`<div class="bet"${i>=0?` data-k="bet${i}" data-v="${a}"`:''}>${c?miniStackC(c):miniStack(a)}${fmt(a)}</div>`;
 export function seatPositions(n,heroSeated){
   // returns [{x,y}] in % for slots; slot 0 is bottom centre (hero) when seated
   const out=[];
@@ -58,33 +60,49 @@ export function seatPositions(n,heroSeated){
   }
   return out;
 }
+let WIN_HAND=-1;   // the winner's plate flashes on the first draw of a finished hand, then stays lit
 export function seatHTML(i,pos,compact){
   const p=S.seats[i],cls=['seat'];
   if(compact)cls.push('compact');
   if(S.actor===i)cls.push('turn');
   if(p.folded||p.leaving||(!p.inHand&&S.street!=='idle'))cls.push('dim');
-  if(p.win)cls.push('win');
+  if(p.win){cls.push('win');if(WIN_HAND!==S.hand)cls.push('fresh');}
   if(p.shown)cls.push('show');
   let cards='';
-  if(p.inHand&&!p.folded&&S.street!=='idle')cards=[0,1].map(k=>cardHTML(p.shown?p.shown[k]:null,'mini')).join('');
+  if(p.inHand&&!p.folded&&S.street!=='idle')cards=[0,1].map(k=>cardHTML(p.shown?p.shown[k]:null,'mini',`m${S.hand}-${i}-${k}`)).join('');
   const tag=!p.inHand||S.street==='idle'?'':i===S.sbPos?'小盲':i===S.bbPos?'大盲':'';
   let act;
   if(S.runout&&S.runout.stage==='vote'&&S.runout.voters.includes(i))act=`<div class="act vote">${S.runout.votes[i]?(S.runout.votes[i]===2?'选：跑两次':'选：跑一次'):'选择中…'}</div>`;
   else if(S.actor===i&&S.deadline&&p.kind==='human')act=`<div class="act">思考中 <span class="cd" data-until="${S.deadline}"></span></div>`;
-  else if(p.bet>0&&!p.shown)act=betHTML(p.bet,p.betChips);
+  else if(p.bet>0&&!p.shown)act=betHTML(p.bet,p.betChips,i);
   else act=`<div class="act">${esc((p.shown?p.handName:p.last)||(p.qBuy?'买入待生效':''))||'&nbsp;'}</div>`;
-  return `<div class="${cls.join(' ')}" style="left:${pos.x.toFixed(2)}%;top:${pos.y.toFixed(2)}%;--phone-x:${pos.mx}%;--phone-y:${pos.my}%">
+  // countdown ring (online: a timed turn); the breathing glow keeps its phase across redraws
+  const ring=S.actor===i&&S.deadline&&p.kind==='human'?`<i class="ring" style="animation-duration:${ACT_MS}ms;animation-delay:-${Math.max(0,ACT_MS-(S.deadline-Date.now()))}ms"></i>`:'';
+  return `<div class="${cls.join(' ')}" style="left:${pos.x.toFixed(2)}%;top:${pos.y.toFixed(2)}%;--phone-x:${pos.mx}%;--phone-y:${pos.my}%;--ph:-${Date.now()%1600}ms">
     <div class="mc">${cards}</div>
     ${bubbleHTML(p)}
-    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}${tag?`<div class="blind" title="${tag}">${tag==='小盲'?'小':'大'}</div>`:''}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}</div><div class="stk">${topChip(p.stack)}${fmt(p.stack)}</div></div>
+    <div class="plate" data-seat="${i}" data-k="p${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${ring}${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}${tag?`<div class="blind" title="${tag}">${tag==='小盲'?'小':'大'}</div>`:''}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}</div><div class="stk">${topChip(p.stack)}<span data-k="s${i}" data-v="${p.stack}">${fmt(p.stack)}</span></div></div>
     ${act}
   </div>`;
 }
 export function renderTable(){
+  const tb=$('table'),before=snap(tb);
+  renderTableInner(tb);
+  playTable(tb,before);
+}
+let RC_AT=0,RC_HAND=-1;   // the result card pops up once per hand and fades on its own
+export function resultCardHTML(){
+  if(S.street!=='done'||!S.msg.length)return '';
+  if(RC_HAND!==S.hand){RC_HAND=S.hand;RC_AT=Date.now();}
+  const age=Date.now()-RC_AT;if(age>3200)return '';
+  const lines=S.msg.slice(0,3).map(names);
+  return `<div class="resultcard" style="--age:-${age}ms" aria-live="polite">${lines[0]}${lines.length>1?`<small>${lines.slice(1).join('<br>')}</small>`:''}</div>`;
+}
+export function renderTableInner(tb){
   const m=mySeat(),seated=m>=0,n=N(),compact=n>7;
   const pos=seatPositions(Math.max(n,1),seated);
-  const tb=$('table');tb.classList.toggle('big',compact);
-  const board=[];for(let k=0;k<5;k++)board.push(cardHTML(S.board[k],'bd'));
+  tb.classList.toggle('big',compact);
+  const board=[];for(let k=0;k<5;k++)board.push(cardHTML(S.board[k],'bd',S.board[k]===undefined?'':`b${S.hand}-${k}`));
   let result='';
   if(S.street==='done'||S.street==='idle')result=names(S.msg[0]||'');
   else if(S.actor>=0&&S.actor!==m&&BETTING.includes(S.street))result=`${esc(seatName(S.seats[S.actor]))} 思考中…`;
@@ -94,15 +112,17 @@ export function renderTable(){
   }
   const R=S.runout,twice=R&&R.times===2&&R.stage!=='vote';
   let board2='';
-  if(twice){const b2=S.board2||R.base;const cs=[];for(let k=0;k<5;k++)cs.push(cardHTML(b2[k],'bd sm'));board2=`<div class="board two"><span class="bl">2</span>${cs.join('')}</div>`;}
+  if(twice){const b2=S.board2||R.base;const cs=[];for(let k=0;k<5;k++)cs.push(cardHTML(b2[k],'bd sm',b2[k]===undefined?'':`b2-${S.hand}-${k}`));board2=`<div class="board two"><span class="bl">2</span>${cs.join('')}</div>`;}
   if(R&&R.stage==='vote')result=`全下！跑几次？<span class="cd" data-until="${R.deadline}"></span>`;
   let seats='';
   for(let k=seated?1:0;k<n;k++){const i=seated?(m+k)%n:k;seats+=seatHTML(i,pos[k],compact);}
+  if(S.street==='done')WIN_HAND=S.hand;
   const me=seated?S.seats[m]:null;
   tb.innerHTML=`<div class="felt"></div>
-    <div class="center${twice?' twice':''}">${twice?'':pilesC(S.potChips,{size:15,max:6})}<div class="pot"><span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b>${fmt(potTotal())}</b></div><div class="board${twice?' one':''}">${twice?'<span class="bl">1</span>':''}${twice?board.join('').replace(/card bd/g,'card bd sm'):board.join('')}</div>${board2}</div>
+    <div class="center${twice?' twice':''}">${potStack(S.potChips)}<div class="pot"><span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b data-k="pot" data-v="${potTotal()}">${fmt(potTotal())}</b></div><div class="board${twice?' one':''}">${twice?'<span class="bl">1</span>':''}${twice?board.join('').replace(/card bd/g,'card bd sm'):board.join('')}</div>${board2}</div>
     <div class="result${S.street==='done'?' done':''}">${result}</div>
-    ${me&&me.bet>0?`<div class="herobet">${betHTML(me.bet,me.betChips)}</div>`:''}
+    ${resultCardHTML()}
+    ${me&&me.bet>0?`<div class="herobet">${betHTML(me.bet,me.betChips,m)}</div>`:''}
     ${seats}
     ${profileHTML()}`;
 }
