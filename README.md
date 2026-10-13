@@ -57,6 +57,9 @@ npm run check        # eslint + 单元测试；import map 没更新也会报错
 
 然后提交、推到 `main`，GitHub Pages 大约一分钟后上线。
 
+推到 `main` 也会自动部署到 Cloudflare：https://verve.meiling-wang0131.workers.dev
+（`.github/workflows/deploy.yml`，需要仓库 Secret `CLOUDFLARE_API_TOKEN`；也可以在 Actions 页面手动运行）
+
 ## 联机需要的 Firebase 字段
 
 座位文档 `rooms/{房间}/seats/{uid}` 由玩家自己写：`name pub join t act buyN cashN tidyN emo seatReq`。

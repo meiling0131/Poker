@@ -1,0 +1,8 @@
+// Cloudflare Worker that serves the site. The deploy workflow copies index.html, css/ and js/ into dist/ first.
+{
+  "name": "verve",
+  "account_id": "99abcf9b0878a8b932cb0fcc9c9b3140",
+  "compatibility_date": "2026-10-06",
+  "workers_dev": true,
+  "assets": { "directory": "./dist" }
+}
