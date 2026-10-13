@@ -10,5 +10,8 @@
     "serve": "python3 -m http.server 8000",
     "sim": "node tools/simulate.js",
     "bench": "node tools/benchmark.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.149.0"
   }
 }

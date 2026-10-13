@@ -62,5 +62,7 @@ export function applyMoney(p){
 export const heroReady=()=>S.mode!=='bots'||S.seats.some(p=>p.kind==='human'&&(p.stack>0||p.qBuy>0));
 export function eligibleCount(){return S.seats.filter(p=>p.kind==='bot'||p.stack>0||p.qBuy>0).length;}
 export const mySeat=()=>S?S.seats.findIndex(p=>p.uid===M.me):-1;
+// the room's owner (房主): the browser running the game, or with the server, the player who opened it
+export const isOwner=()=>M.host||(!!M.server&&!!S&&S.ownerUid===M.me);
 // my turn = I'm the actor and I still owe an action (guards the pause after a round closes)
 export function myTurn(){const m=mySeat(),p=S.seats[m];return m>=0&&S.actor===m&&BETTING.includes(S.street)&&canAct(p)&&(!p.acted||p.bet<S.currentBet);}

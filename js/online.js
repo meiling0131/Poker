@@ -65,7 +65,7 @@ export function onSeatDocs(snap){
   let changed=false;
   S.names=S.names||{};
   for(const u in SEATDOCS){const nm=String(SEATDOCS[u].name||'').replace(/\s+/g,' ').trim().slice(0,16);if(nm&&S.names[u]!==nm){S.names[u]=nm;changed=true;}}
-  S.seats.forEach(p=>{
+  S.seats.slice().forEach(p=>{
     const d=SEATDOCS[p.uid],stay=!!(d&&d.join)&&!isKicked(p.uid);
     if(p.leaving===stay){p.leaving=!stay;changed=true;}
     if(syncDoc(p))changed=true;
@@ -137,6 +137,10 @@ export async function loadKeys(){
   return k;
 }
 export async function decryptMine(){
+  if(M.server){ // the server sends my own two cards with the table
+    if(S&&S.mine&&S.mine.h===S.hand&&MYHOLE.hand!==S.hand){setMYHOLE({hand:S.hand,c:S.mine.c});view.render();}
+    return;
+  }
   if(!S||!M.keys||!S.hostPub)return;
   const box=S.enc&&S.enc[M.me];
   if(!box||MYHOLE.hand===S.hand)return;
@@ -151,7 +155,7 @@ export async function startOnline(){
   M.keys=M.keys||await loadKeys();
   if(g!==SESSION)return;
   let t0=null;try{const s0=await tableRef.get();if(s0.exists)t0=s0.data();}catch(e){}
-  M.owner=t0?t0.hostUid===M.uid:M.creating;
+  M.owner=M.server?false:(t0?t0.hostUid===M.uid:M.creating);   // with the server, no browser runs the game
   if(g!==SESSION)return;
   setmyRef(M.db.doc(`rooms/${R}/seats/${M.uid}`));
   try{const ms=await myRef.get();if(!ms.exists)await myRef.set({name:M.nick,join:false,t:Date.now(),act:null,buyN:0,cashN:0,pub:M.keys.pub});else if(ms.data().name!==M.nick)await myRef.update({name:M.nick});}catch(e){console.warn(e);}

@@ -6,14 +6,14 @@ import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {heroResult} from '../fx.js';
 import {PLAY_MODE,SHOW_HAND,dailyAllowance} from '../settings.js';
 import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SUBMITTED,VOTED,setPUSH,setPUSH_TURN,view} from '../state.js';
-import {bookKey,canAct,handLive,isKicked,lockedIn,maxRaiseTo,mySeat,myTurn,names,netOf} from '../table.js';
+import {bookKey,canAct,handLive,isKicked,isOwner,lockedIn,maxRaiseTo,mySeat,myTurn,names,netOf} from '../table.js';
 import {EMOJIS,EMO_OPEN,avatarOf} from '../talk.js';
 import {miniStack,miniStackC,pilesC} from './chips-view.js';
 import {bubbleHTML,cardHTML,myHoleCards,seatName} from './table-view.js';
 import {$,esc,fmt,sgn} from '../util.js';
 
 export function hostRequestsHTML(){
-  if(!M.host||!S||S.mode!=='online')return '';
+  if(!isOwner()||!S||S.mode!=='online')return '';
   const asks=S.seats.filter(p=>p.askB>0),seatAsks=S.seats.filter(p=>p.askSeat);
   if(!asks.length&&!seatAsks.length)return '';
   const other=uid=>{const q=S.seats.find(x=>x.uid===uid);return q?esc(seatName(q)):'玩家';};
