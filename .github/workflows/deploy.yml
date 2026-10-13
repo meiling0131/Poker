@@ -20,7 +20,7 @@ jobs:
           node-version: 22
       - run: npx -y eslint@10 .
       - run: npm test
-      - run: mkdir dist && cp -r index.html css js dist/
+      - run: mkdir dist && cp -r index.html css js manifest.webmanifest icons dist/
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -3,7 +3,7 @@ const browser = Object.fromEntries([
   'window', 'document', 'navigator', 'localStorage', 'sessionStorage', 'location', 'history', 'console',
   'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'crypto', 'btoa', 'atob', 'getSelection',
   'TextEncoder', 'TextDecoder', 'Uint8Array', 'Uint32Array', 'URLSearchParams', 'matchMedia', 'AudioContext',
-  'URL', 'WebSocket', 'fetch',
+  'URL', 'WebSocket', 'fetch', 'performance', 'requestAnimationFrame',
 ].map(n => [n, 'readonly']));
 const node = Object.fromEntries(['process', 'URL', 'structuredClone', 'Request', 'setImmediate'].map(n => [n, 'readonly']));
 const worker = Object.fromEntries(['WebSocketPair', 'Response', 'URL', 'console', 'setTimeout', 'clearTimeout', 'crypto'].map(n => [n, 'readonly']));

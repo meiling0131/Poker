@@ -20,3 +20,8 @@ export function pilesC(c,{size=16,max=6,cls=''}={}){
 }
 export function miniStackC(c){const list=[];for(const d of DV){for(let k=0;k<Math.min((c&&c[d])||0,2)&&list.length<3;k++)list.push(CCLS[d]);}return `<span class="stackchips">${list.map(x=>chipEl(x)).join('')}</span>`;}
 export function topChip(amount){for(const [v,c] of DENOMS)if(amount>=v)return chipEl(c);return '';}
+// the pot seen from the side (phones, where the face-on piles have no room): a column of discs per denomination
+export function potStack(c){
+  const cols=DV.filter(d=>c&&c[d]>0);
+  return `<span class="potstack" aria-hidden="true">${cols.map(d=>`<span class="pcol ${CCLS[d]}">${'<i class="disc"></i>'.repeat(Math.min(c[d],8))}</span>`).join('')}</span>`;
+}
