@@ -159,6 +159,7 @@ export async function startOnline(){
   if(g!==SESSION)return;
   setmyRef(M.db.doc(`rooms/${R}/seats/${M.uid}`));
   try{const ms=await myRef.get();if(!ms.exists)await myRef.set({name:M.nick,join:false,t:Date.now(),act:null,buyN:0,cashN:0,pub:M.keys.pub});else if(ms.data().name!==M.nick)await myRef.update({name:M.nick});}catch(e){console.warn(e);}
+  if(g!==SESSION)return;   // turned away by the server while we waited
   UNSUBS.push(myRef.onSnapshot(s=>{if(g!==SESSION)return;setMYDOC(s.exists?s.data():null);if(M.mode)view.render();},()=>{}));
   if(M.owner){
     M.host=true;

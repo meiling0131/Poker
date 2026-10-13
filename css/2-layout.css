@@ -105,17 +105,6 @@ h1{text-overflow:ellipsis}
 .seat.show .mc .card{box-shadow:0 2px 6px rgba(0,0,0,.6)}
 /* standalone page skeleton */
 [hidden]{display:none!important}
-/* online room form */
-.mode.online{grid-template-columns:1fr;grid-template-areas:"k" "t" "d" "f";cursor:default}
-.mode.online:hover{border-color:var(--line)}
-.mode.disabled{opacity:.55}
-.mode .form{grid-area:f;display:grid;align-items:center;margin-top:10px}
-.mode .form label{font-size:12px;color:var(--mute)}
-.mode .form input{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;color:var(--cream);font:500 16px var(--body);padding:9px 10px;min-width:0}
-.mode .form input#roomIn{font-family:var(--num);letter-spacing:.12em;text-transform:uppercase}
-.mode .form input:focus{outline:2px solid var(--brass);outline-offset:1px}
-.formbtns{grid-column:1/-1;display:flex;gap:8px;margin-top:8px}
-.formbtns .btn{min-height:44px;font-size:14px}
 .invite{display:flex;gap:8px;align-items:center;min-width:0}
 .invite code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font:500 12px var(--num);color:var(--cream);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;user-select:all;-webkit-user-select:all}
 .roomcode{font:600 12px var(--num);color:var(--brass);letter-spacing:.1em}

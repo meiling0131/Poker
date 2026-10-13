@@ -63,28 +63,12 @@ body[data-view="table"] .wrap{height:auto;min-height:calc(100dvh - 42px)}
 .cashier .lbl{text-align:center}
 .cbtn{background:#12362880;border-color:#dce4cb2b}
 #records{width:min(800px,100%);align-self:center;padding:20px 0}
-#menu{width:min(820px,100%);align-self:center;padding:40px 0;gap:18px;grid-template-columns:1fr 1fr}
-.lobby-intro{grid-column:1/-1;text-align:center;padding:12px 0 28px}
-.lobby-intro .eyebrow{font:500 11px var(--num);letter-spacing:.28em;color:var(--brass)}
-.lobby-intro h2{font-size:clamp(30px,5vw,48px);font-weight:500;letter-spacing:.06em;margin:18px 0 12px}
-.lobby-intro p{color:var(--mute);font-size:14px;margin:0}
-.lobby-chips{display:flex;justify-content:center;gap:12px;margin:28px 0 0}
-.lobby-chips .chip-d{--cs:30px;box-shadow:0 5px 0 #0004,0 10px 15px #0003}
-.mode{padding:26px;border:1px solid #c8b38230;border-radius:20px;background:linear-gradient(145deg,#26392f,#17251e);grid-template-areas:"k" "t" "d" "go";grid-template-columns:1fr;gap:12px;align-content:start}
-.mode .mk{font-family:var(--body);font-size:25px;font-weight:600}
-.mode .md{font-size:13px;line-height:1.8}
-.mode .go{text-align:center;padding:13px}
-.mode.online{background:linear-gradient(145deg,#26362d,#1b241f)}
-.mode .form{grid-template-columns:1fr;gap:8px}
-.mode .form input{min-height:46px}
-.why{grid-column:1/-1}
 @media(min-width:1500px){.wrap{max-width:1400px}}
 @media(max-width:700px){.wrap{gap:8px}h1{font-size:18px}
  .table,.table.big{flex-basis:305px;height:auto;max-height:none}
  .seat,.plate{width:72px}.plate{padding:4px 3px;border-radius:8px}.nm{font-size:11px}.stk{font-size:12px}.mc{height:34px}.mc .card{--w:25px;--h:34px}.seat.compact,.seat.compact .plate{width:62px}
  .center{top:43%;gap:9px}.pot{font-size:11px}.pot b{font-size:19px}.board{gap:4px}.card.bd{--w:clamp(34px,10vw,46px);--h:calc(var(--w)*1.38)}.card.bd .r{font-size:21px}.card.bd .s{font-size:16px}.card.bd.sm{--w:32px;--h:44px}
  .result{top:77%;font-size:11px;width:200px}.hero{padding:6px 12px 0;gap:8px}.rail,.rail.live{padding:0;gap:10px}.tw{height:56px}.hero .me .card.big .r{font-size:22px}.hero .me .card.big .s{font-size:17px}.info .money b{font-size:21px}.btn{min-height:48px}
- #menu{grid-template-columns:1fr;padding:20px 8px}.lobby-intro{padding:12px 0 18px}.mode{padding:22px}.mode .form{grid-template-columns:auto 1fr}.mode .mk{font-size:22px}
 }
 @media(max-width:380px){.top .row{flex-wrap:wrap}.table,.table.big{min-height:300px}.hero{padding-inline:6px}.rail,.rail.live{gap:4px}}
 @media(prefers-reduced-motion:reduce){.tower,.btn{transition:none}}
@@ -208,15 +192,7 @@ html{background:#141a19}
 .face .chip-d::before{transform:scaleY(1.45)}
 .hintToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--text)}
 .hintToggle input{width:36px;height:20px;accent-color:var(--brass);cursor:pointer}
-.lobby-options{grid-column:1/-1;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#263630;border:1px solid #c8b38230;padding:18px;border-radius:16px}
-.lobby-options>div{flex:1 1 220px}
-.lobby-options strong{font-size:14px}
-.lobby-options>div span{display:block;font-size:11px;color:var(--mute);margin-top:5px}
-.lobby-options>label:not(.hintToggle){display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
-.lobby-options input[type=number]{width:64px;font:600 16px var(--num);color:var(--cream);background:#172820;border:1px solid #627568;border-radius:8px;padding:8px}
-#menu .mode.online{grid-column:1/-1}
-#lobbyError:empty{display:none}
-@media(max-width:700px){.hero .info .hand{display:inline;font-size:9px;line-height:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lobby-options{gap:12px;padding:15px}.lobby-options>.hintToggle{flex-basis:100%}}
+@media(max-width:700px){.hero .info .hand{display:inline;font-size:9px;line-height:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 /* Minimal card back: flat ink blue, ivory keyline, a single centre mark. */
 .card.back{background:#344e65}
 .card.back::after{inset:3px;border:1px solid #ede8da60;border-radius:2px}

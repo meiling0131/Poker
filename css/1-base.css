@@ -140,14 +140,5 @@ body[data-view="records"] #game,body[data-view="records"] #menu{display:none}
 .linkbtn{background:none;border:0;padding:0;color:var(--mute);font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;align-self:center}
 .linkbtn.inline{margin-left:6px}
 .info .row1 .hand{font-size:13px;color:var(--win)}
-#menu{display:grid;padding-block:8px}
-.mode{display:grid;text-align:left;border-left:3px solid var(--brass);color:var(--text);font:inherit;cursor:pointer}
-.mode:hover:not(:disabled){border-color:var(--brass)}
-.mode:disabled{opacity:.5;cursor:default;border-left-color:var(--line)}
-.mode .mk{grid-area:k;color:var(--cream)}
-.mode .mt{grid-area:t;font-size:13px;color:var(--brass)}
-.mode .md{grid-area:d;color:var(--mute);margin-top:6px;max-width:60ch;margin:0}
-.mode .go{grid-area:go;align-self:center;background:var(--brass);color:var(--brass-ink);font-weight:600;border-radius:8px;font-size:14px;margin-top:14px}
-.mode:disabled .go{background:var(--line);color:var(--mute)}
 .why{font-size:12px;color:var(--mute);margin:0}
 .off{color:var(--mute);font-size:11px}
