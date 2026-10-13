@@ -1,7 +1,7 @@
 // Game constants and the Firebase project config.
 
 // Verve server for online rooms (wss/https URL of the Cloudflare Worker). Empty = rooms use Firebase.
-export const SERVER_URL='https://verve.meiling-wang0131.workers.dev';
+export const SERVER_URL='https://verve.vpoker.workers.dev';
 /* Firebase 配置：把 Firebase 控制台「项目设置 → 你的应用 → SDK 设置和配置」
    里给你的 firebaseConfig 整段贴在这里。 */
 export const FIREBASE_CONFIG={

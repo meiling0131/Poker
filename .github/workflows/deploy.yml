@@ -1,4 +1,4 @@
-# Every push to main: lint + tests, then deploy to Cloudflare (https://verve.meiling-wang0131.workers.dev).
+# Every push to main: lint + tests, then deploy to Cloudflare (https://verve.vpoker.workers.dev).
 name: Deploy to Cloudflare
 
 on:
