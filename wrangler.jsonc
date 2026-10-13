@@ -1,6 +1,7 @@
 // One Cloudflare Worker serves both the site and the Verve server:
 //   static files from dist/ (the deploy workflow copies index.html, css/ and js/ there first)
 //   /room/<CODE>  WebSocket to that room's Durable Object (server/worker.js)
+//   /rooms        the room list, kept by the Lobby Durable Object (server/lobby.js)
 // Deploy: push to main (.github/workflows/deploy.yml)
 {
   "name": "verve",
@@ -9,6 +10,6 @@
   "compatibility_date": "2026-10-06",
   "workers_dev": true,
   "assets": { "directory": "./dist" },
-  "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "Room" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
+  "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "Room" }, { "name": "LOBBY", "class_name": "Lobby" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }]
 }

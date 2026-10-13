@@ -24,6 +24,8 @@ export let LOCAL_B=0,LOCAL_C=0;      // my buy / cash-out counters, written to m
 export let tableRef=null,secretRef=null,myRef=null,recRef=null;
 
 // ---- local UI ----
+// lobby: rooms from the server, the room row opened to join, the room being created (waiting for its password)
+export const LOBBY={rooms:null,open:null,confirm:null};
 export let FLASH='';                 // one-line message under the controls
 export let VIEW='table';             // 'table' | 'records'
 export let CONFIRM_RESET=false;      // 重置牌桌 waits for a second tap

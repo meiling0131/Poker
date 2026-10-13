@@ -39,7 +39,8 @@ js/
                     依赖方向只有一个：ui/ 用游戏逻辑，游戏逻辑不引用 ui/（重画走 state.js 的 view）
 server/             Verve 服务器（Cloudflare Worker + 每个房间一个 Durable Object）
   worker.js         入口：/room/<房间号> 转给这个房间的 Durable Object
-  room.js           房间：用 js/engine.js 发牌和推进牌局，存进 Durable Object 存储，按人推送
+  room.js           房间：用 js/engine.js 发牌和推进牌局，存进 Durable Object 存储，按人推送；房间密码
+  lobby.js          房间列表：有人连着的房间都报到这里，主页顶上显示
 wrangler.jsonc      Cloudflare 部署配置：一个 Worker 同时放网页和 Verve 服务器
 tests/              node:test 单元测试
 tools/stamp.js      按文件内容给每个模块加版本号，防止更新时新旧文件混用
@@ -87,7 +88,12 @@ npx wrangler dev                 # 本地网页 + 服务器 http://127.0.0.1:878
 （`https://verve.meiling-wang0131.workers.dev`），所有人都走服务器；留空则还是 Firebase。
 也可以在网址后加 `?server=<地址>` 临时切换（会记在浏览器里）。
 
-协议：`wss://<服务器>/room/<房间号>?uid=…&token=…`（建房再加 `&create=1&sb=1&bb=2`）。
+协议：`wss://<服务器>/room/<房间号>?uid=…&token=…`（建房再加 `&create=1&sb=1&bb=2`，有密码再加 `&pw=…`）。
+房间号 3–8 位字母数字，建房时自己填，不填就随机。密码在浏览器里先算成 SHA-256（`verve:<房间号>:<密码>`）再发，
+服务器只存这个值；每个 uid 只在第一次进房时要密码，之后凭 token 直接进。
+进不去时服务器先发 `{t:'error',code}` 再断开：`password`（没密码或密码不对）、`taken`（房间号被别人占着）、
+`noroom`（没有这个房间）、`identity`（uid 的 token 对不上）。房间没人连着超过 12 小时，别人才能用同一个房间号重新建。
+`GET /rooms` 返回现在有人在的房间：`[{code,n,online,pw,sb,bb,host}]`（n 入座人数，online 在线人数，pw 有没有密码）。
 服务器发 `{t:'table',S}`（S 里带 `mine`：你自己的两张牌）和 `{t:'seat',doc}`；
 客户端发 `{t:'seat',op:'set'|'update',data}`（字段同上面的座位文档）和房主命令 `{t:'cmd',name,args}`
 （approve / swap / kick / unkick / restart）。uid 第一次连上时绑定 token，别人冒用会被拒绝。
