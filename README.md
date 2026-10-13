@@ -50,6 +50,7 @@
 - The lobby lists the rooms people are in right now. Tap one, enter a name (and the password, if it has one) and you're in.
 - The **Verve server** (on Cloudflare) deals every hand. Each player's hole cards are sent only to that player; no one else's browser, not even the host's, ever has them. The host can lock their phone or leave and the game carries on.
 - The host approves buy-ins, can remove players, swap seats and reset the table.
+- **Fair shuffling:** a fresh 52-card deck every hand, shuffled with an unbiased Fisher–Yates driven by `crypto.getRandomValues`. Bots games are shuffled and dealt in your browser; online rooms on the Verve server. A player has 45 seconds to act, then checks or folds automatically.
 
 **At the table**
 
@@ -88,22 +89,21 @@ css/                styles, loaded in numeric order; later files override earlie
   6-lobby.css       lobby: floors beside the title, stakes, mode cards, button colours
   7-table.css       table layout (one screen, cards scale with the table) and the animations
 js/
-  main.js           entry: connect to the server (or Firebase), restore the last mode
-  config.js         constants and Firebase config
+  main.js           entry: connect to the Verve server, restore the last mode
+  config.js         constants and the server address
   util.js           small helpers ($, fmt, esc, store…)
   settings.js       stakes, normal/practice, hand hints, daily allowance
   state.js          shared runtime state, written through setX(); views register redraws on `view`
   cards.js          cards, shuffling, hand ranking, equity        ← pure logic, tested
   chips.js          chips: exact payment, change, tidying         ← pure logic, tested
   pots.js           main and side pots                            ← pure logic, tested
-  crypto.js         hole-card encryption for Firebase rooms (ECDH + AES-GCM)
   table.js          queries and small operations on the table state
   engine.js         the dealer: dealing, betting rounds, all-in runouts, showdown
   bots.js           bot strategy
   stats.js          your stats
   talk.js           avatars, bot lines, emoji
   fx.js             confetti, your-turn sound, keep the screen awake
-  online.js         online sync: room, seat and records documents; approvals and removals
+  online.js         online play: your seat doc, following the table; on the server, seat docs, approvals, removals
   net.js            Verve server client: a WebSocket behind the same doc/onSnapshot interface
   actions.js        your actions: confirm, bet presets, pre-actions, buy in / cash out / tidy
   seats.js          seat swaps: direct against bots, by request online
@@ -144,7 +144,7 @@ Then push to `main`. GitHub Pages updates in about a minute, and `.github/workfl
 
 ### Verve server
 
-`SERVER_URL` in `js/config.js` is the server everyone uses. Leave it empty to fall back to Firebase. `?server=<url>` switches for one browser (remembered).
+A page served by the Worker connects to its own address. Other copies (GitHub Pages) use `SERVER_URL` in `js/config.js`; with it empty, only bots games are offered. `?server=<url>` switches for one browser (remembered).
 
 - **Connect:** `wss://<server>/room/<code>?uid=…&token=…`. Creating a room adds `&create=1&sb=1&bb=2`, plus `&pw=…` for a password.
 - **Room codes** are 3–8 letters or digits, chosen by the creator (random when left blank).
@@ -152,8 +152,4 @@ Then push to `main`. GitHub Pages updates in about a minute, and `.github/workfl
 - **Refusals:** the server sends `{t:'error',code}` and hangs up. The codes are `password` (missing or wrong), `taken` (someone else's room), `noroom` and `identity` (the uid's token doesn't match). A code frees up after its room has been empty for 12 hours.
 - **Room list:** `GET /rooms` returns `[{code,n,online,pw,sb,bb,host}]`, where `n` is seated players, `online` is connected players and `pw` says whether there's a password.
 - **Server → client:** `{t:'table',S}` (with `S.mine`, your own two cards) and `{t:'seat',doc}`.
-- **Client → server:** `{t:'seat',op:'set'|'update',data}` and the host's `{t:'cmd',name,args}`, where name is approve / swap / kick / unkick / restart.
-
-### Firebase rooms (when `SERVER_URL` is empty)
-
-Each player writes their own seat document `rooms/{room}/seats/{uid}`: `name pub join t act buyN cashN tidyN emo seatReq`. The host writes the room document `rooms/{room}` and the records document `rooms/{room}/meta/records`, and everyone in the room reads them.
+- **Client → server:** `{t:'seat',op:'set'|'update',data}` (seat doc fields: `name join t act buyN cashN tidyN emo seatReq`) and the host's `{t:'cmd',name,args}`, where name is approve / swap / kick / unkick / restart.

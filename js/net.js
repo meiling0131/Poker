@@ -1,9 +1,7 @@
 // Online play through the Verve server (Cloudflare, one Durable Object per room, see server/).
-// It presents the small slice of the Firestore API that the online code uses, so the rest of the
-// client stays the same:
+// The online code talks to the room as two documents with get / set / update / onSnapshot:
 //   rooms/R                 the table, pushed by the server (read-only here)
 //   rooms/R/seats/<uid>     my seat doc: my writes go to the server, which runs the game
-//   users/<uid>/private/*   kept in this browser (the server deals, so no hole-card encryption)
 // Owner commands (approve a buy-in, remove a player, reset) go through serverCmd().
 import {SERVER_URL} from './config.js';
 import {BB,SB} from './settings.js';
@@ -11,7 +9,7 @@ import {M} from './state.js';
 import {store} from './util.js';
 
 // where the server is: ?server=… (remembered); else the page's own origin when the Worker served it
-// (so a renamed workers.dev address keeps working); else the configured SERVER_URL; '' = use Firebase
+// (so a renamed workers.dev address keeps working); else the configured SERVER_URL; '' = no online play
 export function serverUrl(){
   try{const q=new URLSearchParams(location.search).get('server');if(q!==null)store.set('poker.server',q);}catch(e){}
   let self='';try{if(/\.workers\.dev$/.test(location.hostname))self=location.origin;}catch(e){}
@@ -76,13 +74,11 @@ export function serverDb(base,id){
   const done=()=>{if(!tableSubs.size&&!seatSubs.size)close();};
   function doc(path){
     const p=path.split('/');
-    if(p[0]==='users')return {get:async()=>snap(JSON.parse(store.get('poker.k.'+path)||'null')),set:async v=>store.set('poker.k.'+path,JSON.stringify(v))};
     const R=p[1];
     if(p.length===2)return {
       get:async()=>{connect(R);await wait(()=>gotTable);return snap(table);},
       onSnapshot:f=>{connect(R);tableSubs.add(f);if(gotTable)f(snap(table));return ()=>{tableSubs.delete(f);done();};},
     };
-    if(p[2]==='meta')return {get:async()=>snap(null),set:async()=>{},onSnapshot:()=>()=>{}}; // records come inside the table
     return {
       get:async()=>{connect(R);await wait(()=>gotSeat);return snap(mySeat);},
       set:async v=>{mySeat=clone(v);send({t:'seat',op:'set',data:v});for(const f of seatSubs)f(snap(mySeat));},

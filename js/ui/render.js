@@ -1,6 +1,5 @@
 // Top-level render and the 1-second ticker.
 import {PENDING_ACTION,cancelAction,pendingIsCurrent,runPre} from '../actions.js';
-import {BETTING} from '../config.js';
 import {celebrate,keepAwake,turnAlert} from '../fx.js';
 import {adoptStake} from '../settings.js';
 import {FLASH,M,S,VIEW,view} from '../state.js';
@@ -32,12 +31,6 @@ export function tick(){
   document.querySelectorAll('[data-bubble-until]').forEach(e=>{if(+e.dataset.bubbleUntil<Date.now())e.remove();});
   const day=localDay();if(day!==DISPLAY_DAY){DISPLAY_DAY=day;render();return;}
   document.querySelectorAll('[data-until]').forEach(e=>{const s=Math.max(0,Math.ceil((+e.dataset.until-Date.now())/1000));e.textContent=s+'s';});
-  const away=$('away');
-  if(S&&M.mode==='online'&&!M.host&&!M.server){
-    const stale=Date.now()-(S.updated||0)>20000;
-    const ownerTurn=BETTING.includes(S.street)&&S.seats[S.actor]&&S.seats[S.actor].uid===S.ownerUid;
-    away.hidden=!(stale&&!ownerTurn&&S.street!=='idle');
-  }else away.hidden=true;
 }
 setInterval(tick,1000);
 view.render=render;

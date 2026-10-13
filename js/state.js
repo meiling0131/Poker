@@ -2,7 +2,7 @@
 
 // ---- session ----
 // M.mode: null (menu) | 'bots' | 'online'
-export const M={room:null,creating:false,nick:'',fbError:null,mode:null,db:null,user:null,uid:null,me:null,owner:false,host:false,online:false,ready:false,canWrite:null,keys:null,booted:false};
+export const M={room:null,creating:false,nick:'',mode:null,db:null,uid:null,me:null,host:false,online:false,server:false,ready:false,booted:false};
 export let SESSION=0;      // bumped on every mode switch; async work from an older session drops its result
 export let GEN=0;          // bumped when the table restarts; timers from an older generation do nothing
 export let UNSUBS=[];      // Firestore listeners to detach on the next mode switch
@@ -21,7 +21,7 @@ export let MYHOLE={hand:-1,c:null};  // my decrypted hole cards
 export let MYDOC=null;               // my own seat doc
 export let SUBMITTED=-1;             // turn number of the action I sent and the host has not applied yet
 export let LOCAL_B=0,LOCAL_C=0;      // my buy / cash-out counters, written to my seat doc
-export let tableRef=null,secretRef=null,myRef=null,recRef=null;
+export let tableRef=null,myRef=null;
 
 // ---- local UI ----
 // lobby: rooms from the server, the room row opened to join, the room being created (waiting for its password)
@@ -59,7 +59,5 @@ export function setUNSUBS(v){UNSUBS=v;}
 export function setVIEW(v){VIEW=v;}
 export function setVOTED(v){VOTED=v;}
 export function setmyRef(v){myRef=v;}
-export function setrecRef(v){recRef=v;}
-export function setsecretRef(v){secretRef=v;}
 export function settableRef(v){tableRef=v;}
 export function setPROFILE(v){PROFILE=v;}

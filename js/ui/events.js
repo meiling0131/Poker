@@ -51,7 +51,6 @@ document.addEventListener('click',e=>{
       if(!readStakeForm())return;
       const room=typed?code:newRoomCode();
       if(room.length<3){setFLASH('房间号要 3–8 位字母或数字。');renderMenu();return;}
-      if(!M.server){enterOnline(room,true);return;}   // Firebase rooms have no password
       LOBBY.open=null;LOBBY.confirm={code:room,typed:!!typed};renderMenu();$('cpPw')&&$('cpPw').focus();return;
     }
     if(!code){setFLASH('填一下房间号，或者新开一个房间');renderMenu();return;}

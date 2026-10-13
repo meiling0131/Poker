@@ -43,7 +43,7 @@ export function renderRecords(){
   const people=S.mode==='online'?`<section class="panel"><h2>玩家 <span>${S.seats.length} 在座${(S.pending||[]).length?` · ${S.pending.length} 排队`:''} · 上限 10</span></h2>
       <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}${p.leaving?' · 离座中':''}${isOwner()&&p.uid!==M.me&&!isKicked(p.uid)?kickBtn(p.uid):''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队${isOwner()?kickBtn(u):''}</span>`).join('')||''}</div>
       ${isOwner()&&S.kicked&&Object.keys(S.kicked).length?`<div class="people">${Object.keys(S.kicked).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 已请出<button class="kick" data-unkick="${esc(u)}">允许回来</button></span>`).join('')}</div>`:''}
-      <p>${M.server?(isOwner()?'你是房主。发牌在 Verve 服务器上进行，你离开或锁屏都不影响牌局。':'发牌在 Verve 服务器上进行。你的底牌只发给你，别人（包括房主）都看不到。'):M.host?'你是房主：发牌在你这个页面上进行，页面关掉牌局就暂停。':'发牌由房主的页面负责。你的底牌只发给你，用你浏览器里的密钥加密。'}</p></section>`:'';
+      <p>${isOwner()?'你是房主。发牌在 Verve 服务器上进行，你离开或锁屏都不影响牌局。':'发牌在 Verve 服务器上进行。你的底牌只发给你，别人（包括房主）都看不到。'}</p></section>`:'';
   el.innerHTML=`${statsHTML()}${invite}${people}
     <section class="panel"><h2>账本 <span>一手 200 · 白10 红6 蓝6 绿4</span></h2>
       <div class="scroll"><table class="book"><thead><tr><th>玩家</th><th>买入</th><th>退出</th><th>桌上</th><th>盈亏</th></tr></thead><tbody>${rows||'<tr><td colspan="5">还没有人买入。</td></tr>'}</tbody>
@@ -52,5 +52,5 @@ export function renderRecords(){
       ${S.ledger.length?`<ol class="rec">${S.ledger.map(r=>`<li><time>${tm(r.t)}</time><span class="k">${esc(nameOfKey(r.k))}</span><span class="${r.kind==='buy'?'buy':'cash'}">${r.kind==='buy'?'买一手':r.kind==='cash'?'退一手':'离桌带走'} ${fmt(r.amt)}</span></li>`).join('')}</ol>`:'<p>还没有买入或退出记录。</p>'}</section>
     <section class="panel"><h2>牌局记录 <span>最近 ${S.log.length} 条</span></h2>
       <ol class="lg">${S.log.map(l=>`<li class="${l.cls}">${names(l.t)}</li>`).join('')}</ol></section>
-    <p class="note">洗牌用 crypto.getRandomValues 做无偏 Fisher–Yates，每手重洗一副 52 张。联机局里每位玩家的底牌用 ECDH + AES-GCM 单独加密，只有本人浏览器能解开；牌是在房主的页面上洗和发的。轮到真人时限 45 秒，超时自动过牌或弃牌。</p>`;
+    <p class="note">洗牌用 crypto.getRandomValues 做无偏 Fisher–Yates，每手重洗一副 52 张。人机局在你的浏览器里洗牌发牌；联机局由 Verve 服务器（Cloudflare）洗牌发牌，每位玩家的底牌经加密连接只发给本人，其他人（包括房主）的浏览器里都没有，摊牌时才亮出来。轮到真人时限 45 秒，超时自动过牌或弃牌。</p>`;
 }

@@ -1,10 +1,10 @@
-// Host engine: dealing, betting rounds, run-outs, showdown and payouts.
+// The dealer: dealing, betting rounds, run-outs, showdown and payouts. Runs in your browser for bots
+// games and on the Verve server for online rooms (M.host in both).
 import {botDecide} from './bots.js';
 import {best7,cardTxt,handName,randInt,shuffledDeck} from './cards.js';
 import {BUY_CHIPS,Z,cadd,giveFromPot} from './chips.js';
 import {ACT_MS,BETTING,BOTS_WAIT,BOT_STYLE,BUY,CARD_MS,DEAL_MS,FLOP_MS,NEXT_MS,ONLINE_MAX,STREET_CN} from './config.js';
-import {seal} from './crypto.js';
-import {commit,saveSecret,syncDoc} from './online.js';
+import {commit,syncDoc} from './online.js';
 import {BB,SB} from './settings.js';
 import {DECK,GEN,H,M,S,SEATDOCS,SPEED,TT,setDECK,setGEN,setH,setS,setTT} from './state.js';
 import {loadMyStats,recordStats} from './stats.js';
@@ -21,8 +21,8 @@ export function maybeStart(){
 
 export function baseTable(mode){
   return {v:6,mode,stakes:{sb:SB,bb:BB},raises:0,potChips:Z(),board2:null,runout:null,hand:0,started:false,street:'idle',dealer:-1,dealerKey:null,sbPos:-1,bbPos:-1,board:[],currentBet:0,minRaise:BB,fullRaiseId:0,
-    actor:-1,turn:(S&&S.turn||0)+1,deadline:0,nextAt:0,updated:0,msg:[],log:[],enc:{},pending:[],book:{},ledger:[],
-    ownerUid:M.mode==='online'?M.uid:null,hostUid:M.mode==='online'?M.uid:null,room:M.room,names:{},hostPub:M.keys?M.keys.pub:null,seats:[]};
+    actor:-1,turn:(S&&S.turn||0)+1,deadline:0,nextAt:0,updated:0,msg:[],log:[],pending:[],book:{},ledger:[],
+    ownerUid:M.mode==='online'?M.uid:null,hostUid:M.mode==='online'?M.uid:null,room:M.room,names:{},seats:[]};
 }
 export function newBotsTable(){
   setS(baseTable('bots'));
@@ -46,7 +46,7 @@ export function applySeatChanges(){ // online only; never during a live hand
     else keep.push(p);
   });
   S.seats=keep;
-  const pend=Object.keys(SEATDOCS).filter(u=>SEATDOCS[u].join&&SEATDOCS[u].pub&&(Number(SEATDOCS[u].buyN)||0)>0&&!isKicked(u)&&!S.seats.some(p=>p.uid===u))
+  const pend=Object.keys(SEATDOCS).filter(u=>SEATDOCS[u].join&&(Number(SEATDOCS[u].buyN)||0)>0&&!isKicked(u)&&!S.seats.some(p=>p.uid===u))
     .sort((a,b)=>(SEATDOCS[a].t||0)-(SEATDOCS[b].t||0));
   for(const u of pend){
     if(S.seats.length>=ONLINE_MAX)break;
@@ -69,7 +69,6 @@ export async function startHand(){
 }
 export async function startHandInner(){
   setGEN(GEN+1);clearTimeout(TT);
-  const g=GEN;
   const prevDealerIdx=S.dealer;
   S.street='idle';S.actor=-1;S.deadline=0;S.nextAt=0;
   applySeatChanges();
@@ -79,7 +78,7 @@ export async function startHandInner(){
       const n=BOT_STYLE[p.name]?.type==='whale'?2:1;p.stack+=BUY*n;p.chips=Z();for(let k=0;k<n;k++)cadd(p.chips,BUY_CHIPS());
       ledger(p,'buy',BUY*n);if(n>1)botSay(p,'rebuy',1);}});
   const elig=P.map((p,i)=>i).filter(i=>P[i].stack>0);
-  S.board=[];S.board2=null;S.runout=null;S.pfAgg=-1;S.curAgg=-1;S.prevAgg=-1;S.potChips=Z();S.msg=[];S.enc={};
+  S.board=[];S.board2=null;S.runout=null;S.pfAgg=-1;S.curAgg=-1;S.prevAgg=-1;S.potChips=Z();S.msg=[];
   P.forEach(p=>{p.inHand=p.stack>0;if(!p.inHand&&p.kind==='human')p.last='未买入';});
   const need=needToStart();
   if(!heroReady()){S.msg=[BOTS_WAIT];S.sbPos=S.bbPos=-1;commit();return;}
@@ -103,16 +102,6 @@ export async function startHandInner(){
   put(bbp,BB);bbp.last=`大盲 ${fmt(bbp.bet)}`;
   S.currentBet=BB;S.minRaise=BB;S.fullRaiseId=0;S.raises=1;S.street='dealing';S.actor=S.bbPos;
   log(`第 ${S.hand} 手 · ${elig.length} 人 · 庄位 ${who(P[S.dealer])}`,'h');
-  if(S.mode==='online'&&!M.server){ // with the Verve server, it deals each player their cards itself
-    S.hostPub=M.keys.pub;
-    for(let i=0;i<n;i++){const p=P[i];
-      if(isRemote(p)&&p.inHand){const d=SEATDOCS[p.uid];
-        if(d&&d.pub){try{S.enc[p.uid]=await seal(M.keys.priv,d.pub,{h:S.hand,c:H[i]});}catch(e){console.warn(e);}}
-        else p.leaving=true;
-      }}
-    if(g!==GEN)return;
-    saveSecret();
-  }
   S.street='preflop';S.animUntil=Date.now()+DEAL_MS;
   proceed();
 }
@@ -223,7 +212,6 @@ export function endStreet(){
   else{S.board.push(DECK.pop());S.street='river';}
   S.animUntil=Date.now()+(S.street==='flop'?FLOP_MS:CARD_MS);
   log(`${STREET_CN[S.street]}：${S.board.map(cardTxt).join(' ')}`,'h');
-  if(S.mode==='online'&&!M.server)saveSecret();
   S.actor=S.dealer;
   proceed();
 }
@@ -265,7 +253,6 @@ export function runoutStep(){
   else if(R.times===2&&(!S.board2||S.board2.length<5)){if(!S.board2)S.board2=R.base.slice();dealChunk(S.board2);
     log(`第二次：${S.board2.map(cardTxt).join(' ')}`,'h');}
   else return showdown();
-  if(S.mode==='online'&&!M.server)saveSecret();
   commit();later(runoutStep,1300);
 }
 export function winByFold(){

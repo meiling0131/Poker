@@ -1,6 +1,6 @@
 // One Durable Object per room. It runs the same game engine as the browser (js/engine.js) and is the
 // only place the deck and everyone's hole cards live: each player receives the public table plus their
-// own two cards. Players send what the Firebase version wrote to their seat doc (join, buy-ins, actions,
+// own two cards. Players send their seat doc (join, buy-ins, actions,
 // emoji, seat requests); the owner (房主) also sends commands (approve buy-ins, remove players, reset).
 //
 // Several rooms can share one isolate and the engine keeps its state in module variables, so every event

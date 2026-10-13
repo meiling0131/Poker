@@ -50,6 +50,7 @@
 - 主页顶上列出现在有人在的房间：点一下，填名字（有密码再填密码）就进。
 - 每一手都由 **Verve 服务器**（在 Cloudflare 上）发牌。每个人的底牌只发给本人，别人的浏览器里（包括房主）根本没有。房主锁屏或离开，牌局照常继续。
 - 房主可以审批买入、请人离开、换座位、重置牌桌。
+- **公平洗牌：** 每手重洗一副 52 张，用 `crypto.getRandomValues` 做无偏 Fisher–Yates。人机局在你的浏览器里洗牌发牌，联机局在 Verve 服务器上。轮到真人时限 45 秒，超时自动过牌或弃牌。
 
 **牌桌上**
 
@@ -86,22 +87,21 @@ css/                样式，按编号顺序加载，后面的会覆盖前面的
   6-lobby.css       主页：标题两边选楼层、盲注、模式卡片和按钮颜色
   7-table.css       牌桌排版（一屏放下，牌按桌子大小缩放）和发牌、翻牌、筹码、赢家的动画
 js/
-  main.js           入口：连服务器（或 Firebase），恢复上次的模式
-  config.js         常量和 Firebase 配置
+  main.js           入口：连 Verve 服务器，恢复上次的模式
+  config.js         常量和服务器地址
   util.js           小工具（$、fmt、esc、store…）
   settings.js       盲注、正常/练习模式、牌型提示、每日买入额度
   state.js          共享的运行状态，写入用 setX()；界面通过 view 钩子注册重画函数
   cards.js          牌、洗牌、比牌型、胜率估算        ← 纯逻辑，有测试
   chips.js          筹码：精确付款、找零、整理          ← 纯逻辑，有测试
   pots.js           主池和边池                          ← 纯逻辑，有测试
-  crypto.js         Firebase 房间的底牌加密（ECDH + AES-GCM）
   table.js          牌桌状态上的查询和小操作
   engine.js         发牌引擎：发牌、下注轮、全下跑牌、摊牌结算
   bots.js           机器人策略
   stats.js          我的统计
   talk.js           头像、机器人台词、表情
   fx.js             彩带、轮到你的提示音、屏幕常亮
-  online.js         联机同步：房间文档、座位文档、记录文档、审批和请出
+  online.js         联机：你的座位文档、跟随牌桌；在服务器上处理座位文档、审批和请出
   net.js            连 Verve 服务器：用 WebSocket 模拟 Firestore 的 doc/onSnapshot 接口
   actions.js        你的操作：确认、下注预设、提前操作、买入/退出/整理
   seats.js          换座位：人机局直接换；联机向房主申请
@@ -142,7 +142,7 @@ npm run check        # eslint + 单元测试；import map 没更新也会报错
 
 ### Verve 服务器
 
-`js/config.js` 里的 `SERVER_URL` 是现在所有人用的服务器，留空就退回 Firebase。网址后加 `?server=<地址>` 可以只给这个浏览器切换（会记住）。
+从 Worker 打开的页面直接连自己所在的网址；别处的副本（比如 GitHub Pages）用 `js/config.js` 里的 `SERVER_URL`，留空就只能和电脑打。网址后加 `?server=<地址>` 可以只给这个浏览器切换（会记住）。
 
 - **连接：** `wss://<服务器>/room/<房间号>?uid=…&token=…`。建房再加 `&create=1&sb=1&bb=2`，有密码再加 `&pw=…`。
 - **房间号：** 3–8 位字母或数字，由建房的人自己填，不填就随机。
@@ -150,8 +150,4 @@ npm run check        # eslint + 单元测试；import map 没更新也会报错
 - **进不去时：** 服务器先发 `{t:'error',code}` 再断开。code 有四种：`password`（没填或填错）、`taken`（房间号被别人占着）、`noroom`（没有这个房间）、`identity`（uid 的 token 对不上）。房间空了 12 小时以后，别人才能用同一个房间号重新建。
 - **房间列表：** `GET /rooms` 返回 `[{code,n,online,pw,sb,bb,host}]`。n 是入座人数，online 是在线人数，pw 表示有没有密码。
 - **服务器发给客户端：** `{t:'table',S}`（S 里的 `mine` 是你自己的两张牌）和 `{t:'seat',doc}`。
-- **客户端发给服务器：** `{t:'seat',op:'set'|'update',data}`，以及房主命令 `{t:'cmd',name,args}`（approve / swap / kick / unkick / restart）。
-
-### Firebase 房间（`SERVER_URL` 为空时）
-
-座位文档 `rooms/{房间}/seats/{uid}` 由玩家自己写：`name pub join t act buyN cashN tidyN emo seatReq`。房间文档 `rooms/{房间}` 和记录文档 `rooms/{房间}/meta/records` 由房主写，房间里的人都能读。
+- **客户端发给服务器：** `{t:'seat',op:'set'|'update',data}`（座位文档字段：`name join t act buyN cashN tidyN emo seatReq`），以及房主命令 `{t:'cmd',name,args}`（approve / swap / kick / unkick / restart）。
