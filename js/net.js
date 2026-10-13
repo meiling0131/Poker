@@ -10,10 +10,12 @@ import {BB,SB} from './settings.js';
 import {M} from './state.js';
 import {store} from './util.js';
 
-// where the server is: ?server=… (remembered), else the configured SERVER_URL; '' = use Firebase
+// where the server is: ?server=… (remembered); else the page's own origin when the Worker served it
+// (so a renamed workers.dev address keeps working); else the configured SERVER_URL; '' = use Firebase
 export function serverUrl(){
   try{const q=new URLSearchParams(location.search).get('server');if(q!==null)store.set('poker.server',q);}catch(e){}
-  return (store.get('poker.server')||SERVER_URL||'').replace(/\/+$/,'');
+  let self='';try{if(/\.workers\.dev$/.test(location.hostname))self=location.origin;}catch(e){}
+  return (store.get('poker.server')||self||SERVER_URL||'').replace(/\/+$/,'');
 }
 const rand=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');
 // this browser's identity on the server: a random id plus a secret only it knows
