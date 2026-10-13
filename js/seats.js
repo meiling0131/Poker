@@ -2,7 +2,7 @@
 // player asks and the host approves (the host's own swaps need no approval). A swap approved during
 // a hand waits for the hand to end.
 import {H,M,MYDOC,S,myRef,setFLASH,setH,view} from './state.js';
-import {handLive,log,mySeat,who} from './table.js';
+import {handLive,isOwner,log,mySeat,who} from './table.js';
 import {commit} from './online.js';
 
 export const canSwapNow=()=>!!S&&!handLive()&&!(S.runout&&S.runout.stage&&S.runout.stage!=='over');
@@ -26,7 +26,7 @@ export async function requestSwap(j){
     commit();return;
   }
   SEAT_N=Math.max(SEAT_N,Number(MYDOC&&MYDOC.seatReq&&MYDOC.seatReq.n)||0)+1;
-  setFLASH('已向房主申请换座位');view.render();
+  setFLASH(isOwner()?'换座位中…':'已向房主申请换座位');view.render();
   try{await myRef.update({seatReq:{with:target.uid,n:SEAT_N}});}catch(e){setFLASH('申请失败，请再试一次。');view.render();}
 }
 // host: pick up a seat request a player wrote to their own seat doc
@@ -34,7 +34,11 @@ export function syncSeatReq(p,d){
   const r=d&&d.seatReq,n=Number(r&&r.n)||0;
   if(!(n>(p.seatN||0)))return false;
   p.seatN=n;
-  if(r.with&&r.with!==p.uid&&at(r.with)>=0){p.askSeat=r.with;log(`${who(p)} 想和 ${who({kind:'human',uid:r.with})} 换座位（等房主同意）`,'h');}
+  if(!(r.with&&r.with!==p.uid&&at(r.with)>=0))return true;
+  p.askSeat=r.with;
+  // on the Verve server the owner is a player like everyone else: their own swaps need no approval
+  if(M.server&&p.uid===S.ownerUid){approveSwap(p.uid,true);return true;}
+  log(`${who(p)} 想和 ${who({kind:'human',uid:r.with})} 换座位（等房主同意）`,'h');
   return true;
 }
 export function approveSwap(uid,yes){

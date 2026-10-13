@@ -32,7 +32,7 @@ export function tick(){
   const day=localDay();if(day!==DISPLAY_DAY){DISPLAY_DAY=day;render();return;}
   document.querySelectorAll('[data-until]').forEach(e=>{const s=Math.max(0,Math.ceil((+e.dataset.until-Date.now())/1000));e.textContent=s+'s';});
   const away=$('away');
-  if(S&&M.mode==='online'&&!M.host){
+  if(S&&M.mode==='online'&&!M.host&&!M.server){
     const stale=Date.now()-(S.updated||0)>20000;
     const ownerTurn=BETTING.includes(S.street)&&S.seats[S.actor]&&S.seats[S.actor].uid===S.ownerUid;
     away.hidden=!(stale&&!ownerTurn&&S.street!=='idle');

@@ -10,6 +10,7 @@ import {mySeat} from './table.js';
 import './ui/events.js';
 import {render} from './ui/render.js';
 import {store} from './util.js';
+import {localIdentity,serverDb,serverUrl} from './net.js';
 
 loadStake();applySkin();
 
@@ -17,7 +18,9 @@ export async function boot(){
   render();
   M.nick=(store.get('poker.nick')||'').slice(0,16);
   try{
+    const srv=serverUrl();
     if(window.__TEST_DB__){M.db=window.__TEST_DB__.db;M.uid=window.__TEST_DB__.uid;}
+    else if(srv){const id=localIdentity();M.server=true;M.db=serverDb(srv,id);M.uid=id.uid;}
     else if(window.firebase&&FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.projectId){
       firebase.initializeApp(FIREBASE_CONFIG);
       const cred=await firebase.auth().signInAnonymously();
