@@ -2,7 +2,7 @@
 import {botDecide} from './bots.js';
 import {best7,cardTxt,handName,randInt,shuffledDeck} from './cards.js';
 import {BUY_CHIPS,Z,cadd,giveFromPot} from './chips.js';
-import {ACT_MS,BETTING,BOTS_WAIT,BOT_STYLE,BUY,NEXT_MS,ONLINE_MAX,STREET_CN} from './config.js';
+import {ACT_MS,BETTING,BOTS_WAIT,BOT_STYLE,BUY,CARD_MS,DEAL_MS,FLOP_MS,NEXT_MS,ONLINE_MAX,STREET_CN} from './config.js';
 import {seal} from './crypto.js';
 import {commit,saveSecret,syncDoc} from './online.js';
 import {BB,SB} from './settings.js';
@@ -113,7 +113,7 @@ export async function startHandInner(){
     if(g!==GEN)return;
     saveSecret();
   }
-  S.street='preflop';
+  S.street='preflop';S.animUntil=Date.now()+DEAL_MS;
   proceed();
 }
 export function roundComplete(){
@@ -137,9 +137,11 @@ export function proceed(){
     S.deadline=Date.now()+ACT_MS;armTimer();
   }else if(p.kind==='human'&&p.leaving){doAction(p,'fold');return proceed();}
   commit();
-  if(p.kind==='bot')later(()=>botTurn(found),SPEED);
+  if(p.kind==='bot')later(()=>botTurn(found),botDelay());
   else if(isRemote(p))checkRemoteAct();
 }
+// bots think for SPEED, and never before the cards just dealt have finished flying in
+const botDelay=()=>Math.max(SPEED,(S.animUntil||0)-Date.now());
 export function resumeTurn(){
   if(S.street==='done'){later(startHand,Math.max(800,(S.nextAt||Date.now())-Date.now()));if(!S.nextAt)S.nextAt=Date.now()+800;commit();return;}
   if(S.street==='idle'){applySeatChanges();commit();maybeStart();return;}
@@ -219,6 +221,7 @@ export function endStreet(){
   if(S.street==='preflop'){S.board.push(DECK.pop(),DECK.pop(),DECK.pop());S.street='flop';}
   else if(S.street==='flop'){S.board.push(DECK.pop());S.street='turn';}
   else{S.board.push(DECK.pop());S.street='river';}
+  S.animUntil=Date.now()+(S.street==='flop'?FLOP_MS:CARD_MS);
   log(`${STREET_CN[S.street]}：${S.board.map(cardTxt).join(' ')}`,'h');
   if(S.mode==='online'&&!M.server)saveSecret();
   S.actor=S.dealer;

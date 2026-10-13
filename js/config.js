@@ -15,6 +15,8 @@ export const FIREBASE_CONFIG={
 export const STREET_CN={idle:'等待',dealing:'发牌',preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',done:'结算'};
 export const BETTING=['preflop','flop','turn','river'];
 export const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=2,ONLINE_MAX=10;
+// how long the table animates after dealing hole cards / a flop / a turn or river; bots wait it out
+export const DEAL_MS=1000,FLOP_MS=1000,CARD_MS=700;
 export const BUY_SET=[[25,4],[10,6],[5,6],[1,10]];
 export const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 // type 'whale' (奶龙, 土豪): sticky — calls everything until the river, then folds without two pair; rebuys two hands.

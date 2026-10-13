@@ -1,0 +1,164 @@
+/* 牌桌（重新排版）：牌桌占满一屏，不用滚动。
+   #game = .stage（桌面：#table 里是座位、底池、公共牌；#meSeat 是你自己的座位，压在桌子下沿）
+         + .hero（最下面的操作区：下注区、筹码、按钮）。
+   牌的大小跟着桌子的实际大小走（container query 单位 cqw / cqh），手机和电脑都尽量大。
+   动画（发牌、翻牌、筹码、赢家）的时间由 js/ui/anim.js 算好，写在 --d（开始前还要等多久，可以是负数）。 */
+
+/* ---- 一屏的骨架 ---- */
+body[data-view="table"]{height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
+#game{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.stage{position:relative;flex:1;min-height:0;isolation:isolate;container-type:size;
+  --bw:min(7.6cqw,16cqh,100px);          /* board card width */
+  --hw:min(7cqw,15cqh,94px);             /* your two cards */
+  --mw:clamp(30px,3.2cqw,44px);          /* other players' cards */
+  --sw:clamp(96px,9cqw,124px)}           /* seat plate */
+.stage::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:10px solid #1d322c;border-radius:48px;
+  background:radial-gradient(ellipse at 50% 38%,#33584c 0%,#2a4c41 55%,#22403a 100%);box-shadow:0 0 0 1px #8f8a6a40,0 18px 44px #0006}
+.stage::after{content:"";position:absolute;inset:16px;z-index:-1;pointer-events:none;border:1px solid #e8e2c812;border-radius:36px}
+.table{position:absolute;inset:0;user-select:none;-webkit-user-select:none;max-height:none;height:auto}
+
+/* ---- 中间：底池、公共牌、提示 ---- */
+.table .center{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:1;width:max-content;max-width:94%}
+.table .center.twice{top:40%;gap:6px}
+.table.topmid .center{top:47%}
+.table .pot{display:flex;align-items:center}
+.table .pot .piles{min-height:0;margin-right:4px}
+.hero .cashier .cbtn.leave{flex:0 0 auto;color:var(--mute)}
+.table .pot{gap:10px;font-size:13px;white-space:nowrap}
+.table .pot b{font-size:clamp(18px,2.2cqw,26px)}
+.table .board{gap:calc(var(--bw)*.1)}
+.card.bd{--w:var(--bw);--h:calc(var(--w)*1.4);border-radius:calc(var(--w)*.12)}
+.card.bd.sm{--w:calc(var(--bw)*.72)}
+.table .result{position:static;transform:none;width:auto;max-width:min(420px,90cqw);font-size:13px;line-height:1.45;min-height:1.45em;text-align:center}
+
+/* ---- 别人的座位 ---- */
+.table .seat{left:var(--x);top:var(--y);width:var(--sw);transform:translate(-50%,-50%)}
+.table .plate{width:var(--sw);padding:6px 6px;border-radius:12px}
+.table .nm{font-size:12.5px}
+.table .stk{font-size:15px}
+.table .mc{height:calc(var(--mw)*1.4);margin-bottom:calc(var(--mw)*-.3)}
+.table .mc .card{--w:var(--mw);--h:calc(var(--w)*1.4);border-radius:calc(var(--w)*.13)}
+.table .mc .card+.card{margin-left:calc(var(--mw)*-.28)}
+.table .act{max-width:calc(var(--sw) + 20px);font-size:11.5px;min-height:15px}
+.table .bet{font-size:12px;padding:3px 8px}
+.table .seat.show .mc{margin-bottom:calc(var(--mw)*-.2);height:calc(var(--mw)*2)}
+.table .seat.show .mc .card{--w:calc(var(--mw)*1.45)}       /* shown hands are big enough to read */
+.table .seat.show .mc .card+.card{margin-left:2px}
+
+/* ---- 你的座位：两张大牌，下面是名字和筹码 ---- */
+.me-seat{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:5}
+.me{position:relative;display:flex;flex-direction:column;align-items:center}
+.me .hc{display:flex;gap:calc(var(--hw)*.06);filter:drop-shadow(0 8px 8px #0004);margin-bottom:calc(var(--hw)*-.28);position:relative;z-index:0}
+.me .hc .card:first-child{rotate:-5deg}
+.me .hc .card:last-child{rotate:5deg}
+.me .card.big{--w:var(--hw);--h:calc(var(--w)*1.4);border-radius:calc(var(--w)*.12)}
+.me.folded .hc{opacity:.4}
+.me .plate{position:relative;z-index:1;display:flex;align-items:center;gap:6px;padding:5px 8px 5px 10px;border-radius:999px;width:auto;white-space:nowrap}
+.me .plate .who{font-weight:600;font-size:13px}
+.me .plate .stk{font:700 17px var(--num);color:var(--cream);margin:0}
+.me .plate .pushed{font:600 12px var(--num);color:var(--win)}
+.me.turn .plate{border-color:var(--brass);box-shadow:0 0 0 2px #c9b68533,0 0 14px #c9b68540}
+.me-sub{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;white-space:nowrap}
+.me-sub .hand{color:var(--win)}
+.me .herobet{position:absolute;left:auto;transform:none;right:calc(100% + 6px);top:calc(var(--hw)*.45);z-index:2}   /* beside your cards, clear of the board */
+.me .hero-bubble{top:auto;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);animation-name:pop}
+
+/* ---- 最下面的操作区 ---- */
+.hero,.hero.win{flex:none;align-self:center;width:min(1000px,100%);margin:0;padding:12px 18px;border-radius:20px;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);grid-template-areas:"zone ctl" "rail ctl";gap:4px 22px;align-items:center;box-shadow:0 10px 26px #0005;
+  min-height:158px}                       /* the usual height, so the table doesn't jump between turns */
+.hero .betzone{grid-area:zone;width:100%;min-height:34px;padding:0 4px 4px;align-self:end}
+.hero .rail,.hero .rail.live{grid-area:rail;width:100%;padding:0;gap:10px;background:none;border:0;border-radius:0}
+.hero .towers{gap:10px}
+.hero .tw{height:58px}
+.hero .controls{grid-area:ctl;margin:0;padding:0;border:0;gap:7px;width:100%}
+.hero .controls:only-child{grid-column:1/-1}
+.hero .btn{min-height:48px}
+.hero .wait{font-size:12.5px;line-height:1.5;padding:0}
+/* nothing on the left (not seated, between hands without chips): the buttons take the whole width */
+.hero:not(:has(.rail)):not(:has(.betzone)){grid-template-columns:1fr;grid-template-areas:"ctl"}
+
+/* ---- 动画 ---- */
+/* 发牌：从公共牌那里飞到座位上（--dx/--dy 是飞行起点） */
+.card[data-deal]{animation:deal 380ms cubic-bezier(.2,.75,.3,1) var(--d,0ms) both}
+@keyframes deal{from{transform:translate(var(--dx,0px),var(--dy,0px)) rotate(-30deg) scale(.5);opacity:0}15%{opacity:1}to{transform:none;opacity:1}}
+/* 你的牌：飞过来，再翻开 */
+.me .card[data-deal]{position:relative;animation:dealme 760ms cubic-bezier(.2,.75,.3,1) var(--d,0ms) both}
+.me .card[data-deal]::after,.card[data-flip]::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:3;
+  background:#344e65;box-shadow:inset 0 0 0 2px #f0ebdf,inset 0 0 0 4px #344e65,inset 0 0 0 5px #ede8da60}
+.me .card[data-deal]::after{animation:hideback 760ms var(--d,0ms) both}
+@keyframes dealme{0%{transform:translate(var(--dx,0px),var(--dy,0px)) rotate(-30deg) scale(.5);opacity:0}8%{opacity:1}50%{transform:none}72%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes hideback{0%,71.9%{opacity:1}72%,100%{opacity:0}}
+/* 公共牌：一张接一张翻开 */
+.card[data-flip]{position:relative;animation:flip 440ms ease-in-out var(--d,0ms) both}
+.card[data-flip]::after{animation:hideback2 440ms var(--d,0ms) both}
+@keyframes flip{0%{transform:translateY(-6px) scaleX(1)}50%{transform:translateY(-6px) scaleX(0)}100%{transform:none}}
+@keyframes hideback2{0%,49.9%{opacity:1}50%,100%{opacity:0}}
+/* 筹码飞进底池、底池飞给赢家（js 里用 Web Animations 做，这里只是外观） */
+.fx{position:fixed;inset:0;pointer-events:none;z-index:45;overflow:hidden}
+.fly{position:absolute;transform:translate(-50%,-50%);will-change:transform}
+.fly .bet{background:#0d2d22cc;padding:4px 9px;box-shadow:0 4px 10px #0006}
+.fly .bet.win{font-size:14px;color:#f3d77e}
+.fly .stackchips .chip-d{--cs:18px}
+/* 赢家：座位发光，组成牌型的五张牌抬起来，其余公共牌暗一点 */
+.table .seat.win .plate,.me.win .plate{border-color:#f3d77e;animation:winglow 1.3s ease-in-out infinite alternate}
+@keyframes winglow{from{box-shadow:0 0 0 2px #f3d77e55,0 0 10px #f3d77e40}to{box-shadow:0 0 0 3px #f3d77ecc,0 0 28px #f3d77e99}}
+.card.hot{translate:0 -10%;box-shadow:0 0 0 2px #f3d77e,0 10px 18px #0007!important;transition:translate .3s ease .25s}
+.board.showdown .card.faceup:not(.hot){filter:brightness(.62) saturate(.7);transition:filter .3s ease .25s}
+
+/* ---- 电脑：大屏留出更多桌面 ---- */
+@media(min-width:701px){
+  body[data-view="table"]{padding:10px 22px 14px}
+  .hero:not(:has(.betzone)) .rail{grid-row:1/-1}       /* chips beside the buttons fill the left side */
+  body[data-view="table"] .top{padding-block:0 6px}
+}
+/* ---- 手机 ---- */
+@media(max-width:700px){
+  body[data-view="table"] .wrap{gap:4px}
+  #game{gap:6px}
+  .stage{--bw:min(14cqw,15cqh,62px);--hw:min(16cqw,16.5cqh,70px);--mw:clamp(20px,6.4cqw,27px);--sw:clamp(58px,17cqw,68px)}
+  .stage::before{border-width:7px;border-radius:30px}
+  .stage::after{inset:11px;border-radius:22px}
+  .table .seat{left:var(--px);top:var(--py)}
+  .table.big{--sw:clamp(52px,15cqw,60px);--mw:clamp(18px,5.6cqw,24px)}   /* 9–10 players */
+  .table .center{top:45%;gap:6px}
+  .table .center.twice{top:43%}
+  .table .pot .piles{display:none}
+  .table .pot{gap:5px;font-size:11px}.table .pot b{font-size:17px}
+  .table .result{font-size:11px;line-height:1.35;max-width:82cqw}
+  .table .plate{padding:3px 2px;border-radius:8px}
+  .table .nm{font-size:11px;line-height:13px}
+  .table .stk{font-size:12px;line-height:14px;margin:0}
+  .table .stk .chip-d{--cs:10px}
+  .table .act{font-size:10.5px;line-height:12px;min-height:12px;max-width:calc(var(--sw) + 8px)}
+  .table .bet{font-size:10.5px;line-height:12px;padding:1px 4px;margin-top:2px}
+  .me-seat{bottom:4px}
+  .me .plate{padding:3px 6px 3px 8px;gap:4px}
+  .me .plate .who{font-size:12px}.me .plate .stk{font-size:15px}
+  .me-sub{font-size:11px;margin-top:2px}
+  .hero,.hero.win{width:100%;padding:8px 10px;border-radius:16px;grid-template-columns:1fr;grid-template-areas:"zone" "rail" "ctl";gap:4px;min-height:202px;align-content:start}
+  .hero .recap,.hero .seat-hint{display:none}   /* the table already says who won */
+  .hero .betzone{min-height:26px;padding:0 2px 2px}
+  .hero .towers{gap:4px}
+  .hero .tw{height:44px}
+  .hero .tower{padding:0}
+  .hero .controls{gap:5px;padding-top:4px}
+  .hero .btn,.actions .btn{min-height:44px;font-size:13px}
+  .hero .wait{font-size:11.5px;line-height:15px}
+  .hero .cbtn{min-height:32px;padding:4px 8px;font-size:12px}
+  .hero .cashier .lbl{font-size:11px}
+  .preacts button{min-height:36px}
+}
+@media(max-width:700px) and (max-height:620px){
+  .hero,.hero.win{min-height:180px}
+  .table .center{top:42%}
+  .hero .tw{height:36px}
+  .hero .btn,.actions .btn{min-height:40px}
+}
+/* very short screens (a phone on its side): let the page scroll rather than squash the table */
+@media(max-height:520px){
+  body[data-view="table"]{height:auto;overflow:visible}
+  .stage{flex:none;height:400px}
+}
+@media(prefers-reduced-motion:reduce){.card[data-deal]::after,.card[data-flip]::after{display:none}}
