@@ -103,7 +103,7 @@ export async function startHandInner(){
   put(bbp,BB);bbp.last=`大盲 ${fmt(bbp.bet)}`;
   S.currentBet=BB;S.minRaise=BB;S.fullRaiseId=0;S.raises=1;S.street='dealing';S.actor=S.bbPos;
   log(`第 ${S.hand} 手 · ${elig.length} 人 · 庄位 ${who(P[S.dealer])}`,'h');
-  if(S.mode==='online'){
+  if(S.mode==='online'&&!M.server){ // with the Verve server, it deals each player their cards itself
     S.hostPub=M.keys.pub;
     for(let i=0;i<n;i++){const p=P[i];
       if(isRemote(p)&&p.inHand){const d=SEATDOCS[p.uid];
@@ -220,7 +220,7 @@ export function endStreet(){
   else if(S.street==='flop'){S.board.push(DECK.pop());S.street='turn';}
   else{S.board.push(DECK.pop());S.street='river';}
   log(`${STREET_CN[S.street]}：${S.board.map(cardTxt).join(' ')}`,'h');
-  if(S.mode==='online')saveSecret();
+  if(S.mode==='online'&&!M.server)saveSecret();
   S.actor=S.dealer;
   proceed();
 }
@@ -262,7 +262,7 @@ export function runoutStep(){
   else if(R.times===2&&(!S.board2||S.board2.length<5)){if(!S.board2)S.board2=R.base.slice();dealChunk(S.board2);
     log(`第二次：${S.board2.map(cardTxt).join(' ')}`,'h');}
   else return showdown();
-  if(S.mode==='online')saveSecret();
+  if(S.mode==='online'&&!M.server)saveSecret();
   commit();later(runoutStep,1300);
 }
 export function winByFold(){
@@ -315,3 +315,5 @@ export function botTurn(i){
   const p=S.seats[i];const d=botDecide(p,i);
   doAction(p,d.type,d.to);proceed();
 }
+export function setSTARTING(v){STARTING=v;}
+export function setRT(v){RT=v;}

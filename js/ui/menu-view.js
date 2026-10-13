@@ -4,6 +4,7 @@ import {SOUND} from '../fx.js';
 import {BB,PLAY_MODE,SB,SHOW_HAND,SKIN,SKINS,dailyAllowance} from '../settings.js';
 import {CONFIRM_RESET,FLASH,M,S,VIEW} from '../state.js';
 import {$,esc,fmt,store} from '../util.js';
+import {isOwner} from '../table.js';
 
 export function renderHeader(){
   const online=M.mode==='online';
@@ -12,7 +13,7 @@ export function renderHeader(){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.view===VIEW));
   $('handHints').checked=SHOW_HAND;$('soundOn').checked=SOUND;
   $('speed').hidden=M.mode!=='bots';
-  $('restart').hidden=!(M.mode==='bots'||(online&&M.host));
+  $('restart').hidden=!(M.mode==='bots'||(online&&isOwner()));
   $('restart').textContent=CONFIRM_RESET?'确认重置？':'重置牌桌';
   $('restart').classList.toggle('warn',CONFIRM_RESET);
   $('homeBtn').hidden=!M.mode;

@@ -1,6 +1,6 @@
 # Verve Poker
 
-单页德州扑克：人机练习，或者用 Firebase 和朋友开房间联机。没有构建步骤，GitHub Pages 直接发布 `main` 分支。
+单页德州扑克：人机练习，或者和朋友开房间联机（Verve 服务器发牌，或旧的 Firebase 方式）。没有构建步骤，GitHub Pages 直接发布 `main` 分支。
 
 ## 目录
 
@@ -29,11 +29,16 @@ js/
   talk.js           头像、机器人台词、表情
   fx.js             彩带、轮到你的提示音、屏幕常亮
   online.js         联机同步：房间文档、座位文档、记录文档、审批和请出
+  net.js            连 Verve 服务器：用 WebSocket 模拟 Firestore 的 doc/onSnapshot 接口，online.js 不用改
   actions.js        你的操作：确认、下注预设、提前操作、买入/退出/整理
   seats.js          换座位：人机局直接换；联机向房主申请
   modes.js          菜单 / 人机 / 联机 之间切换
   ui/               各块界面（牌桌、操作区、记录页、大厅）和事件处理
                     依赖方向只有一个：ui/ 用游戏逻辑，游戏逻辑不引用 ui/（重画走 state.js 的 view）
+server/             Verve 服务器（Cloudflare Worker + 每个房间一个 Durable Object）
+  worker.js         入口：/room/<房间号> 转给这个房间的 Durable Object
+  room.js           房间：用 js/engine.js 发牌和推进牌局，存进 Durable Object 存储，按人推送
+wrangler.toml       Cloudflare 部署配置
 tests/              node:test 单元测试
 tools/stamp.js      按文件内容给每个模块加版本号，防止更新时新旧文件混用
 tools/simulate.js   无界面模拟人机局：npm run sim -- 300 maniac 1（--check 查筹码守恒，--trace=奶龙 看大输的手）
@@ -61,3 +66,23 @@ npm run check        # eslint + 单元测试；import map 没更新也会报错
 
 座位文档 `rooms/{房间}/seats/{uid}` 由玩家自己写：`name pub join t act buyN cashN tidyN emo seatReq`。
 房间文档 `rooms/{房间}` 和记录文档 `rooms/{房间}/meta/records` 由房主写，房间里的人读。
+
+## Verve 服务器（Cloudflare）
+
+设置了服务器地址后，联机改由服务器当庄家：洗牌、发牌、计时、结算都在 Cloudflare 上跑，
+房主只是有审批、请人、换座位、重置权限的普通玩家，房主离开或锁屏牌局照常继续。
+每个人的底牌只发给本人，别人（包括房主）的浏览器里根本没有。
+
+```
+npx wrangler dev                 # 本地服务器 http://127.0.0.1:8787
+npm run serve                    # 另一个终端；打开 http://localhost:8000/?server=http://127.0.0.1:8787
+npx wrangler deploy              # 部署到自己的 Cloudflare 账号（需要登录或 CLOUDFLARE_API_TOKEN）
+```
+
+部署后把 `js/config.js` 里的 `SERVER_URL` 设成 Worker 的地址（例如 `https://verve-poker.xxx.workers.dev`），
+所有人就会走服务器；留空则还是 Firebase。也可以在网址后加 `?server=<地址>` 临时切换（会记在浏览器里）。
+
+协议：`wss://<服务器>/room/<房间号>?uid=…&token=…`（建房再加 `&create=1&sb=1&bb=2`）。
+服务器发 `{t:'table',S}`（S 里带 `mine`：你自己的两张牌）和 `{t:'seat',doc}`；
+客户端发 `{t:'seat',op:'set'|'update',data}`（字段同上面的座位文档）和房主命令 `{t:'cmd',name,args}`
+（approve / swap / kick / unkick / restart）。uid 第一次连上时绑定 token，别人冒用会被拒绝。

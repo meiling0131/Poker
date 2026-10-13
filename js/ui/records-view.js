@@ -2,7 +2,7 @@
 import {CONFIRM_KICK,roomLink} from '../online.js';
 import {M,S} from '../state.js';
 import {ZS,pct} from '../stats.js';
-import {bookKey,isKicked,nameOfKey,nameOfUid,names,netOf} from '../table.js';
+import {bookKey,isKicked,isOwner,nameOfKey,nameOfUid,names,netOf} from '../table.js';
 import {seatName} from './table-view.js';
 import {$,esc,fmt,sgn} from '../util.js';
 
@@ -41,9 +41,9 @@ export function renderRecords(){
       <div class="invite"><code id="linktxt">${esc(roomLink())}</code><button class="mini" data-copy="1">复制链接</button></div>
       <p>朋友打开链接、填个昵称就能进来，不需要注册账号。</p></section>`:'';
   const people=S.mode==='online'?`<section class="panel"><h2>玩家 <span>${S.seats.length} 在座${(S.pending||[]).length?` · ${S.pending.length} 排队`:''} · 上限 10</span></h2>
-      <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}${p.leaving?' · 离座中':''}${M.host&&p.uid!==M.me&&!isKicked(p.uid)?kickBtn(p.uid):''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队${M.host?kickBtn(u):''}</span>`).join('')||''}</div>
-      ${M.host&&S.kicked&&Object.keys(S.kicked).length?`<div class="people">${Object.keys(S.kicked).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 已请出<button class="kick" data-unkick="${esc(u)}">允许回来</button></span>`).join('')}</div>`:''}
-      <p>${M.host?'你是房主：发牌在你这个页面上进行，页面关掉牌局就暂停。':'发牌由房主的页面负责。你的底牌只发给你，用你浏览器里的密钥加密。'}</p></section>`:'';
+      <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}${p.leaving?' · 离座中':''}${isOwner()&&p.uid!==M.me&&!isKicked(p.uid)?kickBtn(p.uid):''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队${isOwner()?kickBtn(u):''}</span>`).join('')||''}</div>
+      ${isOwner()&&S.kicked&&Object.keys(S.kicked).length?`<div class="people">${Object.keys(S.kicked).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 已请出<button class="kick" data-unkick="${esc(u)}">允许回来</button></span>`).join('')}</div>`:''}
+      <p>${M.server?(isOwner()?'你是房主。发牌在 Verve 服务器上进行，你离开或锁屏都不影响牌局。':'发牌在 Verve 服务器上进行。你的底牌只发给你，别人（包括房主）都看不到。'):M.host?'你是房主：发牌在你这个页面上进行，页面关掉牌局就暂停。':'发牌由房主的页面负责。你的底牌只发给你，用你浏览器里的密钥加密。'}</p></section>`:'';
   el.innerHTML=`${statsHTML()}${invite}${people}
     <section class="panel"><h2>账本 <span>一手 200 · 白10 红6 蓝6 绿4</span></h2>
       <div class="scroll"><table class="book"><thead><tr><th>玩家</th><th>买入</th><th>退出</th><th>桌上</th><th>盈亏</th></tr></thead><tbody>${rows||'<tr><td colspan="5">还没有人买入。</td></tr>'}</tbody>

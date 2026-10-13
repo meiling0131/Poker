@@ -7,7 +7,7 @@ import {enterBots,enterOnline,toMenu} from '../modes.js';
 import {approveBuy,commit,joinTable,kick,leaveTable,newRoomCode,normRoom,roomLink,unkick} from '../online.js';
 import {SHOW_HAND,readStakeForm,setSHOW_HAND,setSkin} from '../settings.js';
 import {CONFIRM_RESET,GEN,M,PROFILE,PUSH,S,TT,setCONFIRM_RESET,setFLASH,setGEN,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
-import {bookKey,log,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
+import {bookKey,isOwner,log,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
 import {renderHero} from './hero-view.js';
 import {renderMenu} from './menu-view.js';
@@ -15,6 +15,7 @@ import {render} from './render.js';
 import {$,store} from '../util.js';
 import {approveSwap,requestSwap} from '../seats.js';
 import {renderTable} from './table-view.js';
+import {serverCmd} from '../net.js';
 
 document.addEventListener('change',e=>{
   if(e.target.id==='soundOn'){setSOUND(e.target.checked);store.set('poker.sound',SOUND?'on':'off');if(SOUND)beep();return;}
@@ -31,8 +32,8 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.profileClose){setPROFILE(null);renderTable();return;}
   if(t.dataset.swap){setPROFILE(null);requestSwap(Number(t.dataset.swap));render();return;}
-  if(t.dataset.swapyes){approveSwap(t.dataset.swapyes,true);return;}
-  if(t.dataset.swapno){approveSwap(t.dataset.swapno,false);return;}
+  if(t.dataset.swapyes){M.server?serverCmd('swap',t.dataset.swapyes,true):approveSwap(t.dataset.swapyes,true);return;}
+  if(t.dataset.swapno){M.server?serverCmd('swap',t.dataset.swapno,false):approveSwap(t.dataset.swapno,false);return;}
   if(t.dataset.mode){if(readStakeForm())enterBots(t.dataset.mode);return;}
   if(t.dataset.room){
     const nick=($('nick')&&$('nick').value||'').replace(/\s+/g,' ').trim().slice(0,16);
@@ -55,9 +56,11 @@ document.addEventListener('click',e=>{
   if(t.dataset.skin){setSkin(t.dataset.skin);return;}
   if(t.dataset.speed){setSPEED(+t.dataset.speed);document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',b===t));return;}
   if(t.id==='restart'){
-    if(!M.host||!S)return;
+    if(!isOwner()||!S)return;
     if(!CONFIRM_RESET){setCONFIRM_RESET(true);render();setTimeout(()=>{setCONFIRM_RESET(false);if(M.mode)render();},4000);return;}
-    setCONFIRM_RESET(false);setGEN(GEN+1);clearTimeout(TT);
+    setCONFIRM_RESET(false);
+    if(M.server){serverCmd('restart');render();return;}
+    setGEN(GEN+1);clearTimeout(TT);
     if(S.mode==='bots')newBotsTable();else newOnlineTable(true);
     log('牌桌已重置，账本清零，所有人筹码回到 0','h');commit();maybeStart();return;
   }
@@ -67,10 +70,16 @@ document.addEventListener('click',e=>{
   if(t.dataset.statsReset){if(t.dataset.sure){store.set('poker.stats.bots','');if(S&&S.stats)delete S.stats.local;render();}else{t.dataset.sure='1';t.textContent='确认清空？';}return;}
   if(t.dataset.emoOpen){setEMO_OPEN(!EMO_OPEN);renderHero();return;}
   if(t.dataset.emo){sendEmoji(t.dataset.emo);return;}
-  if(t.dataset.approve){approveBuy(t.dataset.approve,true);return;}
-  if(t.dataset.deny){approveBuy(t.dataset.deny,false);return;}
-  if(t.dataset.kick){kick(t.dataset.kick);return;}
-  if(t.dataset.unkick){unkick(t.dataset.unkick);return;}
+  if(t.dataset.approve){M.server?serverCmd('approve',t.dataset.approve,true):approveBuy(t.dataset.approve,true);return;}
+  if(t.dataset.deny){M.server?serverCmd('approve',t.dataset.deny,false):approveBuy(t.dataset.deny,false);return;}
+  if(t.dataset.kick){
+    if(M.server){ // ask once more on this button, then the server removes them
+      if(t.dataset.sure){serverCmd('kick',t.dataset.kick);}else{t.dataset.sure='1';t.textContent='确认请出？';t.classList.add('warn');}
+      return;
+    }
+    kick(t.dataset.kick);return;
+  }
+  if(t.dataset.unkick){M.server?serverCmd('unkick',t.dataset.unkick):unkick(t.dataset.unkick);return;}
   const a=t.dataset.a;
   if(a==='next'){if(M.host&&S.street==='done')startHand();return;}
   if(a==='join'){joinTable();return;}
