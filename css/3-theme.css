@@ -28,6 +28,15 @@ body[data-view="table"] .wrap{height:auto;min-height:calc(100dvh - 42px)}
 .card.bd .s{font-size:21px}
 .card.empty{border-color:#f1ede429;background:#123a2618;box-shadow:inset 0 1px 6px #09251e15}
 .result{top:78%;width:280px}
+/* Wider screens: the message follows the board instead of sitting at a fixed 78%, which landed on the
+   cards whenever the table was short (it is only 340px tall on most laptop windows). Seats, bets and
+   the profile card stay absolutely placed; only the middle column is in the flow. */
+@media(min-width:701px){
+  .table{display:flex;flex-direction:column;align-items:center}
+  .table::before{content:"";flex:0 0 43%}
+  .table .center,.table .result{position:relative;top:auto;left:auto;transform:none;flex:none}
+  .table .result{margin-top:12px}
+}
 .herobet{bottom:0}
 .seat{width:100px}
 .plate{width:100px;padding:6px 7px;border-radius:11px}
