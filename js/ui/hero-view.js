@@ -2,15 +2,14 @@
 import {BET_MENU,CUSTOM_VAL,PENDING_ACTION,PRE,actionLabels,betPresets,confirmDetail,confirmLabel,confirmationPlan,pendingIsCurrent,preOptions,stillMyTurn} from '../actions.js';
 import {describe} from '../cards.js';
 import {BUY_CHIPS,CCLS,DV,Z,csum,tidied} from '../chips.js';
-import {ACT_MS,BETTING,BUY,ONLINE_MAX} from '../config.js';
+import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {heroResult} from '../fx.js';
 import {PLAY_MODE,SHOW_HAND,dailyAllowance} from '../settings.js';
 import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SUBMITTED,VOTED,setPUSH,setPUSH_TURN,view} from '../state.js';
-import {bookKey,canAct,handLive,isKicked,isOwner,lockedIn,maxRaiseTo,mySeat,myTurn,names,netOf,potTotal} from '../table.js';
+import {bookKey,canAct,handLive,isKicked,isOwner,lockedIn,maxRaiseTo,mySeat,myTurn,names,netOf} from '../table.js';
 import {EMOJIS,EMO_OPEN,avatarOf} from '../talk.js';
 import {miniStack,miniStackC,pilesC} from './chips-view.js';
 import {bubbleHTML,cardHTML,myHoleCards,seatName} from './table-view.js';
-import {playHero,snap} from './motion.js';
 import {$,esc,fmt,sgn} from '../util.js';
 
 export function hostRequestsHTML(){
@@ -38,7 +37,7 @@ export function cashierHTML(p){
 }
 export function towerHTML(d,count,enabled,pushed){
   const c=CCLS[d],shown=Math.min(count,12);
-  return `<button class="tower ${c}" data-push="${d}" data-k="t${d}"${enabled&&count>0?'':' disabled'} aria-label="${d} 面值，剩 ${count} 枚">
+  return `<button class="tower ${c}" data-push="${d}"${enabled&&count>0?'':' disabled'} aria-label="${d} 面值，剩 ${count} 枚">
     <span class="tw">${'<i class="disc"></i>'.repeat(shown)}${count?'<span class="face"><i class="chip-d '+c+'"></i></span>':'<span class="emptyspot"></span>'}</span>
     <span class="cnt">×${count}</span></button>`;
 }
@@ -49,9 +48,7 @@ export function railHTML(p,enabled){
 }
 export function renderHero(){
   const focus=document.activeElement&&document.activeElement.id==='betAmt';
-  const before=snap($('hero'));
   renderHeroInner();
-  playHero($('hero'),before);
   const inp=focus&&$('betAmt');if(inp){inp.focus();const n=inp.value.length;try{inp.setSelectionRange(n,n);}catch(e){}}
 }
 let VERDICT_HAND=-1;
@@ -75,7 +72,7 @@ export function renderHeroInner(){
   for(const d of DV)if(PUSH[d]>p.chips[d])PUSH[d]=p.chips[d];
   el.classList.toggle('win',!!p.win);
   const hole=myHoleCards();
-  const cards=hole?hole.map((c,k)=>cardHTML(c,'big',`h${S.hand}-${k}`)).join(''):cardHTML(undefined,'big')+cardHTML(undefined,'big');
+  const cards=hole?hole.map(c=>cardHTML(c,'big')).join(''):cardHTML(undefined,'big')+cardHTML(undefined,'big');
   const pos=[];if(S.street!=='idle'&&p.inHand){if(S.dealer===m)pos.push('庄');if(S.sbPos===m)pos.push('小盲');if(S.bbPos===m)pos.push('大盲');}
   const handTxt=SHOW_HAND&&hole?describe(hole,S.board)+(S.board2&&S.board2.length>=3?' / '+describe(hole,S.board2):''):'';
   const nb=netOf(bookKey(p));
@@ -84,22 +81,19 @@ export function renderHeroInner(){
   if(mine){
     const L=actionLabels(p),waiting=!M.host&&SUBMITTED===S.turn,dis=waiting?' disabled':'';
     zone=`<div class="betzone${L.pushed?' has':''}">
-      <div class="bz-chips">${L.pushed?DV.filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" data-k="push${d}" data-v="${PUSH[d]}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join(''):'<span class="hint">点筹码下注</span>'}</div>
+      <div class="bz-chips">${L.pushed?DV.filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join(''):'<span class="hint">点筹码下注</span>'}</div>
       <div class="bz-sum">${L.pushed?`<b>${fmt(L.pushed)}</b><button class="mini" data-clear="1">撤回</button>`:`<span class="need">${L.toCall?`跟注 ${fmt(L.toCall)}`:'可过牌'}</span>`}</div>
     </div>`;
-    const sheet=inner=>`<div class="sheet-wrap"><button class="sheet-bg" data-a="cancel" aria-label="关闭"></button><div class="sheet" role="dialog" aria-label="${L.word}">
-        <div class="sheet-h"><b>${L.word}</b><span>底池 ${fmt(potTotal())}${L.toCall?` · 跟注 ${fmt(L.toCall)}`:''} · 你有 ${fmt(p.stack)}</span></div>${inner}</div></div>`;
     if(pendingIsCurrent()){
       const plan=confirmationPlan(),a=PENDING_ACTION,red=plan.type==='fold'||plan.allIn;
-      const bar=`<div class="confirmbar">
+      if(a.custom)ctl+=`<label class="custom">${L.word} 到<input id="betAmt" type="number" inputmode="numeric" step="1" min="${L.minTo}" max="${maxRaiseTo(p)}" value="${esc(CUSTOM_VAL)}" autocomplete="off"><span>最少 ${fmt(L.minTo)} · 最多 ${fmt(maxRaiseTo(p))}</span></label>`;
+      ctl+=`<div class="confirmbar">
         <button class="btn cancel" data-a="cancel">取消</button>
         <button class="btn go ${red?'red':'green'}" id="confirmGo" data-a="confirm"${plan.error?' disabled':''}>${plan.error&&!a.custom?'确认':confirmLabel(p,plan)}</button>
       </div><div class="confirmInfo${plan.error?' err':''}" id="confirmInfo">${esc(plan.error||confirmDetail(plan))}</div>`;
-      if(a.custom)ctl+=sheet(`<label class="custom">${L.word} 到<input id="betAmt" type="number" inputmode="numeric" step="1" min="${L.minTo}" max="${maxRaiseTo(p)}" value="${esc(CUSTOM_VAL)}" autocomplete="off"><span>最少 ${fmt(L.minTo)} · 最多 ${fmt(maxRaiseTo(p))}</span></label>${bar}`);
-      else ctl+=bar;
     }else if(stillMyTurn(BET_MENU)&&L.canR){
-      ctl+=sheet(`<div class="presets betmenu">${betPresets(p).map(x=>`<button data-preset="${x.to||''}"${x.to?'':' disabled'}>${x.k}<small>${x.to?(x.to>=maxRaiseTo(p)?'All in':fmt(x.to)):'—'}</small></button>`).join('')}<button data-preset="custom">Custom<small>自定义</small></button></div>
-        <div class="confirmbar one"><button class="btn cancel" data-a="cancel">取消</button></div>`);
+      ctl+=`<div class="presets betmenu">${betPresets(p).map(x=>`<button data-preset="${x.to||''}"${x.to?'':' disabled'}>${x.k}<small>${x.to?(x.to>=maxRaiseTo(p)?'All in':fmt(x.to)):'—'}</small></button>`).join('')}<button data-preset="custom">Custom<small>自定义</small></button></div>
+        <div class="confirmbar one"><button class="btn cancel" data-a="cancel">取消</button></div>`;
     }else{
       ctl+=`<div class="main actions">
       <button class="btn fold" data-a="fold"${dis}>Fold</button>
@@ -108,7 +102,7 @@ export function renderHeroInner(){
       <button class="btn allin" data-a="allin"${dis||(!L.canAllIn?' disabled':'')}>All in<small>${fmt(p.stack)}</small></button>
     </div>`;
     }
-    if(S.deadline&&!M.host)ctl+=`<div class="tbar" style="animation-duration:${ACT_MS}ms;animation-delay:-${Math.max(0,ACT_MS-(S.deadline-Date.now()))}ms"></div><div class="wait">剩余 <span class="cd" data-until="${S.deadline}"></span>${waiting?' · 已提交，等房主确认…':''}</div>`;
+    if(S.deadline&&!M.host)ctl+=`<div class="wait">剩余 <span class="cd" data-until="${S.deadline}"></span>${waiting?' · 已提交，等房主确认…':''}</div>`;
   }else if(R&&R.stage==='vote'&&R.voters.includes(m)){
     const mv=R.votes[m]||(VOTED&&VOTED.hand===S.hand&&VOTED.turn===R.turn?VOTED.n:0);
     ctl=mv?`<div class="wait">你选了${mv===2?'跑两次':'跑一次'}，等其他人… <span class="cd" data-until="${R.deadline}"></span><br>所有人都选跑两次才会跑两次。</div>`
@@ -144,7 +138,7 @@ export function renderHeroInner(){
       <div class="hc">${cards}</div>
       <div class="info">
         <div class="row1"><span class="av big" aria-hidden="true">${avatarOf(p)}</span><span class="who">你</span><button class="emo-btn${EMO_OPEN?' on':''}" data-emo-open="1" aria-label="发表情" aria-expanded="${EMO_OPEN}">😀</button>${pos.map(t=>`<span class="tag">${t}</span>`).join('')}${handTxt?`<span class="hand">${esc(handTxt)}</span>`:''}</div>
-        <div class="money"><b data-k="money" data-v="${p.stack-(mine?csum(PUSH):0)}">${fmt(p.stack-(mine?csum(PUSH):0))}</b>${mine&&csum(PUSH)?`<span class="pushed">→ ${fmt(csum(PUSH))}</span>`:''}</div>
+        <div class="money"><b>${fmt(p.stack-(mine?csum(PUSH):0))}</b>${mine&&csum(PUSH)?`<span class="pushed">→ ${fmt(csum(PUSH))}</span>`:''}</div>
         <div class="sub">${p.bet>0?`本轮已下 ${fmt(p.bet)} · `:''}盈亏 <span class="${nb.net>0?'pos':nb.net<0?'neg':''}">${sgn(nb.net)}</span> <button class="linkbtn inline" data-view="records">账本</button></div>
       </div>
     </div>${zone}${mine||csum(p.chips)>0?railHTML(p,mine):''}<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
