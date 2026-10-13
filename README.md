@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://verve.meiling-wang0131.workers.dev"><b>▶ Play now</b></a>
+  <a href="https://verve.vpoker.workers.dev"><b>▶ Play now</b></a>
 </p>
 
 ---
@@ -61,7 +61,7 @@
 
 ## How to play
 
-1. Open **[verve.meiling-wang0131.workers.dev](https://verve.meiling-wang0131.workers.dev)** and pick a floor.
+1. Open **[verve.vpoker.workers.dev](https://verve.vpoker.workers.dev)** and pick a floor.
 2. **Against bots:** tap **Normal** or **Practice**, then **买一手 +200** (buy in) to get dealt in.
 3. **With friends:** enter a nickname. Then either type a room code (or leave it blank) and tap **创建房间** (create; you can add a password), or tap a room in the list.
 4. When it's your turn, tap chips to build a bet, or use **Fold / Call / Raise / All in**, then confirm.
@@ -140,7 +140,7 @@ npm run stamp        # refresh the version numbers in index.html (after any js o
 npm run check        # eslint + unit tests; also fails if the import map is stale
 ```
 
-Then push to `main`. GitHub Pages updates in about a minute, and `.github/workflows/deploy.yml` deploys to Cloudflare (https://verve.meiling-wang0131.workers.dev). The workflow needs the repository secret `CLOUDFLARE_API_TOKEN`; you can also run it by hand from the Actions tab.
+Then push to `main`. GitHub Pages updates in about a minute, and `.github/workflows/deploy.yml` deploys to Cloudflare (https://verve.vpoker.workers.dev). The workflow needs the repository secret `CLOUDFLARE_API_TOKEN`; you can also run it by hand from the Actions tab.
 
 ### Verve server
 

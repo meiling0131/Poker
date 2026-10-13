@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://verve.meiling-wang0131.workers.dev"><b>▶ 马上开玩</b></a>
+  <a href="https://verve.vpoker.workers.dev"><b>▶ 马上开玩</b></a>
 </p>
 
 ---
@@ -61,7 +61,7 @@
 
 ## 怎么玩
 
-1. 打开 **[verve.meiling-wang0131.workers.dev](https://verve.meiling-wang0131.workers.dev)**，选一个楼层。
+1. 打开 **[verve.vpoker.workers.dev](https://verve.vpoker.workers.dev)**，选一个楼层。
 2. **和电脑打：** 点**正常模式**或**练习模式**，再点**买一手 +200** 入局。
 3. **和朋友打：** 先填昵称。可以填一个房间号（或者不填）点**创建房间**（可以设密码）；也可以直接点列表里的房间。
 4. 轮到你时，点筹码凑出下注，或者用**弃牌 / 跟注 / 加注 / 全下**，再确认。
@@ -138,7 +138,7 @@ npm run stamp        # 更新 index.html 里的版本号（每次改 js 或 css 
 npm run check        # eslint + 单元测试；import map 没更新也会报错
 ```
 
-然后推到 `main`：GitHub Pages 大约一分钟后上线，`.github/workflows/deploy.yml` 同时部署到 Cloudflare（https://verve.meiling-wang0131.workers.dev）。这个流程需要仓库 Secret `CLOUDFLARE_API_TOKEN`，也可以在 Actions 页面手动运行。
+然后推到 `main`：GitHub Pages 大约一分钟后上线，`.github/workflows/deploy.yml` 同时部署到 Cloudflare（https://verve.vpoker.workers.dev）。这个流程需要仓库 Secret `CLOUDFLARE_API_TOKEN`，也可以在 Actions 页面手动运行。
 
 ### Verve 服务器
 
