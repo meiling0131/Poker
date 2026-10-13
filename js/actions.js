@@ -3,7 +3,7 @@ import {DV,Z,csum,tidyChips} from './chips.js';
 import {BETTING,BUY} from './config.js';
 import {castVote,doAction,maybeStart,proceed,startHand} from './engine.js';
 import {commit} from './online.js';
-import {BB,PLAY_MODE,reserveDailyBuy} from './settings.js';
+import {PLAY_MODE,reserveDailyBuy} from './settings.js';
 import {LOCAL_B,LOCAL_C,M,MYDOC,PUSH,S,SESSION,SUBMITTED,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setPUSH,setSUBMITTED,setVOTED,view} from './state.js';
 import {applyMoney,canRaise,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from './table.js';
 import {$,fmt} from './util.js';
@@ -81,8 +81,9 @@ export function openBetMenu(){
 // 常用下注：raise-to totals, null when below the minimum; anything past the stack becomes All in
 export function betPresets(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pot=potTotal(),minTo=minRaiseTo(p),maxTo=maxRaiseTo(p);
-  return [['1BB',BB],['3BB',3*BB],['1/2 Pot',S.currentBet+Math.round((pot+toCall)/2)],['Pot',S.currentBet+pot+toCall]]
-    .map(([k,t])=>({k,to:t<minTo?null:Math.min(t,maxTo)}));
+  // raise to: the current bet, plus that share of the pot once you have called
+  return [['1/3 Pot',1/3],['1/2 Pot',1/2],['2/3 Pot',2/3],['Pot',1]]
+    .map(([k,f])=>{const t=S.currentBet+Math.round((pot+toCall)*f);return {k,to:t<minTo?null:Math.min(t,maxTo)};});
 }
 export function confirmAction(){
   const plan=confirmationPlan();
