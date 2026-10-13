@@ -125,7 +125,6 @@ ol.lg li.w{color:var(--win)}
 .person img{width:18px;height:18px;border-radius:50%}
 .person.wait{border-style:dashed;color:var(--mute)}
 .panel p{margin:0;color:var(--mute);font-size:12px;line-height:1.6;max-width:65ch}
-.banner{background:rgba(217,103,93,.12);border:1px solid rgba(217,103,93,.45);color:var(--text);border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.5}
 .note{font-size:11px;line-height:1.6;color:var(--mute);margin:0;max-width:65ch}
 @media (prefers-reduced-motion:reduce){.seat{transition:none}}
 /* views */

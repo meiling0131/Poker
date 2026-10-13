@@ -1,17 +1,8 @@
-// Game constants and the Firebase project config.
+// Game constants and where the Verve server is.
 
-// Verve server for online rooms (wss/https URL of the Cloudflare Worker). Empty = rooms use Firebase.
+// Verve server for online rooms (https URL of the Cloudflare Worker). Pages served by the Worker
+// itself connect to their own address instead (see net.js); this one is for other copies, like GitHub Pages.
 export const SERVER_URL='https://verve.vpoker.workers.dev';
-/* Firebase 配置：把 Firebase 控制台「项目设置 → 你的应用 → SDK 设置和配置」
-   里给你的 firebaseConfig 整段贴在这里。 */
-export const FIREBASE_CONFIG={
-  apiKey:"AIzaSyBNHyrxthSeOqc6fFccYMnWgqK_Zpb7pls",
-  authDomain:"poker-df447.firebaseapp.com",
-  projectId:"poker-df447",
-  storageBucket:"poker-df447.firebasestorage.app",
-  messagingSenderId:"55898552743",
-  appId:"1:55898552743:web:f244db4f8df913f0b95e82"
-};
 export const STREET_CN={idle:'等待',dealing:'发牌',preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',done:'结算'};
 export const BETTING=['preflop','flop','turn','river'];
 export const BUY=200,ACT_MS=45000,NEXT_MS=8000,ONLINE_MIN=2,ONLINE_MAX=10;

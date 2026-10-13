@@ -20,15 +20,12 @@ export function renderHeader(){
   $('homeBtn').hidden=!M.mode;
   $('moreBtn').hidden=!M.mode;
   if(!M.mode){$('more').hidden=true;}
-  const away=$('away');if(away&&!online)away.hidden=true;
 }
 export function renderMenu(){
   const canOnline=!!(M.db&&M.uid&&crypto.subtle);
   let why='';
   if(!M.booted)why='正在连接联机服务…';
-  else if(M.fbError==='noconfig')why='联机还没配置：请在这个 HTML 文件顶部填好 Firebase 配置。';
-  else if(M.fbError==='nosdk')why='没能加载 Firebase。请检查网络，或确认页面是通过 https 网址打开的（不是直接双击本地文件）。';
-  else if(M.fbError)why=`联机服务连接失败（${esc(M.fbError)}）。请确认 Firebase 已开启「匿名登录」，并把这个网站的域名加进了已授权网域。`;
+  else if(!M.db)why='没有配置联机服务器（js/config.js 里的 SERVER_URL），现在只能和电脑打。';
   else if(!crypto.subtle)why='这个浏览器环境不支持加密功能，请用 https 网址打开。';
   const prevNick=esc(M.nick||''),pre=esc(M.prefill||'');
   const dis=canOnline?'':' disabled';
@@ -55,7 +52,7 @@ export function renderMenu(){
     </div>
     <div class="mode online${canOnline?'':' disabled'}">
       <div class="mh"><span class="mk">好友模式</span><span class="mt">2–10 人 · 全是真人</span></div>
-      <span class="md">自己起房间号，发给朋友。满 2 人开局，每次买入 200。${M.server?'':'房主需保持页面开启。'}</span>
+      <span class="md">自己起房间号，发给朋友。满 2 人开局，每次买入 200。</span>
       <div class="form">${LOBBY.confirm?`
         <div class="confirm">
           <p>创建房间 <b class="code">${esc(LOBBY.confirm.code)}</b><span>${prevNick}</span></p>

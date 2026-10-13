@@ -63,7 +63,7 @@ export function renderHeroInner(){
     const full=S.seats.length>=ONLINE_MAX;
     if(isKicked(M.me))ctl=`<div class="wait">你已被房主请出这个房间。</div>`;
     else if(queued)ctl=`<div class="wait">已买一手，${handLive()?'这一手结束后入座。':full?'座位已满，有人离开后入座。':'马上入座…'}</div><div class="main"><button class="btn fold small" data-a="leave">取消（退回这一手）</button></div>`;
-    else if(!M.keys)ctl=`<div class="wait">正在连接…</div>`;
+    else if(!M.ready)ctl=`<div class="wait">正在连接…</div>`;
     else ctl=`<div class="wait">${S.seats.length} 人在座${full?' · 已满 10 人，可以先排队':''}${handLive()?' · 牌局进行中，买入后这一手结束入座':''}</div><div class="main"><button class="btn next" data-a="join">${miniStackC(BUY_CHIPS())} 买一手并入座 +200</button></div>`;
     if(FLASH)ctl+=`<div class="flash">${esc(FLASH)}</div>`;
     el.innerHTML=`<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
@@ -123,7 +123,7 @@ export function renderHeroInner(){
       ctl=`<div class="wait">你这一手没上牌${p.stack===0?'（筹码为 0）':''}。买一手后下一手发牌给你。</div>`;
     }else{
       const a=S.actor>=0?`等 <b>${esc(seatName(S.seats[S.actor]))}</b> 行动…`:'发牌中…';
-      ctl=`<div class="wait">${p.folded?'你已弃牌，看他们打完这手。':p.allIn?'你已全下，等结果。':(!hole&&!M.host?'正在解密你的底牌…':a)}</div>`;
+      ctl=`<div class="wait">${p.folded?'你已弃牌，看他们打完这手。':p.allIn?'你已全下，等结果。':(!hole&&!M.host?'正在接收你的底牌…':a)}</div>`;
       if(canAct(p)&&BETTING.includes(S.street)&&!(S.runout&&S.runout.stage))
         ctl+=`<div class="preacts" role="group" aria-label="提前操作">${preOptions(p).map(o=>{const on=PRE&&PRE.hand===S.hand&&PRE.kind===o.k;return `<button data-pre="${o.k}" aria-pressed="${on}" class="${on?'on':''}"><i></i>${o.lbl}</button>`;}).join('')}</div>`;
     }
