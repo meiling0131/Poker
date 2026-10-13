@@ -19,7 +19,7 @@ export function nameOfUid(uid){if(uid===M.me)return '你';const n=S&&S.names&&S.
 export const nameOfKey=k=>k.startsWith('bot:')?k.slice(4):nameOfUid(k);
 export const names=t=>esc(t).replace(/@@([^@]+)@@/g,(_,u)=>esc(nameOfUid(u)));
 export function log(t,cls){S.log.unshift({t,cls:cls||''});if(S.log.length>80)S.log.length=80;}
-export function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false,won:0,vp:false,pr:false};}
+export function handFields(){return {betChips:Z(),inHand:false,folded:false,allIn:false,bet:0,total:0,acted:false,actedStreet:false,seenRaise:-1,last:'',shown:null,handName:'',win:false,won:0,vp:false,pr:false,hist:[],pa:0,pb:0};}
 export function freshBot(i){return Object.assign({kind:'bot',uid:null,name:BOTS[i-1][0],stack:0,chips:Z(),qBuy:0,qCash:0,seenB:0,seenC:0,leaving:false},handFields());}
 export function freshHuman(uid,seenB,seenC,seenT){return Object.assign({kind:'human',uid,stack:0,chips:Z(),qBuy:0,qCash:0,seenB:seenB||0,seenC:seenC||0,seenT:seenT||0,leaving:false},handFields());}
 export function put(p,amt,picked){amt=Math.max(0,Math.min(amt,p.stack));if(amt>0)cadd(p.betChips,payChips(p,amt,picked));p.stack-=amt;p.bet+=amt;p.total+=amt;if(p.stack===0)p.allIn=true;return amt;}

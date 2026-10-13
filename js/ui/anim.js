@@ -9,7 +9,7 @@ import {potTotal} from '../table.js';
 import {miniStack} from './chips-view.js';
 import {fmt} from '../util.js';
 
-const DEAL_DUR=380,ME_DUR=760,FLIP_DUR=440,FLIP_STEP=150,COLLECT=380,TO_WINNER=520;
+const DEAL_DUR=380,ME_DUR=760,FLIP_DUR=440,FLIP_STEP=150,COLLECT=380,TO_WINNER=520,MUCK=420;
 const reduced=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches||document.hidden;}catch(e){return false;}};
 
 let prev=null;          // the table as last drawn: values copied (S is changed in place) plus where things were
@@ -32,17 +32,23 @@ export function sync(){
     if(BETTING.includes(S.street)&&!S.board.length)startDeal(now);
     return;
   }
-  // bets that were on the table and are now in the pot
+  // bets that were on the table and are now in the pot — or, when the hand just ended with one
+  // winner, straight to that player
+  const ended=prev.street!=='done'&&S.street==='done',winners=S.seats.map((p,i)=>p.win?i:-1).filter(i=>i>=0);
+  const lone=ended&&winners.length===1?winners[0]:null;
   let collected=false;
-  S.seats.forEach((p,i)=>{if(prev.bets[i]>0&&!(p.bet>0)&&prev.betAt[i]){collected=true;queue.push({kind:'bet',from:prev.betAt[i],html:prev.betHTML[i]});}});
+  S.seats.forEach((p,i)=>{if(prev.bets[i]>0&&!(p.bet>0)&&prev.betAt[i]){collected=true;queue.push({kind:'bet',from:prev.betAt[i],html:prev.betHTML[i],to:lone});}});
+  // cards that were in front of a player who has now folded slide into the muck
+  S.seats.forEach((p,i)=>{if(prev.cardAt[i]&&p.folded&&!prev.folded[i])queue.push({kind:'muck',from:prev.cardAt[i],html:prev.cardHTML[i]});});
   let at=now+(collected?COLLECT-80:0),flipped=false;
   const grow=(key,len,was)=>{for(let k=was;k<len;k++){flips.t[key+k]=at;at+=FLIP_STEP;flipped=true;}};
   grow('a',S.board.length,prev.board);
   if(S.board2)grow('b',S.board2.length,prev.board2!=null?prev.board2:(S.runout&&S.runout.base?S.runout.base.length:0));
   let winAt=0;
-  if(prev.street!=='done'&&S.street==='done'){
+  if(ended){
     const delay=Math.max(0,at-now)+(flipped?FLIP_DUR:0)+(collected?120:0);
-    S.seats.forEach((p,i)=>{if(p.win)queue.push({kind:'pot',to:i,delay,amount:p.won||prev.pot});});
+    const inPot=prev.pot-prev.bets.reduce((x,y)=>x+y,0);       // what was already in the middle
+    if(lone==null||inPot>0)S.seats.forEach((p,i)=>{if(p.win)queue.push({kind:'pot',to:i,delay,amount:lone!=null?inPot:(p.won||prev.pot)});});
     winAt=delay+TO_WINNER*.6;
   }
   // stacks and the pot count to their new values (a winner's stack waits for the chips to arrive)
@@ -96,34 +102,38 @@ export function after(){
   const pot=document.querySelector('#table .pot');
   if(queue.length&&pot&&!reduced()){
     const pr=pot.getBoundingClientRect(),to={x:pr.left+pr.width/2,y:pr.top+pr.height/2};
+    const plateAt=i=>{const plate=document.querySelector(`.seat[data-i="${i}"] .plate`)||document.querySelector(`#meSeat .me[data-i="${i}"] .plate`);if(!plate)return null;const r=plate.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};};
     for(const q of queue.splice(0)){
-      if(q.kind==='bet')fly(q.html,q.from,to,0,COLLECT);
+      if(q.kind==='bet')fly(q.html,q.from,(q.to!=null&&plateAt(q.to))||to,0,q.to!=null?TO_WINNER:COLLECT);
+      else if(q.kind==='muck')fly(q.html,q.from,to,0,MUCK,true);
       else{
-        const plate=document.querySelector(`.seat[data-i="${q.to}"] .plate`)||(document.querySelector(`#meSeat .me[data-i="${q.to}"] .plate`));
-        if(!plate)continue;
-        const r=plate.getBoundingClientRect();
-        fly(`<div class="bet win">${miniStack(q.amount)}${fmt(q.amount)}</div>`,to,{x:r.left+r.width/2,y:r.top+r.height/2},q.delay,TO_WINNER);
+        const at=plateAt(q.to);if(!at)continue;
+        fly(`<div class="bet win">${miniStack(q.amount)}${fmt(q.amount)}</div>`,to,at,q.delay,TO_WINNER);
       }
     }
   }
   queue=[];
   for(const r of rolls.splice(0))roll(...r);
   // the table as drawn now
-  const betAt={},betHTML={};
+  const betAt={},betHTML={},cardAt={},cardHTML={};
   document.querySelectorAll('[data-bet-seat]').forEach(el=>{
     const r=el.getBoundingClientRect();if(!r.width)return;
     betAt[el.dataset.betSeat]={x:r.left+r.width/2,y:r.top+r.height/2};betHTML[el.dataset.betSeat]=el.outerHTML;
   });
-  prev={t:Date.now(),hand:S.hand,street:S.street,board:S.board.length,board2:S.board2?S.board2.length:null,pot:potTotal(),bets:S.seats.map(p=>p.bet||0),stacks:S.seats.map(p=>p.stack),betAt,betHTML};
+  document.querySelectorAll('.seat[data-i] .mc').forEach(el=>{
+    const r=el.getBoundingClientRect();if(!r.width||!el.children.length)return;
+    const i=el.closest('.seat').dataset.i;cardAt[i]={x:r.left+r.width/2,y:r.top+r.height/2};cardHTML[i]=el.outerHTML.replace(/ data-deal="1" style="[^"]*"/g,'');
+  });
+  prev={t:Date.now(),hand:S.hand,street:S.street,board:S.board.length,board2:S.board2?S.board2.length:null,pot:potTotal(),bets:S.seats.map(p=>p.bet||0),stacks:S.seats.map(p=>p.stack),folded:S.seats.map(p=>!!p.folded),betAt,betHTML,cardAt,cardHTML};
 }
 let layer=null;
-function fly(html,from,to,delay,dur){
+function fly(html,from,to,delay,dur,fade){
   if(!layer||!layer.isConnected){layer=document.createElement('div');layer.className='fx';document.body.appendChild(layer);}
   const el=document.createElement('div');el.className='fly';el.innerHTML=html;
   el.style.left=from.x+'px';el.style.top=from.y+'px';
   layer.appendChild(el);
   const dx=to.x-from.x,dy=to.y-from.y;
-  const a=el.animate([{transform:'translate(-50%,-50%)',opacity:1},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.8)`,opacity:.85}],
-    {duration:dur,delay,easing:'cubic-bezier(.45,0,.25,1)',fill:'both'});
+  const a=el.animate([{transform:'translate(-50%,-50%)',opacity:1},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(${fade?.5:.8}) rotate(${fade?'20deg':'0'})`,opacity:fade?0:.85}],
+    {duration:dur,delay,easing:fade?'cubic-bezier(.4,0,.8,.6)':'cubic-bezier(.45,0,.25,1)',fill:'both'});
   a.onfinish=a.oncancel=()=>el.remove();
 }

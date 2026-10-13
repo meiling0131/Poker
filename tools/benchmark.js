@@ -1,10 +1,10 @@
 // Runs tools/simulate.js against several sparring strategies and seeds in parallel and
 // prints each bot's average result per 100 hands (higher = stronger).
-//   node tools/benchmark.js [hands=300] [seeds=3] [heroes=fold,station,maniac,nit]
+//   node tools/benchmark.js [hands=300] [seeds=3] [heroes=fold,station,maniac,nit,tag,bot]
 import { execFile } from 'node:child_process';
 import { cpus } from 'node:os';
 const hands = Number(process.argv[2] || 300), seeds = Number(process.argv[3] || 3);
-const heroes = (process.argv[4] || 'fold,station,maniac,nit').split(',');
+const heroes = (process.argv[4] || 'fold,station,maniac,nit,tag,bot').split(',');
 const jobs = heroes.flatMap(h => Array.from({ length: seeds }, (_, i) => [h, i + 1]));
 const run = ([h, sd]) => new Promise((ok, bad) => execFile('node', [new URL('./simulate.js', import.meta.url).pathname, hands, h, sd, '--json'],
   { maxBuffer: 1e7 }, (e, out) => e ? bad(e) : ok({ h, ...JSON.parse(out.trim().split('\n').pop()) })));

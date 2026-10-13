@@ -1,4 +1,15 @@
-// Bot strategy.
+// Bot strategy: one sound core, six personalities on top.
+//
+// The core plays the way solvers do, from public information only (its own cards, the board, what
+// everyone has done this hand, and the table stats): opening ranges by position, 3-bets that are
+// polarised (value plus suited blockers), calls by pot odds against the raiser's range, c-bets sized
+// by texture, barrels and probes, bluffs in proportion to the bet size, and a defence that does not
+// fold more than the minimum (pot ÷ (pot + bet)). Every opponent's range is modelled from their
+// actions so far: an open-raiser is narrower than a limper, a 3-bettor narrower still, a player who
+// bets every street has something. The core returns a distribution over the legal actions; the
+// personality then bends those weights (奶龙 calls more, sc never raises without the nuts, Joe sizes
+// up, Kmetsch runs bluffs) but can only shift probability between options the core already allows at
+// a reasonable price, so a bot keeps its character without giving its chips away.
 import {best7,rankOf,suitOf} from './cards.js';
 import {BOT_STYLE} from './config.js';
 import {BB} from './settings.js';
@@ -6,13 +17,11 @@ import {H,S} from './state.js';
 import {N,bookKey,canAct,canRaise,live,maxRaiseTo,minRaiseTo,potTotal} from './table.js';
 import {botSay} from './talk.js';
 
-// Estimates use only the acting bot's cards and publicly visible betting state, plus what everyone
-// has shown so far (their 入池率 / 翻前加注 from the table stats).
-// read(q): how often q raises before the flop (af) and how often q plays a hand (vp), shrunk toward
-// typical values until there are enough hands to trust.
+// ---- reads: the table stats everyone can see, shrunk toward typical values until there is history ----
+// af: raises before the flop · vp: plays a hand · agg: bets or raises after the flop
 export function read(q){
-  const st=(S.stats||{})[bookKey(q)]||{},h=st.h||0,k=15;
-  return {af:((st.pr||0)+.15*k)/(h+k),vp:((st.vp||0)+.25*k)/(h+k)};
+  const st=(S.stats||{})[bookKey(q)]||{},h=st.h||0,k=15,pa=st.pa||0;
+  return {af:((st.pr||0)+.15*k)/(h+k),vp:((st.vp||0)+.25*k)/(h+k),agg:((st.pb||0)+.35*k)/(pa+k)};
 }
 export function startingStrength(hole){
   const hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
@@ -20,231 +29,93 @@ export function startingStrength(hole){
   const suited=suitOf(hole[0])===suitOf(hole[1]),gap=hi-lo;
   return Math.max(.05,Math.min(.95,(hi+lo-4)/30+(suited?.07:0)+(gap===1?.045:0)-Math.max(0,gap-2)*.025));
 }
-export function rangeEquity(hole,board,opponents,iters){
-  if(!opponents.length)return 1;
-  const known=new Set(hole.concat(board)),deck=Array.from({length:52},(_,c)=>c).filter(c=>!known.has(c));
-  // how tight each opponent's range is: bigger public bets → stronger; a player who raises everything
-  // preflop → wider. The preflop read can only widen a range after the flop (it says nothing about
-  // how they shove later).
-  const potNow=potTotal(),raises=Math.min(.18,Math.max(0,(S.raises||0)-1)*.06),pre=board.length===0;
-  const tights=opponents.map(q=>{
-    const pressure=q.bet>BB?Math.min(1,q.bet/Math.max(BB,potNow-q.bet)):0,adj=(.15-read(q).af)*1.1;
-    return Math.max(.05,Math.min(.85,.25+pressure*.45+raises+(pre?adj:Math.min(0,adj))));
-  });
-  let wins=0;
-  for(let t=0;t<iters;t++){
-    const pool=deck.slice(),hands=[];
-    const draw=()=>pool.splice(Math.floor(Math.random()*pool.length),1)[0];
-    for(let o=0;o<opponents.length;o++){
-      const tight=tights[o];
-      let h;
-      for(let attempt=0;attempt<8;attempt++){
-        h=[draw(),draw()];let strength=startingStrength(h);
-        if(board.length>=3){
-          const category=Math.floor(best7(h.concat(board))/Math.pow(16,5));
-          strength=Math.max(strength*.65,Math.min(.98,.23+category*.18));
-        }
-        if(attempt===7||Math.random()<Math.max(.08,Math.min(1,1.1+strength-tight*2)))break;
-        pool.push(...h);
-      }
-      hands.push(h);
-    }
-    const run=board.slice();while(run.length<5)run.push(draw());
-    const mine=best7(hole.concat(run));let ties=1,lost=false;
-    for(const h of hands){const score=best7(h.concat(run));if(score>mine){lost=true;break;}if(score===mine)ties++;}
-    if(!lost)wins+=1/ties;
-  }
-  return wins/iters;
-}
-// what the core saw on its last decision, for the personality wrappers below
-let CTX={};
-function decideCore(p,i){
-  const opponents=live().filter(q=>q!==p),opp=opponents.length,hole=H[i];
-  const {loose,aggr,type}=BOT_STYLE[p.name]||{loose:.5,aggr:.5};
-  const tag=type==='tag';
-  const toCall=Math.min(Math.max(0,S.currentBet-p.bet),p.stack),pot=potTotal(),canR=canRaise(p);
-  // Exclude side-pot money this stack cannot win from its call price.
-  const eligible=S.seats.reduce((sum,q)=>sum+Math.min(q.total,p.total+toCall),0);
-  const odds=toCall/(eligible+toCall||1);
-  const active=S.seats.map((q,k)=>({q,k})).filter(({q})=>canAct(q));
-  const order=active.sort((a,b)=>((a.k-S.dealer-1+N())%N())-((b.k-S.dealer-1+N())%N()));
-  const position=order.length>1?order.findIndex(x=>x.k===i)/(order.length-1):1;
-  const pre=S.board.length===0,strength=startingStrength(hole);
-  CTX={pre,strength,eq:null,toCall,pot,canR,position,street:S.board.length,raises:S.raises||0,checked:p.chk===S.hand+':'+S.board.length};
-  const eq=rangeEquity(hole,S.board,opponents,Math.max(180,Math.floor(650/(opp+1))));
-  // calling stations: players who play lots of hands but rarely raise
-  const station=opponents.length>0&&opponents.every(q=>{const x=read(q);return x.vp>.55&&x.af<.12;});
-  // a call that commits a big part of the stack needs more than bare pot odds
-  const commit=toCall/Math.max(1,p.stack+p.bet);
-  Object.assign(CTX,{eq,opp,station});
-  const raise=frac=>{
-    let to=pre&&S.currentBet<=BB?BB*((tag?4:2.5)+(1-position)*.5)+S.seats.filter(q=>q!==p&&q.bet===BB).length*BB*(tag?1:.6)
-      :S.currentBet+Math.max(S.minRaise,(pot+toCall)*frac);
-    to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(to)));
-    // Commit the last few chips only when already close to an all-in.
-    if(to>p.bet+p.stack*.90)to=maxRaiseTo(p);
-    return {type:'raise',to};
-  };
-  // sc: sees almost every flop cheaply and folds to a bet the moment his hand isn't good.
-  // With a big hand he likes to check-call, or bet just a little — under 25BB (50 at 1/2) unless he has the nuts.
-  if(type==='peeker'){
-    const nuts=!pre&&eq>.93,big=pre?strength>.80:eq>.75,r=Math.random();
-    const small=()=>{
-      if(nuts)return raise(.9);
-      const to=Math.min(S.currentBet+Math.max(S.minRaise,Math.round((pot+toCall)*.3)),Math.round(BB*25)-1,maxRaiseTo(p));
-      return to>=minRaiseTo(p)?{type:'raise',to}:null;
-    };
-    if(pre){
-      if(!toCall)return {type:'check'};
-      if(big&&canR&&r<.3){const x=small();if(x)return x;}
-      return big||toCall<=BB*6||strength>.62?{type:'call'}:{type:'fold'};
-    }
-    if(!toCall){
-      if(big&&canR&&r<.35){const x=small();if(x)return x;}
-      return {type:'check'};                    // a big hand is usually checked, then called down
-    }
-    if(nuts&&canR&&r<.5)return raise(.9);
-    if(big)return {type:'call'};                // check-call, no raise
-    return eq>.55?{type:'call'}:{type:'fold'};
-  }
-  // 奶龙 (土豪): sticky and loves to see cards — but not every single time, and without a big hand
-  // he won't put in big money (over half the pot, over 15% of his stack, or into a raise).
-  if(type==='whale'){
-    const r=Math.random(),big=pre?strength>.85:eq>.80;
-    if(canR&&big&&r<(toCall?.35:.5))return raise(.6);
-    if(!toCall)return {type:'check'};
-    const made=pre?0:Math.floor(best7(hole.concat(S.board))/Math.pow(16,5));
-    if(S.board.length===5&&made<2&&eq<.5)return {type:'fold'};          // river: two pair or a real chance
-    if(pre){                                                              // sees most flops, but not for a fortune
-      const bbs=toCall/BB;
-      if(bbs>20)return strength>.66?{type:'call'}:{type:'fold'};
-      if(bbs>8)return strength>.50||r<.25?{type:'call'}:{type:'fold'};
-      return strength<.40&&r<.18?{type:'fold'}:{type:'call'};
-    }
-    // big money after the flop: over half the pot, over 15% of his stack, or any raise
-    const huge=toCall>Math.min(pot*.5,(p.stack+p.bet)*.15)||(S.raises||0)>=2;
-    if(huge)return made>=2||eq>odds+.06?{type:'call'}:{type:'fold'};
-    return eq>odds-.08||r<.4?{type:'call'}:{type:'fold'};                  // sticks with pairs, draws, often air
-  }
-  const suited=suitOf(hole[0])===suitOf(hole[1]),hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
-  if(pre){
-    const unopened=S.currentBet<=BB,depth=p.stack/BB,r0=Math.random(),later=position>=.6;
-    // first-in ranges by position, as solvers open them: ~15% from the earliest seat up to ~45% last
-    // (looser players a bit wider, Joe wider still)
-    const rfi=Math.min(.62,(.15+position*.30)*(1+(loose-.5)*.6)+(tag?.10:0));
-    const openT=topT(rfi);
-    if(unopened){
-      if(canR&&strength>=openT){
-        if(depth<=12&&strength>.77)return {type:'raise',to:maxRaiseTo(p)};
-        if(tag){ // Joe opens big: 12.5BB, or 25 / 37.5BB with good hands (25 / 50 / 75 at 1/2)
-          const bbs=strength>=.66?(r0<.5?25:37.5):12.5;
-          const to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(BB*bbs)));
-          return {type:'raise',to:to>p.bet+p.stack*.9?maxRaiseTo(p):to};
-        }
-        return raise(0);
-      }
-      // only one big blind to see the flop: the pot already lays great odds, so folding wastes them —
-      // only the very worst hands let go sometimes
-      if(toCall&&toCall<=BB)return strength>.20||r0<.6?{type:'call'}:{type:'fold'};
-      return {type:'check'};
-    }
-    // Joe doubles a raise whenever his hand is decent
-    if(tag&&canR&&S.raises===2&&strength>=topT(.22)&&eq>odds){
-      const to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),S.currentBet*2));
-      return {type:'raise',to:to>p.bet+p.stack*.9?maxRaiseTo(p):to};
-    }
-    // facing one raise: 3-bet about 10% — the top ~5% for value, the rest as bluffs with suited
-    // blockers (suited aces/kings, suited broadways, suited connectors), wider against loose openers
-    if(S.raises===2&&canR){
-      const opener=S.seats[S.pfAgg],wide=opener&&read(opener).af>.25?.03:0;
-      const bluffable=suited&&(hi>=13||(hi>=10&&lo>=10)||(hi-lo===1&&lo>=4));
-      const valueHand=strength>=topT(.05+wide),bluff3=!valueHand&&bluffable&&r0<(later?.55:.3)*(.6+aggr*.8);
-      if(valueHand||bluff3){
-        const callers=Math.max(0,S.seats.filter(q=>q!==p&&q.bet===S.currentBet).length-1);
-        const to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(S.currentBet*(later?3:3.6)+callers*S.currentBet)));
-        return {type:'raise',to:to>p.bet+p.stack*.6?maxRaiseTo(p):to};
-      }
-    }
-    // facing a 3-bet: 4-bet the top ~2.5% (some A5s-type bluffs), jam the very top
-    if(S.raises===3&&canR&&(strength>=topT(.025)||(suited&&hi===14&&lo<=5&&r0<.12+aggr*.15))){
-      const to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(S.currentBet*2.3)));
-      return {type:'raise',to:to>p.bet+p.stack*.5||strength>=topT(.012)?maxRaiseTo(p):to};
-    }
-    if(S.raises>=4&&canR&&strength>=topT(.015))return {type:'raise',to:maxRaiseTo(p)};
-    if(!toCall)return {type:'check'};
-    // calling: pot odds against the raiser's range, with position and suitedness helping play the hand
-    const realization=.74+position*.13+(suited?.05:0);
-    const margin=.02+(S.raises>=3?.06:0)-(loose-.5)*.03+(commit>.35?.05:0);
-    return eq*realization>odds+margin?{type:'call'}:{type:'fold'};
-  }
-  const cards=hole.concat(S.board),suits=[0,0,0,0];cards.forEach(c=>suits[suitOf(c)]++);
-  const ranks=new Set(cards.map(rankOf));if(ranks.has(14))ranks.add(1);
-  let straightDraw=false;for(let low=1;low<=10;low++){let count=0;for(let r=low;r<low+5;r++)if(ranks.has(r))count++;if(count===4)straightDraw=true;}
-  const draw=S.board.length<5&&(suits.includes(4)||straightDraw);
-  const street=S.board.length,river=street===5,last=position>=.99,inPos=position>=.6,tex=texture(S.board);
-  const pfr=S.pfAgg===i,ledLast=S.prevAgg===i;
-  // against calling stations: thinner value, bigger sizes, almost no bluffs
-  const value=eq>(opp===1?(station?.52:.56):opp===2?(station?.43:.46):.38);
-  const bluffy=(station?.15:1)*(tag?.6:1);
-  const r=Math.random(),size=(station||tag)?(eq>.82?1:.8):eq>.82?.85:.5+aggr*.2;
-  const checked=p.chk===S.hand+':'+street;
-  if(!toCall){
-    // out of position with a monster: sometimes check, planning to raise when someone bets
-    if(canR&&!inPos&&eq>.78&&opp>=1&&!river&&r<.3+aggr*.12)return {type:'check'};
-    // flop c-bet by the preflop raiser: small and often on dry high boards, less on wet / low
-    // connected boards and into more players (Joe only when he still has something)
-    if(street===3&&pfr&&canR&&opp<=3){
-      const freq=(tex.dryHigh?.82:tex.wet?.45:.65)*(opp===1?1:opp===2?.65:.4);
-      if(tag?eq>.40&&r<freq:r<freq*(eq>.3?1:bluffy))return raise(tex.dryHigh?.33:.6);
-    }
-    // donk lead (as Pluribus does): out of position on a low, connected board that suits the caller
-    if(!river&&!inPos&&!pfr&&canR&&tex.low&&tex.connected&&(eq>.62||(draw&&eq>.3))&&r<.25+aggr*.15)return raise(.5);
-    // probe: the flop was checked through, so nobody showed strength — in position, take the turn
-    if(street===4&&S.prevAgg===-1&&canR&&inPos&&(eq>.3?r<.6:r<(.25+aggr*.2)*bluffy))return raise(.5);
-    // second barrel: whoever led the flop keeps going on the turn with value and draws, some air
-    if(street===4&&ledLast&&canR&&opp<=2&&(eq>.5||draw||(eq<.3&&r<.4*bluffy))&&r<.75)return raise(eq>.75?.75:.6);
-    // river: last to act after everyone checked — bet value and bluffs, check back only the middle;
-    // the nuts and some air go big (overbet), the bluff share follows the size (≈25% at half pot, 33% at pot)
-    if(river&&last&&canR){
-      if(eq>.88&&r<.35)return raise(1.25);
-      if(eq>.45&&r<.85)return raise(eq>.7?.75:.5);
-      if(eq<.35&&r<(.6+aggr*.3)*bluffy/(opp>2?1.6:1))return raise(r<.2?1.25:.6+aggr*.15);
-    }
-    if(canR&&value&&r<.7+aggr*.25)return raise(river&&eq>.9&&r<.25?1.25:size);
-    if(river&&canR&&opp<=3){
-      if(inPos&&eq>.5&&r<.65)return raise(.5);
-      if(!inPos&&eq>.55&&r<.45)return raise(.4);                       // thin value from the front: small bet
-      if(eq<.35&&r<((inPos?.45:.2)+aggr*.2)*bluffy/(opp>2?2:1))return raise(.6+aggr*.15);
-    }
-    // checked to me in position on the flop or turn: stab with a piece, sometimes with nothing
-    if(!river&&canR&&inPos&&opp<=3&&(eq>.4?r<.55:r<(.22+aggr*.2)*bluffy))return raise(.5);
-    // everyone checked to the last player in a bigger pot: someone has to bet — a piece usually, air now and then
-    if(!river&&canR&&last&&(eq>.33?r<.72:r<(.2+aggr*.2)*bluffy))return raise(.45);
-    // first to act in a multiway pot with a decent hand: bet for protection sometimes
-    if(!river&&canR&&!inPos&&opp>=3&&eq>.42&&r<.3+aggr*.15)return raise(.5);
-    if(canR&&opp<=2&&draw&&eq>.22&&r<(.18+aggr*.22)*bluffy)return raise(.55);
-    return {type:'check'};
-  }
-  // facing a bet. Don't over-fold (minimum defense ≈ pot ÷ (pot + bet)); look up river bets from
-  // players who bluff a little lighter.
-  const bettor=S.seats.reduce((a,q)=>q.bet>(a?a.bet:-1)?q:a,null),aggro=bettor&&read(bettor).af>.22;
-  const margin=(river?(aggro?-.04:-.01):.02)+(opp>2?.025:0)-(loose-.5)*.025+(tag?.03:0)+(commit>.35&&eq<.65?.05:0);
-  // check-raise: I checked this street and now somebody bet — monsters and some strong draws
-  if(checked&&canR&&(eq>.70||(draw&&eq>.35&&r<.3*aggr*bluffy))&&r<.8)return raise(eq>.82?.9:.75);
-  if(eq<odds+margin){
-    if(river&&canR&&opp===1&&last&&eq<.12&&r<.04*aggr*bluffy)return raise(1);   // rare river bluff-raise
-    return {type:'fold'};
-  }
-  if(canR&&eq>(opp===1?.75:.62)&&r<.55+aggr*.35)return raise(size);
-  if(canR&&opp===1&&draw&&eq>.35&&toCall<pot*.4&&r<aggr*.15)return raise(.65);
-  return {type:'call'};
-}
-
 // startingStrength → share of all 1,326 starting hands: topT(.15) is the weakest hand in the top 15%
 let RANKED=null;
 export function topT(share){
   if(!RANKED){const all=[];for(let a=0;a<52;a++)for(let b=a+1;b<52;b++)all.push(startingStrength([a,b]));RANKED=all.sort((x,y)=>y-x);}
   return RANKED[Math.max(0,Math.min(RANKED.length-1,Math.floor(share*RANKED.length)))];
+}
+
+// ---- an opponent's range, from what they have done this hand ----
+// pre: how tight their starting hands are (0 = any two, 1 = only the very top), from their preflop
+// actions (limp, call an open, open-raise, 3-bet, 4-bet). post: how much their hand must connect with
+// the board, from every bet, raise or call after the flop. Reads shift both: a player who raises a lot
+// opens wider; one who rarely bets after the flop means it when they do.
+export function rangeTight(q){
+  const h=q.hist||[],rd=read(q);
+  let pre=.18,post=0,preRaises=0,preCallLevel=0;
+  for(const a of h){
+    if(a.s!==0)continue;
+    if(a.t==='raise')preRaises++;else if(a.t==='call')preCallLevel=Math.max(preCallLevel,a.r);
+  }
+  if(preRaises)pre=[0,.45,.62,.78,.88][Math.min(4,preRaises)]-(rd.af-.15)*1.2;
+  else if(preCallLevel>=3)pre=.58;
+  else if(preCallLevel===2)pre=.42-(rd.vp-.25)*.4;
+  else if(preCallLevel===1)pre=.25;
+  for(const a of h){
+    if(a.s===0)continue;
+    const late=a.s===5?.08:a.s===4?.04:0;                     // the later the street, the more an action says
+    if(a.t==='raise')post+=(a.r>=1?.42:.3)+late+(rd.agg<.2?.08:rd.agg>.5?-.06:0);   // a raise over a bet: stronger still
+    else if(a.t==='call')post+=.15+late;                        // calling a bet means the board is hit, or a draw
+    else if(a.t==='check')post-=.05;
+  }
+  return {pre:Math.max(.08,Math.min(.92,pre)),post:Math.max(0,Math.min(.95,post))};
+}
+// hand category of every two-card combo on this board, computed once per board and shared by all bots
+let CAT_KEY='',CAT=null;
+function categories(board){
+  const key=board.join(',');
+  if(key===CAT_KEY&&CAT)return CAT;
+  const arr=new Uint8Array(52*52);
+  if(board.length>=3){
+    const on=new Set(board);
+    for(let a=0;a<52;a++){if(on.has(a))continue;for(let b=a+1;b<52;b++){if(on.has(b))continue;arr[a*52+b]=1+Math.floor(best7([a,b].concat(board))/Math.pow(16,5));}}
+  }
+  CAT_KEY=key;CAT=arr;return arr;
+}
+// cumulative weights of every combo for one opponent: starting strength against pre, board connection against post
+function rangeWeights(q,board,combos){
+  const {pre,post}=rangeTight(q),cat=categories(board),cum=new Float64Array(combos.length);
+  const suits=[0,0,0,0];board.forEach(c=>suits[suitOf(c)]++);
+  let acc=0;
+  for(let k=0;k<combos.length;k++){
+    const [a,b]=combos[k];
+    const wp=Math.max(.01,Math.min(1,1+startingStrength(combos[k])-2*pre));
+    let wq=1;
+    if(board.length>=3){
+      let str=.23+(cat[a*52+b]-1)*.18;
+      if(board.length<=4){   // a flush draw plays like a medium hand (the semi-bluffing part of a range)
+        const sa=suitOf(a),sb=suitOf(b);
+        if(suits[sa]+1+(sa===sb?1:0)>=4||suits[sb]+1+(sa===sb?1:0)>=4)str=Math.max(str,.5);
+      }
+      wq=post<=0?1:Math.max(.01,Math.pow(Math.max(0,Math.min(1,(Math.min(.98,str)-post*1.5+.55)/.55)),2));
+    }
+    acc+=wp*wq;cum[k]=acc;
+  }
+  return cum;
+}
+const pickFrom=(cum,combos)=>{let lo=0,hi=cum.length-1;const x=Math.random()*cum[hi];while(lo<hi){const mid=(lo+hi)>>1;if(cum[mid]<x)lo=mid+1;else hi=mid;}return combos[lo];};
+export function rangeEquity(hole,board,opponents,iters){
+  if(!opponents.length)return 1;
+  const known=new Set(hole.concat(board)),deck=Array.from({length:52},(_,c)=>c).filter(c=>!known.has(c));
+  const combos=[];for(let a=0;a<deck.length;a++)for(let b=a+1;b<deck.length;b++)combos.push([deck[a],deck[b]]);
+  const tables=opponents.map(q=>rangeWeights(q,board,combos));
+  let wins=0;
+  for(let t=0;t<iters;t++){
+    const used=new Set(),hands=[];
+    for(const cum of tables){
+      let h;
+      for(let tries=0;tries<20;tries++){h=pickFrom(cum,combos);if(!used.has(h[0])&&!used.has(h[1]))break;}
+      if(used.has(h[0])||used.has(h[1]))h=deck.filter(c=>!used.has(c)).slice(0,2);
+      used.add(h[0]);used.add(h[1]);hands.push(h);
+    }
+    const rest=deck.filter(c=>!used.has(c)),run=board.slice();
+    while(run.length<5)run.push(rest.splice(Math.floor(Math.random()*rest.length),1)[0]);
+    const mine=best7(hole.concat(run));let ties=1,lost=false;
+    for(const h of hands){const score=best7(h.concat(run));if(score>mine){lost=true;break;}if(score===mine)ties++;}
+    if(!lost)wins+=1/ties;
+  }
+  return wins/iters;
 }
 // board texture for c-bets and leads
 export function texture(board){
@@ -254,34 +125,273 @@ export function texture(board){
   const high=rs[0]||0,wet=suitMax>=3||connected||(suitMax===2&&top3.length>=2&&top3[0]-top3[1]<=2);
   return {high,paired,suitMax,connected,wet,low:high<=9,dryHigh:high>=12&&!connected&&suitMax<=2&&!wet};
 }
+// my draws (flop and turn): a flush draw with one of my cards, open-ended or gutshot straight draw, overcards
+export function draws(hole,board){
+  const none={fd:false,oesd:false,gut:false,overs:0,draw:false};
+  if(board.length<3||board.length>4)return none;
+  const cards=hole.concat(board),suits=[0,0,0,0];cards.forEach(c=>suits[suitOf(c)]++);
+  const fd=suits.some((n,s)=>n===4&&hole.some(c=>suitOf(c)===s));
+  const ranks=new Set(cards.map(rankOf));if(ranks.has(14))ranks.add(1);
+  let oesd=false,gut=false;
+  for(let low=1;low<=10;low++){
+    const miss=[];for(let r=low;r<low+5;r++)if(!ranks.has(r))miss.push(r);
+    if(miss.length!==1)continue;
+    if((miss[0]===low&&low>1)||(miss[0]===low+4&&low<10))oesd=true;else gut=true;
+  }
+  const bmax=Math.max(...board.map(rankOf)),overs=hole.filter(c=>rankOf(c)>bmax).length;
+  return {fd,oesd,gut,overs,draw:fd||oesd||gut};
+}
 
-// Kmetsch: after about three real hands (betting or calling with a strong holding) he switches to
-// bluffing — bets or raises with anything — for two bluffs, then plays straight again.
+// ---- the situation, as the acting bot sees it ----
+let CTX={};
+function situation(p,i){
+  const opponents=live().filter(q=>q!==p),opp=opponents.length,hole=H[i];
+  const style=BOT_STYLE[p.name]||{loose:.5,aggr:.5},{loose,aggr,type}=style;
+  const toCall=Math.min(Math.max(0,S.currentBet-p.bet),p.stack),pot=potTotal(),canR=canRaise(p);
+  const eligible=S.seats.reduce((sum,q)=>sum+Math.min(q.total,p.total+toCall),0);   // side-pot money this stack cannot win is not in its price
+  const odds=toCall/(eligible+toCall||1);
+  const active=S.seats.map((q,k)=>({q,k})).filter(({q})=>canAct(q));
+  const order=active.sort((a,b)=>((a.k-S.dealer-1+N())%N())-((b.k-S.dealer-1+N())%N()));
+  const position=order.length>1?order.findIndex(x=>x.k===i)/(order.length-1):1;
+  const pre=S.board.length===0,street=S.board.length,river=street===5,strength=startingStrength(hole);
+  const eq=rangeEquity(hole,S.board,opponents,Math.max(160,Math.floor(600/(opp+1))));
+  const station=opp>0&&opponents.every(q=>{const x=read(q);return x.vp>.55&&x.af<.12;});
+  const bettor=S.seats.reduce((a,q)=>q!==p&&q.bet>(a?a.bet:-1)?q:a,null),bettorRead=bettor?read(bettor):null;
+  const effective=Math.max(0,...opponents.map(q=>q.stack+q.bet));
+  const depth=Math.min(p.stack+p.bet,effective||p.stack+p.bet)/BB;
+  const suited=suitOf(hole[0])===suitOf(hole[1]),hi=Math.max(...hole.map(rankOf)),lo=Math.min(...hole.map(rankOf));
+  const limpers=pre?S.seats.filter(q=>q!==p&&(q.hist||[]).some(a=>a.s===0&&a.t==='call'&&a.r<=1)).length:0;
+  const callers=pre?Math.max(0,S.seats.filter(q=>q!==p&&q.bet===S.currentBet&&S.currentBet>BB).length-1):0;
+  return {p,i,hole,opponents,opp,loose,aggr,type,tag:type==='tag',toCall,pot,odds,canR,position,inPos:position>=.6,last:position>=.99,
+    pre,street,river,strength,eq,station,bettor,bettorRead,depth,suited,hi,lo,limpers,callers,
+    raises:S.raises||0,pfr:S.pfAgg===i,ledLast:S.prevAgg===i,checked:p.chk===S.hand+':'+street,
+    commit:toCall/Math.max(1,p.stack+p.bet),spr:p.stack/Math.max(1,pot+toCall),
+    made:pre?0:Math.floor(best7(hole.concat(S.board))/Math.pow(16,5)),dr:draws(hole,S.board),tex:texture(S.board)};
+}
+
+// ---- a distribution over the legal actions ----
+// {fold, call (check when nothing to call), raise:[{w,frac|to}]}: weights, normalised when sampled.
+const mix=()=>({fold:0,call:0,raise:[]});
+const bet=(m,w,frac,to)=>{if(w>0)m.raise.push({w,frac,to});};
+// facing a bet the weights are relative to the call (or fold) weight of 1: odds(P) is the weight
+// that makes the raise happen with probability P
+const odds=P=>{P=Math.min(.95,Math.max(0,P));return P/(1-P);};
+function raiseTo(c,frac,to){
+  const p=c.p;
+  if(to==null)to=c.pre&&S.currentBet<=BB?BB*(2.5+(1-c.position)*.5)+c.limpers*BB:S.currentBet+Math.max(S.minRaise,(c.pot+c.toCall)*frac);
+  to=Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(to)));
+  if(to>p.bet+p.stack*.85)to=maxRaiseTo(p);        // the last few chips go in with the raise
+  return to;
+}
+
+function corePre(c){
+  const m=mix(),{strength,position,raises,toCall,eq,depth,canR,suited,hi,lo,loose,tag,aggr,commit,callers,limpers}=c;
+  const unopened=S.currentBet<=BB,later=position>=.6;
+  // first-in ranges by position, as solvers open them: ~15% from the earliest seat up to ~45% last;
+  // looser players a bit wider; limpers ahead are isolated with a slightly tighter range
+  const rfi=Math.min(.62,(.15+position*.30)*(1+(loose-.5)*.6)*(limpers?.85:1));
+  if(unopened){
+    if(canR&&strength>=topT(rfi)){
+      if(depth<=12)bet(m,1,0,strength>=topT(rfi*.7)?maxRaiseTo(c.p):undefined);   // short: open-jam the top, else a normal open
+      else bet(m,1,0);
+      return m;
+    }
+    // one big blind (or completing the small blind) to see the flop: the pot lays good odds, so a hand
+    // worth playing comes along, the junk mostly folds
+    if(toCall&&toCall<=BB){
+      const half=toCall<BB;
+      m.call=Math.min(.95,(strength>.42?.9:strength>.30?(half?.8:.55)+limpers*.08:strength>.20?(half?.45:.2):(half?.2:.05))*(.5+loose));
+      m.fold=1-m.call;return m;
+    }
+    m.call=1;return m;   // check the big blind
+  }
+  // short stacks: jam or fold, no calling
+  if(depth<=12){
+    if(canR&&strength>=topT(raises>=3?.04:.10))bet(m,odds(.95),0,maxRaiseTo(c.p));
+    if(eq>c.odds+.08&&commit>.5)m.call=1;else m.fold=1;
+    return m;
+  }
+  if(raises===2&&canR){
+    // facing one raise: 3-bet about 10% — the top ~5% for value, the rest as bluffs with suited blockers
+    // (suited aces/kings, suited broadways, suited connectors), wider against loose openers, tighter with callers
+    const opener=S.seats[S.pfAgg],wide=opener&&read(opener).af>.25?.03:0;
+    const bluffable=suited&&(hi>=13||(hi>=10&&lo>=10)||(hi-lo===1&&lo>=4));
+    const huge=S.currentBet>=BB*8;
+    const valueHand=strength>=topT(huge?.025:.05+wide-callers*.01);
+    const size=S.currentBet*(later?3:3.6)+callers*S.currentBet;
+    if(valueHand)bet(m,odds(.85),0,size);
+    else if(bluffable&&!callers&&!huge)bet(m,odds((later?.5:.28)*(.6+aggr*.8)),0,size);
+  }
+  // facing a 3-bet: 4-bet the top ~2.5% and some A5s-type blockers, jam the very top; facing a 4-bet: jam QQ+/AK
+  if(raises===3&&canR&&(strength>=topT(.025)||(suited&&hi===14&&lo<=5)))
+    bet(m,odds(strength>=topT(.025)?.9:.12+aggr*.15),0,strength>=topT(.012)?maxRaiseTo(c.p):S.currentBet*2.3);
+  if(raises>=4&&canR&&strength>=topT(.015))bet(m,odds(.92),0,maxRaiseTo(c.p));
+  if(!toCall){m.call=1;return m;}
+  // calling: pot odds against the raiser's range, with position and suitedness helping play the hand
+  const realization=.74+position*.13+(suited?.05:0);
+  const margin=.02+(raises>=3?.06:0)-(loose-.5)*.03+(commit>.35?.05:0)+(tag?.02:0)+(S.currentBet>=BB*8?.05:0);
+  const ok=eq*realization>c.odds+margin;
+  m.call=ok?1:0;m.fold=ok?0:1;
+  // the raise weights above are relative to a call: value raises dominate, bluffs are a share
+  return m;
+}
+
+function corePost(c){
+  const m=mix(),{eq,opp,toCall,pot,canR,inPos,last,river,street,pfr,ledLast,checked,tex,dr,station,commit,spr,aggr,tag,loose,bettorRead}=c;
+  const draw=dr.draw;
+  // bluffs are rarer into calling stations and into a crowd; Joe bluffs less by nature
+  const bluffy=(station?.15:1)*(tag?.6:1)*(opp>2?.5:1)*(river?1.25:1);
+  // the price of a bluff-catch sets how many bluffs a balanced bettor has: size ÷ (1 + size)
+  const alpha=s=>s/(1+s);
+  const vT=opp===1?(station?.5:river?.52:.56):opp===2?(station?.43:.46):.38;   // bet for value above this (thinner on the river)
+  const air=eq<(river?.30:.33);
+  if(!toCall){
+    const size=river?(eq>.9?1.25:eq>.7?.75:.5):street===3?(tex.dryHigh?.33:.66):.66;
+    // value: bet most of the time; out of position with a monster sometimes check to raise;
+    // when the bet would be most of the stack, only a hand that wants to get it in
+    if(canR&&eq>vT){
+      let w=.68+aggr*.2+(eq>.8?.1:0)-(opp>=3?.15:0);
+      if(!inPos&&eq>.78&&!river&&opp>=1)w-=.3+aggr*.12;
+      const frac=(station||tag)?(eq>.82?1:.8):size;
+      if((pot+toCall)*frac>c.p.stack*.5&&eq<.64)w*=.25;
+      bet(m,w,frac);
+    }
+    // flop c-bet by the preflop raiser: small and often on dry high boards, less on wet / low boards
+    // and into more players; with air it is a bluff at the size's share
+    if(street===3&&pfr&&canR&&opp<=3&&eq<=vT){
+      const f=(tex.dryHigh?.82:tex.wet?.45:.65)*(opp===1?1:opp===2?.65:.4);
+      bet(m,air?f*alpha(tex.dryHigh?.33:.6)*1.6*bluffy:f*(tag&&eq<.4?0:1),tex.dryHigh?.33:.6);
+    }
+    // semi-bluff: a draw bets the flop or turn, sized to fold out better hands now
+    if(!river&&draw&&canR&&eq<=vT&&opp<=2)bet(m,(.3+aggr*.25)*bluffy*(dr.fd||dr.oesd?1:.5),.6);
+    // donk lead (as Pluribus does): out of position on a low, connected board that suits the caller
+    if(!river&&!inPos&&!pfr&&canR&&tex.low&&tex.connected&&(eq>.62||(draw&&eq>.3)))bet(m,.25+aggr*.15,.5);
+    // probe: the flop was checked through, so nobody showed strength — in position, take the turn
+    if(street===4&&S.prevAgg===-1&&canR&&inPos)bet(m,eq>.3?.6:(.25+aggr*.2)*bluffy,.5);
+    // second barrel: whoever led the flop keeps going on the turn with value, draws and some air
+    if(street===4&&ledLast&&canR&&opp<=2&&eq<=vT)bet(m,(draw?.6:air?.35*bluffy:.45)*.75,eq>.75?.75:.6);
+    // river, last to act after everyone checked: value and bluffs, check back only the middle;
+    // the nuts and some air go big (overbet); bluffs follow the size (≈25% at half pot, 33% at pot)
+    if(river&&last&&canR){
+      if(eq>.88)bet(m,.35,1.25);
+      else if(eq>.45&&eq<=vT)bet(m,.85,eq>.7?.75:.5);
+      else if(air){bet(m,(.5+aggr*.3)*bluffy*alpha(.6)*1.6,.6);bet(m,.15*bluffy,1.25);}
+    }else if(river&&canR&&opp<=3){
+      if(inPos&&eq>.5&&eq<=vT)bet(m,.65,.5);
+      if(!inPos&&eq>.55&&eq<=vT)bet(m,.45,.4);                         // thin value from the front: small bet
+      if(air)bet(m,((inPos?.45:.2)+aggr*.2)*bluffy*alpha(.6)*1.4,.6+aggr*.15);
+    }
+    // checked to me in position on the flop or turn: stab with a piece, sometimes with nothing
+    if(!river&&canR&&inPos&&opp<=3&&eq<=vT)bet(m,eq>.4?.55:(.22+aggr*.2)*bluffy,.5);
+    // everyone checked to the last player in a bigger pot: someone has to bet
+    if(!river&&canR&&last&&eq<=vT)bet(m,eq>.33?.72:(.2+aggr*.2)*bluffy,.45);
+    // first to act in a multiway pot with a decent hand: bet for protection sometimes
+    if(!river&&canR&&!inPos&&opp>=3&&eq>.42&&eq<=vT)bet(m,.3+aggr*.15,.5);
+    m.call=1;    // check: whatever the bets leave over (bet weights are capped when sampled)
+    return m;
+  }
+  // facing a bet: defend at least the minimum (pot ÷ (pot + bet)) against a balanced bettor; fold a
+  // little more to a player who rarely bets without it, call a little lighter against one who bets everything
+  const passive=bettorRead&&bettorRead.agg<.22,aggro=bettorRead&&bettorRead.agg>.5,raised=c.raises>=2;
+  const margin=(river?-.01:.02)+(opp>2?.025:0)-(loose-.5)*.025+(tag?.03:0)+(commit>.35&&eq<.65?.05:0)
+    +(passive?(street>=4?.07:.03):0)-(aggro?.04:0)+(spr<1.5&&eq>.5?-.03:0)+(raised?(river?.1:.06):0);
+  if(eq<c.odds+margin){
+    m.fold=1;
+    if(river&&canR&&opp===1&&last&&eq<.12)bet(m,odds(.04*aggr*bluffy),1);        // rare river bluff-raise
+    return m;
+  }
+  m.call=1;
+  // raise: strong hands (check-raise when I checked this street), strong draws at a good price
+  const vR=raised?.88:opp===1?.72:.62;
+  if(canR&&(eq>vR||(checked&&!raised&&eq>.7)))bet(m,odds((.5+aggr*.35)*(checked?1.25:1)*(raised?.8:1)),eq>.82?.9:.75);
+  if(canR&&opp===1&&draw&&(dr.fd||dr.oesd)&&eq>.35&&toCall<pot*.4&&!river)bet(m,odds(aggr*.2*bluffy*(checked?1.5:1)),.65);
+  return m;
+}
+
+// ---- personalities: bend the core's weights, never past a sound price ----
+function personality(m,c){
+  const {type,eq,toCall,pot,pre,strength,odds,raises,p,river,canR}=c;   // odds: the pot odds of the call
+  const scaleRaises=(k,keep)=>{m.raise.forEach(r=>{if(!(keep&&keep(r)))r.w*=k;});};
+  if(type==='whale'){
+    // 奶龙: sticky and loves to see cards, but big money needs a big hand. Close folds at a fair price
+    // become calls; raises are rarer unless the hand is huge; huge bets with nothing are still folded.
+    const cheap=pre?toCall<=BB*6:toCall<=Math.min(pot*.4,(p.stack+p.bet)*.12)&&raises<2;
+    const close=pre?strength>.38:eq>odds-.08&&!(river&&c.made<2&&eq<.5);
+    if(m.fold>0&&cheap&&close){m.call+=m.fold*.5;m.fold*=.5;}
+    if(m.fold>0&&pre&&toCall<=BB&&strength>.2){m.call+=m.fold*.8;m.fold*=.2;}
+    scaleRaises(.6,r=>eq>.85||strength>.85);
+  }else if(type==='peeker'){
+    // sc: sees cheap flops, folds the moment the hand isn't good, and with a big hand check-calls or
+    // bets small (under 25BB unless the nuts)
+    if(pre&&m.fold>0&&toCall<=BB*6&&strength>.3){m.call+=m.fold*.85;m.fold*=.15;}
+    const nuts=!pre&&eq>.93;
+    m.raise.forEach(r=>{
+      if(nuts)return;
+      const to=r.to!=null?r.to:S.currentBet+Math.max(S.minRaise,(pot+toCall)*(r.frac||.5));
+      if(to<BB*25&&!toCall)r.w*=.4;else r.w*=0;            // small bets only when nobody has bet
+    });
+    if(!pre&&eq>.75&&!nuts)m.raise.forEach(r=>{r.w*=.5;});    // mostly check-call a big hand
+  }else if(type==='tag'){
+    // Joe: opens 12.5BB, 25 / 37.5BB with good hands (25 / 50 / 75 at 1/2) and doubles a raise with a
+    // decent hand; tighter and bigger, but never bluffing without a piece
+    if(pre&&S.currentBet<=BB&&m.raise.length&&canR){
+      const bbs=strength>=.66?(Math.random()<.5?25:37.5):12.5;
+      m.raise=[{w:1,to:Math.round(BB*bbs)}];
+    }else if(pre&&raises===2&&canR&&strength>=topT(.22)&&eq>odds){
+      const to=S.currentBet*2;if(!m.raise.length)m.raise.push({w:1,to});else m.raise.forEach(r=>{r.w=Math.max(r.w,1);r.to=Math.max(r.to||0,to);});
+    }
+    m.raise.forEach(r=>{if(r.frac!=null&&r.frac<1&&eq>.6)r.frac=Math.min(1,r.frac*1.2);});
+  }else if(type==='bluffer'){
+    // Kmetsch: after a few real hands he runs a couple of bluffs — in spots where a bluff makes sense
+    if(p.bluffing&&canR&&(c.opp||0)<=2&&!c.station&&!(pre&&S.currentBet>=BB*8)){
+      const weak=pre?strength<.6:eq<.5;
+      const to=raiseTo(c,pre?.8:.75);
+      if(weak&&to<=p.bet+(p.stack+p.bet)*.4){
+        if(!m.raise.length)bet(m,1,0,to);else m.raise.forEach(r=>{r.w=Math.max(r.w*2.5,1);});
+        m.fold*=.3;
+      }
+    }
+  }
+  return m;
+}
+
+// ---- sample an action from the weights ----
+function choose(m,c){
+  const raises=c.canR?m.raise.filter(r=>r.w>0):[];
+  const rw=raises.reduce((a,r)=>a+r.w,0);
+  if(!c.toCall){
+    // bet weights are probabilities of betting; the rest is a check
+    if(rw>0&&Math.random()<Math.min(.95,rw)){const r=pickBy(raises,rw);return {type:'raise',to:raiseTo(c,r.frac,r.to)};}
+    return {type:'check'};
+  }
+  // facing a bet: fold / call / raise, relative weights
+  const total=m.fold+m.call+rw;if(total<=0)return {type:'fold'};
+  let x=Math.random()*total;
+  if((x-=m.fold)<0)return {type:'fold'};
+  if((x-=m.call)<0)return {type:'call'};
+  const r=pickBy(raises,rw);return {type:'raise',to:raiseTo(c,r.frac,r.to)};
+}
+function pickBy(list,total){let x=Math.random()*total;for(const r of list){if((x-=r.w)<0)return r;}return list[list.length-1];}
+
+// Kmetsch's cycle: three real hands (betting or calling with a strong holding), then two bluffs
 const REAL_HANDS=3,BLUFFS=2;
-function bluffTo(p,frac){
-  const to=S.currentBet+Math.max(S.minRaise,(CTX.pot+CTX.toCall)*frac);
-  return Math.max(minRaiseTo(p),Math.min(maxRaiseTo(p),Math.round(to)));
+function bluffCycle(p,d,c){
+  if((BOT_STYLE[p.name]||{}).type!=='bluffer')return;
+  if(p.bluffing){
+    if(d.type==='raise'){p.bl=(p.bl||0)+1;p.bluffs=(p.bluffs||0)+1;botSay(p,'bluff',.85);if(p.bl>=BLUFFS){p.bluffing=false;p.real=0;p.bl=0;}}
+    return;
+  }
+  const real=c.pre?c.strength>.74:c.eq>.6;
+  if(real&&(d.type==='raise'||d.type==='call'))p.real=(p.real||0)+1;
+  if((p.real||0)>=REAL_HANDS)p.bluffing=true;
 }
 export function botDecide(p,i){
-  const d=pick(p,i);
+  const c=situation(p,i);
+  CTX={pre:c.pre,strength:c.strength,eq:c.eq,toCall:c.toCall,pot:c.pot,canR:c.canR,position:c.position,street:c.street,raises:c.raises,checked:c.checked,opp:c.opp,station:c.station};
+  const m=personality(c.pre?corePre(c):corePost(c),c);
+  const d=choose(m,c);
+  bluffCycle(p,d,c);
   if(d.type==='check')p.chk=S.hand+':'+S.board.length;   // remembered for a check-raise later this street
   if(globalThis.__botTrace)globalThis.__botTrace(p,d,CTX);  // tools/simulate.js --behaviour
   return d;
 }
-function pick(p,i){
-  const d=decideCore(p,i),{type}=BOT_STYLE[p.name]||{};
-  if(type!=='bluffer')return d;
-  if((p.real||0)>=REAL_HANDS&&CTX.canR){
-    const r=Math.random(),weak=CTX.pre?CTX.strength<.6:(CTX.eq??0)<.5;
-    const spot=CTX.pre?r<.5:!CTX.toCall?r<.8:r<.4;
-    if(weak&&spot&&d.type!=='raise'&&(CTX.opp||0)<=2&&!CTX.station){
-      p.bl=(p.bl||0)+1;p.bluffs=(p.bluffs||0)+1;botSay(p,'bluff',.85);
-      if(p.bl>=BLUFFS){p.real=0;p.bl=0;}
-      return {type:'raise',to:bluffTo(p,CTX.pre?.8:.75)};
-    }
-  }
-  const real=CTX.pre?CTX.strength>.74:(CTX.eq??0)>.6;
-  if(real&&(d.type==='raise'||d.type==='call'))p.real=(p.real||0)+1;
-  return d;
-}
-

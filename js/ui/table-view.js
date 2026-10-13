@@ -95,6 +95,15 @@ function winningCards(){
   });
   return hot;
 }
+// the result card pops up over the felt once per hand, then fades on its own
+let RC_AT=0,RC_HAND=-1;
+export function resultCardHTML(){
+  if(!S.msg.length)return '';
+  if(RC_HAND!==S.hand){RC_HAND=S.hand;RC_AT=Date.now();}
+  const age=Date.now()-RC_AT;if(age>3400)return '';
+  const lines=S.msg.slice(0,3).map(names);
+  return `<div class="resultcard" style="--age:-${age}ms">${lines[0]}${lines.length>1?`<small>${lines.slice(1).join('<br>')}</small>`:''}</div>`;
+}
 export function renderTable(){
   sync();
   const m=mySeat(),seated=m>=0,n=N(),compact=n>7;
@@ -106,8 +115,9 @@ export function renderTable(){
   const R=S.runout,twice=R&&R.times===2&&R.stage!=='vote';
   const boardCards=(cards,key,size)=>{const out=[];for(let k=0;k<5;k++){const c=cards[k];out.push(cardHTML(c,size+(c!=null&&HOT.has(c)?' hot':''),c!=null?flipCard(key,k):''));}return out.join('');};
   let result='';
-  if(S.street==='done'||S.street==='idle')result=names(S.msg[0]||'');
-  else if(S.actor>=0&&S.actor!==m&&BETTING.includes(S.street))result=`${esc(seatName(S.seats[S.actor]))} 思考中…`;
+  if(S.street==='idle')result=names(S.msg[0]||'');
+  else if(S.street==='done')result=resultCardHTML();
+  else if(S.actor>=0&&S.actor!==m&&BETTING.includes(S.street))result=`<span class="pill-note">${esc(seatName(S.seats[S.actor]))} 思考中…</span>`;
   if(S.mode==='online'&&S.street==='idle'){
     const bought=S.seats.filter(p=>p.stack>0).length;
     result=`等待玩家 <b class="cnt">${bought}/${needToStart()}</b><br>${S.started?'有人买入后继续':'买一手入座，满 2 人自动开局'}<br><span class="roomcode">房间号 ${esc(M.room)}</span>`;
