@@ -176,7 +176,7 @@ export function doAction(p,type,to,picked){
   if(type==='call'&&toCall===0)type='check';
   if(S.street==='preflop'){if(type==='raise'){p.vp=p.pr=true;S.pfAgg=S.seats.indexOf(p);}else if(type==='call')p.vp=true;}
   else{p.pa=(p.pa||0)+1;if(type==='raise')p.pb=(p.pb||0)+1;}                        // postflop aggression, for the stats
-  (p.hist=p.hist||[]).push({s:S.board.length,t:type,r:S.raises||0});                // what everyone can see this hand
+  (p.hist=p.hist||[]).push({s:S.board.length,t:type,r:S.raises||0,b:p.bet});        // what everyone can see this hand
   if(type==='raise')S.curAgg=S.seats.indexOf(p);            // last bettor/raiser of this street
   if(type==='fold'){p.folded=true;p.last='弃牌';}
   else if(type==='check'){p.last='过牌';}

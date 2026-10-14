@@ -43,12 +43,16 @@ export function topT(share){
 // opens wider; one who rarely bets after the flop means it when they do.
 export function rangeTight(q){
   const h=q.hist||[],rd=read(q);
-  let pre=.18,post=0,preRaises=0,preCallLevel=0;
+  let pre=.18,post=0,preRaises=0,preCallLevel=0,big=0;
   for(const a of h){
     if(a.s!==0)continue;
-    if(a.t==='raise')preRaises++;else if(a.t==='call')preCallLevel=Math.max(preCallLevel,a.r);
+    if(a.t==='raise'){preRaises++;big=Math.max(big,(a.b||0)/BB);}else if(a.t==='call')preCallLevel=Math.max(preCallLevel,a.r);
   }
-  if(preRaises)pre=[0,.45,.62,.78,.88][Math.min(4,preRaises)]-(rd.af-.15)*1.2;
+  if(preRaises){
+    pre=[0,.45,.62,.78,.88][Math.min(4,preRaises)]-(rd.af-.15)*1.2;
+    if(big>4)pre+=Math.min(.22,(big-4)*.012);                  // the bigger the raise, the narrower
+    if(big>=20&&rd.af<.1)pre=Math.max(pre,.86);                 // a jam from a player who rarely raises: premiums
+  }
   else if(preCallLevel>=3)pre=.58;
   else if(preCallLevel===2)pre=.42-(rd.vp-.25)*.4;
   else if(preCallLevel===1)pre=.25;
@@ -226,6 +230,8 @@ function corePre(c){
   if(raises===3&&canR&&(strength>=topT(.025)||(suited&&hi===14&&lo<=5)))
     bet(m,odds(strength>=topT(.025)?.9:.12+aggr*.15),0,strength>=topT(.012)?maxRaiseTo(c.p):S.currentBet*2.3);
   if(raises>=4&&canR&&strength>=topT(.015))bet(m,odds(.92),0,maxRaiseTo(c.p));
+  // a raise that would put most of the stack in is judged by equity against the raiser's range, not by a hand chart
+  if(commit>.5&&!(eq>c.odds+.04))m.raise=[];
   if(!toCall){m.call=1;return m;}
   // calling: pot odds against the raiser's range, with position and suitedness helping play the hand
   const realization=.74+position*.13+(suited?.05:0);
@@ -277,8 +283,8 @@ function corePost(c){
       else if(eq>.45&&eq<=vT)bet(m,.85,eq>.7?.75:.5);
       else if(air){bet(m,(.5+aggr*.3)*bluffy*alpha(.6)*1.6,.6);bet(m,.15*bluffy,1.25);}
     }else if(river&&canR&&opp<=3){
-      if(inPos&&eq>.5&&eq<=vT)bet(m,.65,.5);
-      if(!inPos&&eq>.55&&eq<=vT)bet(m,.45,.4);                         // thin value from the front: small bet
+      if(inPos&&eq>.46&&eq<=vT)bet(m,.7,.5);
+      if(!inPos&&eq>.52&&eq<=vT)bet(m,.5,.4);                          // thin value from the front: small bet
       if(air)bet(m,((inPos?.45:.2)+aggr*.2)*bluffy*alpha(.6)*1.4,.6+aggr*.15);
     }
     // checked to me in position on the flop or turn: stab with a piece, sometimes with nothing
@@ -293,8 +299,9 @@ function corePost(c){
   // facing a bet: defend at least the minimum (pot ÷ (pot + bet)) against a balanced bettor; fold a
   // little more to a player who rarely bets without it, call a little lighter against one who bets everything
   const passive=bettorRead&&bettorRead.agg<.22,aggro=bettorRead&&bettorRead.agg>.5,raised=c.raises>=2;
+  const maniac=bettorRead&&bettorRead.agg>.65&&bettorRead.af>.3;   // bets and raises everything: their raises mean little
   const margin=(river?-.01:.02)+(opp>2?.025:0)-(loose-.5)*.025+(tag?.03:0)+(commit>.35&&eq<.65?.05:0)
-    +(passive?(street>=4?.07:.03):0)-(aggro?.04:0)+(spr<1.5&&eq>.5?-.03:0)+(raised?(river?.1:.06):0);
+    +(passive?(street>=4?.07:.03):0)-(aggro?.05:0)+(spr<1.5&&eq>.5?-.03:0)+(raised?(maniac?.02:river?.1:.06):0);
   if(eq<c.odds+margin){
     m.fold=1;
     if(river&&canR&&opp===1&&last&&eq<.12)bet(m,odds(.04*aggr*bluffy),1);        // rare river bluff-raise
@@ -302,7 +309,7 @@ function corePost(c){
   }
   m.call=1;
   // raise: strong hands (check-raise when I checked this street), strong draws at a good price
-  const vR=raised?.88:opp===1?.72:.62;
+  const vR=raised&&!maniac?.88:opp===1?(maniac?.62:.72):.62;
   if(canR&&(eq>vR||(checked&&!raised&&eq>.7)))bet(m,odds((.5+aggr*.35)*(checked?1.25:1)*(raised?.8:1)),eq>.82?.9:.75);
   if(canR&&opp===1&&draw&&(dr.fd||dr.oesd)&&eq>.35&&toCall<pot*.4&&!river)bet(m,odds(aggr*.2*bluffy*(checked?1.5:1)),.65);
   return m;
@@ -323,12 +330,12 @@ function personality(m,c){
   }else if(type==='peeker'){
     // sc: sees cheap flops, folds the moment the hand isn't good, and with a big hand check-calls or
     // bets small (under 25BB unless the nuts)
-    if(pre&&m.fold>0&&toCall<=BB*6&&strength>.3){m.call+=m.fold*.85;m.fold*=.15;}
+    if(pre&&m.fold>0&&toCall<=BB*6&&strength>.38){m.call+=m.fold*.85;m.fold*=.15;}
     const nuts=!pre&&eq>.93;
     m.raise.forEach(r=>{
       if(nuts)return;
       const to=r.to!=null?r.to:S.currentBet+Math.max(S.minRaise,(pot+toCall)*(r.frac||.5));
-      if(to<BB*25&&!toCall)r.w*=.4;else r.w*=0;            // small bets only when nobody has bet
+      if(to<BB*25&&!toCall)r.w*=.6;else r.w*=0;            // small bets only when nobody has bet
     });
     if(!pre&&eq>.75&&!nuts)m.raise.forEach(r=>{r.w*=.5;});    // mostly check-call a big hand
   }else if(type==='tag'){
