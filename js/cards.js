@@ -2,6 +2,8 @@
 
 export const SUITS=['♠','♥','♦','♣'];
 export const rankOf=c=>c%13+2, suitOf=c=>Math.floor(c/13);
+// Ah, Kd, Ts, 2c: rank uppercase (ten is T), suit lowercase
+export const cardCode=c=>'23456789TJQKA'[c%13]+'shdc'[Math.floor(c/13)];
 export const rankStr=r=>({10:'10',11:'J',12:'Q',13:'K',14:'A'})[r]||String(r);
 export function randInt(n){const buf=new Uint32Array(1),lim=Math.floor(0x100000000/n)*n;let x;do{crypto.getRandomValues(buf);x=buf[0];}while(x>=lim);return x%n;}
 export function shuffledDeck(){const d=[];for(let i=0;i<52;i++)d.push(i);for(let i=51;i>0;i--){const j=randInt(i+1);const t=d[i];d[i]=d[j];d[j]=t;}return d;}
@@ -38,16 +40,14 @@ export function best5(cs){const n=cs.length;let best=-1,pick=null;
   return pick;}
 export function handName(s){
   const d=[];let x=s;for(let i=0;i<6;i++){d.unshift(x%16);x=Math.floor(x/16);}
-  const k=d.slice(1).map(rankStr);
-  switch(d[0]){case 0:return `高牌 ${k[0]}`;case 1:return `一对 ${k[0]}`;case 2:return `两对 ${k[0]}/${k[1]}`;
-    case 3:return `三条 ${k[0]}`;case 4:return `顺子 到${k[0]}`;case 5:return `同花 ${k[0]}高`;
-    case 6:return `葫芦 ${k[0]}带${k[1]}`;case 7:return `四条 ${k[0]}`;case 8:return d[1]===14?'皇家同花顺':`同花顺 到${k[0]}`;}
+  switch(d[0]){case 0:return '高牌';case 1:return '一对';case 2:return '两对';
+    case 3:return '三条';case 4:return '顺子';case 5:return '同花';
+    case 6:return '葫芦';case 7:return '四条';case 8:return d[1]===14?'皇家同花顺':'同花顺';}
 }
 export function describe(hole,board){
   if(board.length>=3)return handName(best7(hole.concat(board)));
-  const a=rankOf(hole[0]),b=rankOf(hole[1]);
-  if(a===b)return `一对 ${rankStr(a)}`;
-  return `${rankStr(Math.max(a,b))}${rankStr(Math.min(a,b))}${suitOf(hole[0])===suitOf(hole[1])?' 同花':''}`;
+  if(rankOf(hole[0])===rankOf(hole[1]))return '一对';
+  return suitOf(hole[0])===suitOf(hole[1])?'同花':'高牌';
 }
 export function equity(hole,board,nOpp,iters){
   if(nOpp<=0)return 1;

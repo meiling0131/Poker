@@ -1,20 +1,24 @@
 // What the local player does: confirmations, bet presets, pre-actions, buy/cash/tidy.
-import {DV,Z,csum,tidyChips} from './chips.js';
+import {DV,Z,csum,pickChips,tidied} from './chips.js';
 import {BETTING,BUY} from './config.js';
-import {castVote,doAction,maybeStart,proceed,startHand} from './engine.js';
+import {castVote,doAction,maybeStart,proceed} from './engine.js';
 import {commit} from './online.js';
-import {PLAY_MODE,reserveDailyBuy} from './settings.js';
+import {serverMoney} from './net.js';
+import {tableCash} from './ui/menu-view.js';
 import {LOCAL_B,LOCAL_C,M,MYDOC,PUSH,S,SESSION,SUBMITTED,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setPUSH,setSUBMITTED,setVOTED,view} from './state.js';
-import {applyMoney,canRaise,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from './table.js';
-import {$,fmt} from './util.js';
+import {applyMoney,canRaise,lockedIn,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal,settleAdjust} from './table.js';
+import {$,fmt,store} from './util.js';
 
-export let PENDING_ACTION=null,BET_MENU=null,CUSTOM_VAL='';
+export let PENDING_ACTION=null,BET_MENU=null,CUSTOM_VAL='',RAISE_AT=0;
 // 提前操作: chosen while someone else acts, played the moment the turn reaches you.
 // cf = 过牌/弃牌, call = 只跟当前这注 (dropped if the bet changes), any = 跟任何注
 export let PRE=null;
-export function preOptions(p){
-  const toCall=Math.min(p.stack,Math.max(0,S.currentBet-p.bet));
-  return [{k:'cf',lbl:toCall?'弃牌':'过牌/弃牌'},{k:'call',lbl:toCall?`跟注 ${fmt(toCall)}`:'过牌'},{k:'any',lbl:'跟任何注'}];
+export function preOptions(){
+  return [
+    {k:'cf',en:'Check/Fold',zh:'过牌/弃牌',tone:'light'},
+    {k:'call',en:'Check',zh:'过牌',tone:'light'},
+    {k:'any',en:'Call Any',zh:'跟任何注',tone:'any'},
+  ];
 }
 export function setPre(kind){
   const m=mySeat();if(m<0||!S)return;
@@ -56,15 +60,12 @@ export function confirmationPlan(){
   return {type:a.type,to,amount,chips,change,total:p.bet+amount,allIn:amount>0&&amount>=p.stack};
 }
 export function confirmLabel(p,plan){
-  if(plan.type==='fold')return '确认 Fold';
-  if(plan.allIn)return `确认 All in ${fmt(plan.amount)}`;
-  if(plan.type==='call')return `确认 Call ${fmt(plan.amount)}`;
-  return `确认 ${actionLabels(p).word} ${fmt(plan.to)}`;
+  if(plan.allIn)return `All in ${fmt(plan.amount)}`;
+  if(plan.type==='fold')return 'Fold';
+  if(plan.type==='call')return `Call ${fmt(plan.amount)}`;
+  return `Raise ${fmt(plan.to)}`;
 }
-export function confirmDetail(plan){
-  if(plan.type==='fold')return '弃掉这一手牌';
-  return `本次投入 ${fmt(plan.amount)} · 本轮合计 ${fmt(plan.total)}${plan.change?` · 找零 ${fmt(plan.change)}`:''}`;
-}
+export function confirmDetail(){return '';}
 export function requestAction(type,to=0,chips=null,custom=false){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
   if(type==='check'){cancelAction();act('check');return;}
@@ -76,13 +77,113 @@ export function requestAction(type,to=0,chips=null,custom=false){
 }
 export function openBetMenu(){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
-  PENDING_ACTION=null;BET_MENU={session:SESSION,hand:S.hand,turn:S.turn};view.renderHero();
+  const p=S.seats[mySeat()];
+  if(!canRaise(p))return;
+  setPUSH(Z());PENDING_ACTION=null;
+  RAISE_AT=minRaiseTo(p);
+  BET_MENU={session:SESSION,hand:S.hand,turn:S.turn};view.renderHero();
+}
+// Call picks the chips you must put in. Check, with nothing to call, goes straight through.
+export function selectCall(){
+  if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
+  const p=S.seats[mySeat()],toCall=Math.max(0,S.currentBet-p.bet);
+  cancelAction();
+  if(toCall<=0){act('check');return;}
+  setPUSH(pickChips(p.chips,Math.min(toCall,p.stack)));
+  view.renderHero();
+}
+export function raiseScale(p){
+  const min=minRaiseTo(p),max=maxRaiseTo(p);
+  const toCall=Math.max(0,S.currentBet-p.bet),pot=potTotal();
+  let value=Math.round(RAISE_AT)||min;
+  if(value<min)value=min;
+  if(value>max)value=max;
+  const at=v=>max>0?Math.min(100,Math.max(0,v/max*100)):0;
+  const marks=[
+    {k:'Min.',v:min,label:true},
+    {k:'',v:S.currentBet+Math.round((pot+toCall)/3),label:false},
+    {k:'',v:S.currentBet+Math.round((pot+toCall)/2),label:false},
+    {k:'Pot',v:S.currentBet+pot+toCall,label:true},
+    {k:'All in',v:max,label:true},
+  ].map(m=>({...m,v:Math.round(m.v),at:at(m.v)}));
+  return {min,max,value,allIn:max>0&&value>=max,pct:at(value),minPct:at(min),marks};
+}
+// Where the slider thumb's center sits for a value, so ticks land on the same point.
+export function scalePoint(scale,value){
+  const input=scale.querySelector('input[type=range]');if(!input)return 0;
+  const s=scale.getBoundingClientRect(),i=input.getBoundingClientRect();
+  const thumb=18,min=+input.min||0,max=+input.max||0;
+  const left=i.left-s.left,width=i.width;
+  if(!(width>thumb)||!(max>min))return left+thumb/2;
+  const ratio=Math.min(1,Math.max(0,(value-min)/(max-min)));
+  return left+thumb/2+ratio*(width-thumb);
+}
+export function layoutScaleTicks(scale){
+  if(!scale||!scale.clientWidth)return;
+  scale.querySelectorAll('.raise-ticks i').forEach(el=>{el.style.left=scalePoint(scale,+el.dataset.v)+'px';});
+  const fill=scale.querySelector('.raise-line .fill');
+  const input=scale.querySelector('input[type=range]');
+  if(fill&&input)fill.style.width=scalePoint(scale,+input.value)+'px';
+}
+// Nudge mark labels apart when their preferred spots overlap, keeping each inside the bar.
+export function layoutRaiseMarks(){
+  const scale=$('raiseScale');if(!scale)return;
+  const w=scale.clientWidth;if(!w)return;
+  layoutScaleTicks(scale);
+  const marks=[...scale.querySelectorAll('.raise-marks button')];
+  if(!marks.length)return;
+  const gap=6;
+  const items=marks.map(el=>{
+    const width=el.offsetWidth,x=scalePoint(scale,+el.dataset.v);
+    return {el,x,width,left:Math.max(0,Math.min(w-width,x-width/2))};
+  }).sort((a,b)=>a.x-b.x);
+  for(let i=1;i<items.length;i++){
+    const minLeft=items[i-1].left+items[i-1].width+gap;
+    if(items[i].left<minLeft)items[i].left=minLeft;
+  }
+  const end=items[items.length-1];
+  const overflow=end.left+end.width-w;
+  if(overflow>0){
+    for(let i=items.length-1;i>=0;i--)items[i].left-=overflow;
+    items[0].left=Math.max(0,items[0].left);
+    for(let i=1;i<items.length;i++){
+      const minLeft=items[i-1].left+items[i-1].width+gap;
+      if(items[i].left<minLeft)items[i].left=minLeft;
+    }
+    const over2=items[items.length-1].left+items[items.length-1].width-w;
+    if(over2>0)items.forEach(it=>{it.left-=over2;});
+  }
+  items.forEach(it=>{it.el.style.left=Math.max(0,it.left)+'px';it.el.style.transform='none';});
+}
+function paintRaise(){
+  const p=S&&mySeat()>=0?S.seats[mySeat()]:null;if(!p)return;
+  const sc=raiseScale(p);RAISE_AT=sc.value;
+  const num=$('raiseNum'),go=$('raiseGo'),scale=$('raiseScale'),range=$('raiseRange');
+  if(num)num.textContent=fmt(sc.value);
+  if(scale)scale.style.setProperty('--val',sc.pct+'%');
+  if(range&&String(range.value)!==String(sc.value))range.value=String(sc.value);
+  if(go){go.classList.toggle('allin',sc.allIn);go.classList.toggle('raise',!sc.allIn);go.innerHTML=sc.allIn?'All in':`Raise<small>${fmt(sc.value)}</small>`;}
+  layoutRaiseMarks();
+}
+export function setRaiseAt(n){RAISE_AT=n;paintRaise();}
+export function commitRaise(){
+  if(!stillMyTurn(BET_MENU))return;
+  const p=S.seats[mySeat()],sc=raiseScale(p);
+  const chips=pickChips(p.chips,Math.max(0,sc.value-p.bet));
+  cancelAction();setPUSH(chips);view.renderHero();
+}
+export function placeBet(){
+  if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
+  const p=S.seats[mySeat()],L=actionLabels(p);
+  if(!L.betOk)return;
+  const chips=Object.assign({},PUSH);
+  cancelAction();act(L.betType,L.betType==='raise'?L.to:0,chips);
 }
 // 常用下注：raise-to totals, null when below the minimum; anything past the stack becomes All in
 export function betPresets(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pot=potTotal(),minTo=minRaiseTo(p),maxTo=maxRaiseTo(p);
   // raise to: the current bet, plus that share of the pot once you have called
-  return [['1/3 Pot',1/3],['1/2 Pot',1/2],['2/3 Pot',2/3],['Pot',1]]
+  return [['1/2 Pot',1/2],['Pot',1]]
     .map(([k,f])=>{const t=S.currentBet+Math.round((pot+toCall)*f);return {k,to:t<minTo?null:Math.min(t,maxTo)};});
 }
 export function confirmAction(){
@@ -92,12 +193,20 @@ export function confirmAction(){
   act(plan.type,plan.to,plan.chips);
 }
 document.addEventListener('input',e=>{
+  if(e.target.id==='raiseRange'){RAISE_AT=Number(e.target.value);paintRaise();return;}
   if(e.target.id!=='betAmt')return;
   CUSTOM_VAL=e.target.value;
   const plan=confirmationPlan(),go=$('confirmGo'),info=$('confirmInfo');
   if(go){go.disabled=!!plan.error;if(!plan.error){go.textContent=confirmLabel(S.seats[mySeat()],plan);go.classList.toggle('red',plan.allIn);go.classList.toggle('green',!plan.allIn);}}
   if(info){info.textContent=plan.error||confirmDetail(plan);info.classList.toggle('err',!!plan.error);}
 });
+if(typeof window!=='undefined')window.addEventListener('resize',()=>layoutRaiseMarks());
+document.addEventListener('wheel',e=>{
+  if(!e.target||e.target.id!=='raiseRange')return;
+  e.preventDefault();
+  const step=e.shiftKey?25:1;
+  setRaiseAt(RAISE_AT+(e.deltaY>0?-step:step));
+},{passive:false});
 document.addEventListener('keydown',e=>{
   if(!pendingIsCurrent()&&!stillMyTurn(BET_MENU))return;
   if(e.key==='Escape'){e.preventDefault();cancelAction();view.renderHero();}
@@ -121,19 +230,21 @@ export async function vote(n){
 export async function money(kind){
   const m=mySeat();if(m<0)return;
   const p=S.seats[m];
-  if(kind==='cash'&&p.stack-p.qCash*BUY+p.qBuy*BUY<BUY){setFLASH('筹码不足 200，不能退一手。');view.render();return;}
+  if(kind==='buy'&&BUY>tableCash())return;
+  if(kind==='cash'&&p.stack-p.qCash*BUY+p.qBuy*BUY<BUY){setFLASH(`筹码不足 ${BUY}，不能退一手。`);view.render();return;}
   setFLASH('');
+  if(S.mode==='bots'&&!M.host){
+    const d=MYDOC||{};
+    try{
+      if(kind==='buy'){setLOCAL_B(Math.max(LOCAL_B,Number(d.buyN)||0)+1);await myRef.update({name:M.nick,join:true,buyN:LOCAL_B});}
+      else{setLOCAL_C(Math.max(LOCAL_C,Number(d.cashN)||0)+1);await myRef.update({name:M.nick,join:true,cashN:LOCAL_C});}
+    }catch(e){setFLASH('提交失败，请再试一次。');}
+    view.render();return;
+  }
   if(S.mode==='bots'){
-    if(kind==='buy'&&PLAY_MODE==='normal'){
-      const session=SESSION,table=S;
-      const ok=await reserveDailyBuy(()=>SESSION===session&&S===table&&PLAY_MODE==='normal');
-      if(!ok){if(SESSION===session&&S===table)view.render();return;}
-    }
-    const broke=p.stack===0;
     if(kind==='buy')p.qBuy++;else p.qCash++;
+    // after a hand the table waits for 继续游戏, even when this buy-in follows going broke
     applyMoney(p);commit();
-    // busted at the end of a hand: buying back in deals the next hand right away
-    if(kind==='buy'&&broke&&S.street==='done'&&p.stack>0){startHand();return;}
     maybeStart();return;
   }
   const d=MYDOC||{};
@@ -143,30 +254,82 @@ export async function money(kind){
   }catch(e){setFLASH('提交失败，请再试一次。');}
   view.render();
 }
+export async function buyAmount(amt){
+  const m=mySeat();if(m<0||!S||S.mode!=='bots')return;
+  const units=amt/BUY;
+  if(!Number.isInteger(units)||units<1)return;
+  const p=S.seats[m];
+  if(amt>tableCash())return;
+  setFLASH('');
+  if(!M.host){
+    const n=Math.max(LOCAL_B,Number((MYDOC||{}).buyN)||0)+units;
+    setLOCAL_B(n);
+    try{await myRef.update({name:M.nick,join:true,buyN:n});}
+    catch(e){setFLASH('提交失败，请再试一次。');}
+    view.render();return;
+  }
+  p.qBuy+=units;applyMoney(p);commit();maybeStart();
+}
+export async function cashAmount(amt){
+  const m=mySeat();if(m<0||!S||S.mode!=='bots')return;
+  const units=amt/BUY;
+  if(!Number.isInteger(units)||units<1)return;
+  const p=S.seats[m];
+  if(units>Math.floor(p.stack/BUY))return;
+  setFLASH('');
+  if(!M.host){
+    const n=Math.max(LOCAL_C,Number((MYDOC||{}).cashN)||0)+units;
+    setLOCAL_C(n);
+    try{await myRef.update({name:M.nick,join:true,cashN:n});}
+    catch(e){setFLASH('提交失败，请再试一次。');}
+    view.render();return;
+  }
+  p.qCash+=units;applyMoney(p);commit();
+}
+// Buy or cash an exact amount. During a live hand it waits until the hand ends.
+export async function adjustMoney(delta){
+  delta=Math.round(delta);if(!delta||delta%BUY)return;
+  const m=mySeat();if(m<0||!S||S.mode!=='bots')return;
+  const p=S.seats[m];
+  if(delta<0&&p.stack+delta<BUY)return;
+  if(delta>0&&delta>tableCash())return;
+  setFLASH('');
+  if(!M.host){serverMoney(delta);view.render();return;}
+  if(lockedIn(p)){p.moneyWait=(p.moneyWait||0)+delta;commit();return;}
+  if(settleAdjust(p,delta)&&view.moneyDone)view.moneyDone(p,delta);
+  commit();if(delta>0)maybeStart();
+}
 export let LOCAL_T=0;
-export async function tidy(){
+export let AUTO_TIDY=store.get('poker.autoTidy')==='1';
+let TIDY_KEY='';
+export function toggleAutoTidy(){AUTO_TIDY=!AUTO_TIDY;store.set('poker.autoTidy',AUTO_TIDY?'1':'0');TIDY_KEY='';view.renderHero();}
+// runs after each hero render; skipped while chips are picked or an action is being confirmed
+export function autoTidy(){
+  if(!AUTO_TIDY||!S)return;
   const m=mySeat();if(m<0)return;
-  const p=S.seats[m];setPUSH(Z());setFLASH('');cancelAction();
-  if(M.host){if(tidyChips(p))commit();else view.renderHero();return;}
-  try{LOCAL_T=Math.max(LOCAL_T,Number((MYDOC||{}).tidyN)||0)+1;await myRef.update({tidyN:LOCAL_T});}
-  catch(e){setFLASH('整理失败，请再试一次。');}
-  view.render();
+  const p=S.seats[m];
+  if(!p.stack||csum(PUSH)||PENDING_ACTION||BET_MENU)return;
+  const t=tidied(p.chips);if(DV.every(d=>t[d]===p.chips[d])){TIDY_KEY='';return;}
+  const key=`${SESSION}:${S.hand}:${DV.map(d=>p.chips[d]).join(',')}`;if(key===TIDY_KEY)return;
+  TIDY_KEY=key;
+  if(M.host){p.chips=t;commit();return;}
+  LOCAL_T=Math.max(LOCAL_T,Number((MYDOC||{}).tidyN)||0)+1;
+  myRef.update({tidyN:LOCAL_T}).catch(()=>{TIDY_KEY='';});
 }
 export function actionLabels(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
-  const pre=S.street==='preflop',level=Math.max(pre?2:1,(S.raises||0)+1);
-  const word=pre?(level===2?'Open-Raise':`${level}-bet`):(S.currentBet===0?'Bet':level===2?'Raise':`${level}-bet`);
-  const to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
+  const word='Raise',to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
+  const n=Math.min(toCall,p.stack);
   const r={toCall,pushed,canR,minTo,word,to,allIn};
-  r.callLbl=toCall===0?'Check':`Call<small>${fmt(Math.min(toCall,p.stack))}${toCall>=p.stack?' · All in':''}</small>`;
+  r.callLbl=toCall===0?'Check<small>过牌</small>':`Call ${fmt(n)}<small>跟注 ${fmt(n)}</small>`;
   r.canAllIn=p.stack>0&&(p.stack<=toCall||canR);
   r.callChange=pushed>toCall&&toCall>0&&!(to>=minTo||allIn)?pushed-toCall:0;
-  if(r.callChange)r.callLbl=`Call ${fmt(toCall)}<small>找零 ${fmt(r.callChange)}</small>`;
-  if(!canR){r.raise=null;}
-  else if(pushed===0){r.raise={lbl:`${word}<small>自定义</small>`,mode:'fill'};}
-  else if(allIn){r.raise={lbl:`${word}<small>All in · ${fmt(p.bet+p.stack)}</small>`,mode:'go'};}
-  else if(to>=minTo){r.raise={lbl:word==='Bet'?`Bet<small>${fmt(to)}</small>`:`${word}<small>到 ${fmt(to)}</small>`,mode:'go'};}
-  else{r.raise={lbl:`${word}<small>还差 ${fmt(minTo-to)}</small>`,mode:'off'};}
+  // Bet sends the selected chips. Anything short of a call, or a raise short of the minimum, stays disabled.
+  let betOk=false,betType='call';
+  if(toCall>0&&(pushed===toCall||(allIn&&p.stack<=toCall))){betOk=true;betType='call';}
+  else if(canR&&pushed>toCall&&(to>=minTo||allIn)){betOk=true;betType='raise';}
+  else if(canR&&toCall===0&&pushed>0&&(to>=minTo||allIn)){betOk=true;betType='raise';}
+  r.betOk=betOk;r.betType=betType;r.betAllIn=betOk&&allIn;
   return r;
 }
 export function commitAllIn(p){

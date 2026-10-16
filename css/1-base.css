@@ -135,6 +135,7 @@ body[data-view="records"] #game,body[data-view="records"] #menu{display:none}
 .nav{display:flex;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px}
 .nav button{background:transparent;border:0;color:var(--mute);font:inherit;border-radius:999px;cursor:pointer}
 .nav button.on{color:var(--cream)}
+.nav button:disabled{opacity:.35;cursor:default}
 .result .cnt{font:700 18px var(--num);color:var(--win)}
 .linkbtn{background:none;border:0;padding:0;color:var(--mute);font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;align-self:center}
 .linkbtn.inline{margin-left:6px}

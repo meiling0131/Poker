@@ -150,7 +150,7 @@ export function draws(hole,board){
 let CTX={};
 function situation(p,i){
   const opponents=live().filter(q=>q!==p),opp=opponents.length,hole=H[i];
-  const style=BOT_STYLE[p.name]||{loose:.5,aggr:.5},{loose,aggr,type}=style;
+  const style=BOT_STYLE[p.id]||{loose:.5,aggr:.5},{loose,aggr,type}=style;
   const toCall=Math.min(Math.max(0,S.currentBet-p.bet),p.stack),pot=potTotal(),canR=canRaise(p);
   const eligible=S.seats.reduce((sum,q)=>sum+Math.min(q.total,p.total+toCall),0);   // side-pot money this stack cannot win is not in its price
   const odds=toCall/(eligible+toCall||1);
@@ -383,7 +383,7 @@ function pickBy(list,total){let x=Math.random()*total;for(const r of list){if((x
 // Kmetsch's cycle: three real hands (betting or calling with a strong holding), then two bluffs
 const REAL_HANDS=3,BLUFFS=2;
 function bluffCycle(p,d,c){
-  if((BOT_STYLE[p.name]||{}).type!=='bluffer')return;
+  if((BOT_STYLE[p.id]||{}).type!=='bluffer')return;
   if(p.bluffing){
     if(d.type==='raise'){p.bl=(p.bl||0)+1;p.bluffs=(p.bluffs||0)+1;botSay(p,'bluff',.85);if(p.bl>=BLUFFS){p.bluffing=false;p.real=0;p.bl=0;}}
     return;

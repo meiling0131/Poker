@@ -9,7 +9,7 @@ const HANDS = Number(process.argv[2] || 300), HERO = process.argv[3] || 'fold';
 // --behaviour: count how each bot plays in a few telling spots
 const BEH = {}, STREETS = {};
 if (process.argv.includes('--behaviour')) globalThis.__botTrace = (p, d, c) => {
-  const b = BEH[p.name] ||= { cheap: [0, 0], vs1: [0, 0], vs3b: [0, 0], river: [0, 0], rbluff: 0, rpos: [0, 0], xr: [0, 0], bets: [0, 0] };
+  const b = BEH[p.id || p.name] ||= { cheap: [0, 0], vs1: [0, 0], vs3b: [0, 0], river: [0, 0], rbluff: 0, rpos: [0, 0], xr: [0, 0], bets: [0, 0] };
   const raise = d.type === 'raise', inc = (k, hit) => { b[k][0]++; if (hit) b[k][1]++; };
   if (!c.pre) { const k = state.S.hand + ':' + c.street; STREETS[k] ||= false; if (d.type === 'raise') STREETS[k] = true; }
   if (c.pre) {
@@ -75,7 +75,7 @@ while (S().hand < HANDS && guard++ < 5e6) {
     }
     const tr = process.argv.find(a => a.startsWith('--trace='));
     if (tr) { // print the hands where this bot lost a lot: node tools/simulate.js 300 fold 1 --trace=奶龙
-      const who = tr.slice(8), b = s.seats.find(p => p.name === who);
+      const who = tr.slice(8), b = s.seats.find(p => p.id === who || p.name === who || p.name === '🤖 ' + who);
       if (b && b.total - (b.won || 0) > 150) {
         const lines = []; for (const l of s.log) { lines.unshift(l.t); if (/^第 \d+ 手/.test(l.t)) break; }
         console.log(`\n--- hand ${s.hand}: ${who} −${b.total - (b.won || 0)} with ${s.seats.indexOf(b) >= 0 ? (state.H[s.seats.indexOf(b)] || []).map(c => '23456789TJQKA'[c % 13] + 'shdc'[Math.floor(c / 13)]).join(' ') : ''}`);
@@ -90,7 +90,7 @@ while (S().hand < HANDS && guard++ < 5e6) {
 // ---- report ----
 const s = S(), rows = [];
 for (const p of s.seats) {
-  const k = p.kind === 'bot' ? 'bot:' + p.name : p.uid, b = s.book[k] || { in: 0, out: 0 }, st = (s.stats || {})[k] || {};
+  const k = p.kind === 'bot' ? p.id : p.uid, b = s.book[k] || { in: 0, out: 0 }, st = (s.stats || {})[k] || {};
   const net = p.stack + b.out - b.in;
   rows.push({ who: p.kind === 'bot' ? p.name : '你(' + HERO + ')', net, buys: b.in / 200, h: st.h || 0,
     vpip: st.h ? Math.round(st.vp * 100 / st.h) + '%' : '-', pfr: st.h ? Math.round(st.pr * 100 / st.h) + '%' : '-', won: st.w || 0 });

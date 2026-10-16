@@ -5,10 +5,10 @@
 .skinpick{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text)}
 .more{min-width:190px}
 
-/* ======== Verve 一楼：会议室 — 胡桃木长桌、千鸟格扶手椅、蓝绿墙、吊灯 ======== */
+/* ======== Verve 一楼：会议室 — 胡桃木长桌、千鸟格扶手椅、赌场绿毡、吊灯 ======== */
 body[data-skin="f1"]{background:
     radial-gradient(ellipse 55% 26% at 50% 0%,#f6e2c24d,transparent 70%),      /* pendant light */
-    linear-gradient(90deg,#2e3a44 0,#1d5f80 22%,#1b5877 78%,#2e3a44 100%) fixed}
+    radial-gradient(ellipse 90% 80% at 50% 42%,#1f8a4e 0%,#157443 42%,#0c3f2a 100%) fixed}
 body[data-skin="f1"] .top{border-bottom-color:#ffffff22}
 /* walnut table: long rounded rectangle, warm grain */
 body[data-skin="f1"] .stage::before{border-radius:28px;border-width:6px;border-color:#7a4526;
@@ -25,12 +25,8 @@ body[data-skin="f1"] .table .seat::before{content:"";position:absolute;z-index:-
   background:repeating-conic-gradient(#f2f1ee 0 25%,#a7a7a5 0 50%) 0 0/6px 6px;
   box-shadow:-9px 12px 0 -3px #c9c8c4,9px 12px 0 -3px #c9c8c4,0 6px 12px #0008,inset 0 0 0 2px #ffffffaa}
 
-/* ======== Verve 二楼：休息区 — 木条吊顶灯带、蓝绿墙、深色石面方桌、棕色皮沙发 ======== */
-body[data-skin="f2"]{background-color:#173f57;background-image:
-    linear-gradient(90deg,transparent 12%,#ffffffd9 12% 30%,transparent 30% 58%,#ffffffd9 58% 78%,transparent 78%),   /* LED strips */
-    repeating-linear-gradient(90deg,#7a5238 0 15px,#5e3d29 15px 17px),                                                 /* walnut slat ceiling */
-    linear-gradient(180deg,#1d6a8e 0,#195a79 45%,#22374a 100%);                                                        /* teal wall to carpet */
-  background-size:100% 3px,100% 76px,100% 100%;background-position:0 7px,0 0,0 0;background-repeat:no-repeat;background-attachment:fixed}
+/* ======== Verve 二楼：休息区 — 赌场绿毡、深色石面方桌、棕色皮沙发 ======== */
+body[data-skin="f2"]{background:#0c3f2a linear-gradient(180deg,#1a7a48 0,#125c38 48%,#0c3324 100%) fixed}
 body[data-skin="f2"] .top{border-bottom-color:#00000033}
 /* dark stone square table */
 body[data-skin="f2"] .stage::before{border-radius:20px;border-width:8px;border-color:#3a3d42;
@@ -49,7 +45,6 @@ body[data-skin="f2"] .table .seat::before{content:"";position:absolute;z-index:-
 @media(max-width:700px){
   body[data-skin="f1"] .table .seat::before{width:calc(100% + 10px);top:-10px;box-shadow:-7px 10px 0 -3px #c9c8c4,7px 10px 0 -3px #c9c8c4,0 5px 10px #0008,inset 0 0 0 2px #ffffffaa}
   body[data-skin="f2"] .table .seat::before{width:calc(100% + 14px);top:-9px;box-shadow:-9px 10px 0 -3px #7a4a31,9px 10px 0 -3px #7a4a31,0 5px 10px #0009,inset 0 2px 0 #c08a68}
-  body[data-skin="f2"]{background-size:100% 3px,100% 64px,100% 100%;background-position:0 4px,0 0,0 0}
 }
 
 /* ======== 面板配色跟着桌子走（不用绿色）：一楼胡桃木棕，二楼石面灰 ======== */
@@ -106,7 +101,3 @@ body[data-skin] .seat.dim .mc,body[data-skin] .seat.dim .act{opacity:.45}
 body[data-skin] .seat.dim::before{opacity:.7}
 body[data-skin] .seat.dim .plate{opacity:.82}
 body[data-skin] .seat.dim .nm,body[data-skin] .seat.dim .stk{color:#d8d2c4}
-
-/* 二楼：标题栏垫一块深色底板，字不和木条吊顶打架 */
-body[data-skin="f2"] .top{background:#0f1e28cc;border-radius:0 0 18px 18px;padding-inline:18px;border-bottom:1px solid #ffffff14;box-shadow:0 10px 30px #0004}
-@media(max-width:700px){body[data-skin="f2"] .top{padding:4px 10px 6px;border-radius:0 0 14px 14px}}

@@ -3,22 +3,23 @@
 // everyone's seat docs to the table, plus the owner's approvals and removals.
 import {randInt} from './cards.js';
 import {tidyChips} from './chips.js';
-import {BETTING} from './config.js';
-import {applySeatChanges,checkRemoteAct,checkVotes,doAction,maybeStart,proceed} from './engine.js';
-import {M,MYDOC,MYHOLE,S,SEATDOCS,SESSION,SUBMITTED,TT,UNSUBS,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSUBMITTED,setmyRef,settableRef,tableRef,view} from './state.js';
+import {BETTING,BUY} from './config.js';
+import {serverMoney} from './net.js';
+import {applySeatChanges,checkRemoteAct,checkVotes,maybeStart,releaseLeaver} from './engine.js';
+import {M,MYDOC,MYHOLE,S,SEATDOCS,SESSION,SUBMITTED,UNSUBS,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSUBMITTED,setmyRef,settableRef,tableRef,view} from './state.js';
 import {applyMoney,handLive,isKicked,log,who} from './table.js';
 import {syncEmoji} from './talk.js';
-import {syncSeatReq} from './seats.js';
 
 export function syncDoc(p){ // pull cumulative buy/cash counters from the player's own seat doc
   const d=SEATDOCS[p.uid];if(!d)return false;
-  const nb=Math.max(0,Math.min(50,(Number(d.buyN)||0)-p.seenB)),nc=Math.max(0,Math.min(50,(Number(d.cashN)||0)-p.seenC));
+  const cap=S.realMoney?Infinity:50;   // real counters are paid for on the server
+  const nb=Math.max(0,Math.min(cap,(Number(d.buyN)||0)-p.seenB)),nc=Math.max(0,Math.min(cap,(Number(d.cashN)||0)-p.seenC));
   const nt=(Number(d.tidyN)||0)-(p.seenT||0);
   if(nt>0){p.seenT=Number(d.tidyN);tidyChips(p);if(!nb&&!nc)return true;}
   if(!nb&&!nc)return false;
   // 联机：入座时的第一手自动生效，之后每次买入都要房主同意（房主自己除外）
   let ok=nb;
-  if(S.mode==='online'&&p.uid!==S.ownerUid&&nb>0){
+  if(S.mode==='online'&&p.uid!==S.ownerUid&&nb>0&&!S.realMoney){
     const first=p.seenB===0&&!((S.book[p.uid]||{}).in>0)?1:0;
     ok=first;p.askB=(p.askB||0)+nb-first;
     if(nb-first>0)log(`${who(p)} 申请买一手（等房主同意）`,'h');
@@ -32,25 +33,28 @@ export function commit(){S.updated=Date.now();view.render();}
 export function reapplySeatDocs(){const cur=Object.entries(SEATDOCS);onSeatDocs({docs:cur.map(([id,v])=>({id,data:()=>v}))});}
 export function onSeatDocs(snap){
   setSEATDOCS({});snap.docs.forEach(d=>{const v=d.data();if(v)SEATDOCS[d.id]=v;});
-  if(!M.ready||!S||S.mode!=='online')return;
-  let changed=false;
+  if(!M.ready||!S||(S.mode!=='online'&&S.mode!=='bots'))return;
+  let changed=false,dealt=false;
   S.names=S.names||{};
   for(const u in SEATDOCS){const nm=String(SEATDOCS[u].name||'').replace(/\s+/g,' ').trim().slice(0,16);if(nm&&S.names[u]!==nm){S.names[u]=nm;changed=true;}}
   S.seats.slice().forEach(p=>{
+    if(!p.uid)return;
     const d=SEATDOCS[p.uid],stay=!!(d&&d.join)&&!isKicked(p.uid);
-    if(p.leaving===stay){p.leaving=!stay;changed=true;}
+    if(p.leaving===stay){
+      p.leaving=!stay;changed=true;
+      if(p.leaving){p.askB=0;if(releaseLeaver(p))dealt=true;}
+    }
+    if(dealt)return;
     if(syncDoc(p))changed=true;
     if(syncEmoji(p,d))changed=true;
-    if(syncSeatReq(p,d))changed=true;
   });
+  if(dealt)return;
   if(!handLive()){if(applySeatChanges())changed=true;}
   else{
     const pend=Object.keys(SEATDOCS).filter(u=>SEATDOCS[u].join&&(Number(SEATDOCS[u].buyN)||0)>0&&!isKicked(u)&&!S.seats.some(p=>p.uid===u));
     if(JSON.stringify(pend)!==JSON.stringify(S.pending)){S.pending=pend;changed=true;}
   }
   if(BETTING.includes(S.street)){
-    const p=S.seats[S.actor];
-    if(p&&p.kind==='human'&&p.leaving){clearTimeout(TT);doAction(p,'fold');return proceed();}
     const before=S.turn;checkRemoteAct();if(S.turn!==before)return;
   }
   if(S.runout&&S.runout.stage==='vote')checkVotes();
@@ -75,10 +79,7 @@ export function kick(uid){
   S.pending=(S.pending||[]).filter(u=>u!==uid);
   const p=S.seats.find(q=>q.uid===uid);
   log(`房主请 ${who({kind:'human',uid})} 离开了房间`,'h');
-  if(p){p.leaving=true;p.askB=0;
-    if(!handLive())applySeatChanges();
-    else if(BETTING.includes(S.street)&&S.seats[S.actor]===p){clearTimeout(TT);doAction(p,'fold');commit();proceed();return;}
-  }
+  if(p){p.leaving=true;p.askB=0;if(releaseLeaver(p))return;}
   commit();
 }
 export function unkick(uid){
@@ -87,11 +88,12 @@ export function unkick(uid){
 }
 export async function joinTable(){
   setFLASH('');setLOCAL_B(1);setLOCAL_C(0);
-  try{await myRef.set({name:M.nick,join:true,t:Date.now(),act:null,buyN:1,cashN:0});}
+  try{await myRef.set({name:M.nick,join:true,t:Date.now(),act:null,buyN:1,cashN:0});if(M.server)serverMoney(BUY);}
   catch(e){setFLASH('加入失败，请检查网络后再试一次。');}
   view.render();
 }
 export async function leaveTable(){
+  if(!myRef)return;
   try{await myRef.update({join:false});}catch(e){setFLASH('操作失败，请再试一次。');}
   view.render();
 }
@@ -109,7 +111,10 @@ export async function startOnline(){
   settableRef(M.db.doc(`rooms/${R}`));
   setmyRef(M.db.doc(`rooms/${R}/seats/${M.uid}`));
   try{const ms=await myRef.get();if(g!==SESSION)return;
-    if(!ms.exists)await myRef.set({name:M.nick,join:false,t:Date.now(),act:null,buyN:0,cashN:0});
+    if(M.solo){
+      if(!ms.exists)await myRef.set({name:M.nick,join:true,t:Date.now(),act:null,buyN:0,cashN:0});
+      else await myRef.update({name:M.nick,join:true});
+    }else if(!ms.exists)await myRef.set({name:M.nick,join:false,t:Date.now(),act:null,buyN:0,cashN:0});
     else if(ms.data().name!==M.nick)await myRef.update({name:M.nick});}catch(e){console.warn(e);}
   if(g!==SESSION)return;   // turned away by the server while we waited
   UNSUBS.push(myRef.onSnapshot(s=>{if(g!==SESSION)return;setMYDOC(s.exists?s.data():null);if(M.mode)view.render();},()=>{}));
@@ -117,7 +122,7 @@ export async function startOnline(){
     if(g!==SESSION)return;
     M.ready=true;
     setS(s.exists?s.data():null);
-    if(S&&(S.v!==6||S.mode!=='online'||!Array.isArray(S.seats)))setS(null);
+    if(S&&(S.v!==6||!Array.isArray(S.seats)||(S.mode!=='online'&&!(M.solo&&S.mode==='bots'))))setS(null);
     if(S&&SUBMITTED>=0&&SUBMITTED<S.turn)setSUBMITTED(-1);
     if(S&&isKicked(M.me)&&MYDOC&&MYDOC.join)myRef.update({join:false}).catch(()=>{});
     view.render();takeMine();
