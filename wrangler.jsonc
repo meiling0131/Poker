@@ -7,13 +7,13 @@
 // Deploy: npm run deploy (lint, tests, build, wrangler deploy). New migrations first: npm run db:migrate
 {
   "name": "verve",
-  "account_id": "99abcf9b0878a8b932cb0fcc9c9b3140",
+  "account_id": "792f38e2a1626a385a054e767dd35a1b",
   "main": "server/worker.js",
   "compatibility_date": "2026-10-06",
   "workers_dev": true,
   "triggers": { "crons": ["* * * * *"] },
   "assets": { "directory": "./dist" },
   "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "Room" }, { "name": "LOBBY", "class_name": "Lobby" }] },
-  "d1_databases": [{ "binding": "DB", "database_name": "verve", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "verve", "database_id": "879d828c-6350-42cc-bfc0-6ba3a74f2755", "migrations_dir": "migrations" }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }]
 }
