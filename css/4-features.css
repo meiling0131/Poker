@@ -29,7 +29,7 @@
 .person .kick.warn{background:#b3443b;color:#fff3ef;border-color:#b3443b}
 .person [data-unkick]{border-color:var(--line2);color:var(--mute)}
 /* 提前操作 */
-.preacts{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"cf any" "check check";gap:8px}
+.preacts{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"check any" "cf cf";gap:8px}
 .preacts button[data-pre="cf"]{grid-area:cf}
 .preacts button[data-pre="call"]{grid-area:check}
 .preacts button[data-pre="any"]{grid-area:any}
