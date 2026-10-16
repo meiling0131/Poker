@@ -102,8 +102,8 @@ export function statView({k,data,foot,today=true}){
         <div class="usernamePopup-actions">${foot}</div>`;
 }
 // 设置: changes are a draft until 确认. sound: every sound effect (游戏音效); speed: how long a bot thinks (ms).
-export const SPEEDS=[[1100,'正常'],[650,'较快'],[250,'更快']];
-let DRAFT={sound:true,speed:1100};
+export const SPEEDS=[[1100,'较慢'],[650,'中等'],[250,'较快']];
+let DRAFT={sound:true,speed:650};
 export function setSettingsDraft(d){DRAFT=Object.assign({},DRAFT,d);}
 export function settingsDraft(){return DRAFT;}
 function settingsHTML(named,back){

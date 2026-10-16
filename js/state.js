@@ -31,7 +31,7 @@ export let VIEW='table';             // 'table' | 'records'
 export let PUSH={1:0,5:0,10:0,25:0}; // chips pushed into the bet zone, by denomination
 export let PUSH_TURN=-1;             // the turn PUSH belongs to
 export let VOTED=null;               // my run-it-twice vote, until the host records it
-export let SPEED=1100;               // bots mode pace (ms): 正常 1100, 较快 650, 更快 250
+export let SPEED=650;                // bots mode pace (ms): 较慢 1100, 中等 650, 较快 250
 export let PROFILE=null;             // book key of the player whose profile card is open
 
 // The UI registers its renderers here, so game code can redraw without importing the UI.

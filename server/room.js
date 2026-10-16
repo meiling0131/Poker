@@ -76,7 +76,7 @@ export class Room {
   }
 
   fresh() {
-    this.c = { S: null, H: [], DECK: [], SEATDOCS: {}, TT: null, GEN: 0, SESSION: 1, RT: null, SPEED: 1100 };
+    this.c = { S: null, H: [], DECK: [], SEATDOCS: {}, TT: null, GEN: 0, SESSION: 1, RT: null, SPEED: 650 };
     this.tokens = {};
     this.code = '';
     this.pw = '';      // SHA-256 of the room password (hashed in the browser); '' = no password
@@ -109,7 +109,7 @@ export class Room {
     setS(c.S); setH(c.H); setDECK(c.DECK); setSEATDOCS(c.SEATDOCS); setTT(c.TT); setGEN(c.GEN); setSESSION(c.SESSION);
     // STARTING is cleared in a microtask after startHand(), i.e. after leave(); on the server
     // dealing never awaits, so the lock never needs to outlive one event
-    setSTARTING(false); setRT(c.RT); setSPEED(c.SPEED || 1100);
+    setSTARTING(false); setRT(c.RT); setSPEED(c.SPEED || 650);
     setOnCashOut(this.real ? (uid, amt) => this.takeHome(uid, amt) : null);
     setOnChips(this.real ? (kind, p, amt) => this.onChips(kind, p, amt) : null);
     if (c.S) { adoptStake(); if (this.real) c.S.realMoney = true; }
@@ -547,7 +547,7 @@ export class Room {
             if (st.S.mode === 'bots' && st.S.street === 'done') startHand();
             break;
           case 'speed':
-            setSPEED([250, 650, 1100].includes(+a[0]) ? +a[0] : 1100);
+            setSPEED([250, 650, 1100].includes(+a[0]) ? +a[0] : 650);
             break;
           case 'clearstats':
             st.S.stats = {}; commit();

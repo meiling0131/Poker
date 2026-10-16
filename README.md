@@ -51,7 +51,7 @@ This project is based on **[meiling0131/Poker](https://github.com/meiling0131/Po
   - **00:06:** the leaderboard is saved and the old day's data is deleted.
 
   Each new day, everyone starts again at 1,000.
-- **设置 (settings).** 游戏音效 turns all sounds on or off. 机器人速度 (bot speed) offers 正常, 较快 and 更快.
+- **设置 (settings).** 游戏音效 turns all sounds on or off. 机器人速度 (bot speed) offers 较慢, 中等 (the default) and 较快.
 - **Developer tools.** `/d1` is a page for browsing the local database. `/audit` checks every balance against the ledger. Both only work on your own machine.
 - **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard and the sounds: 82 in all.
 

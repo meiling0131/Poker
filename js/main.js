@@ -13,7 +13,7 @@ import {store} from './util.js';
 import {localIdentity,serverDb,serverUrl} from './net.js';
 
 loadStake();applySkin();
-// the bots' pace from 设置 (正常 1100, 较快 650, 更快 250 ms)
+// the bots' pace from 设置 (较慢 1100, 中等 650, 较快 250 ms)
 {const sp=Number(store.get('poker.speed'));if([1100,650,250].includes(sp))setSPEED(sp);}
 
 export async function boot(){
