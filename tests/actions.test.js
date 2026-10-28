@@ -1,5 +1,5 @@
 // Your buttons at a practice table, run headless (see tools/headless.js): what Call, the raise slider and Bet
-// put in when the stack is a fresh buy-in of 25s, and the confirmations before Fold and All in.
+// put in when the stack is a fresh buy-in of 25s, the confirmations before Fold and All in, and 整理.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runNextTimer } from '../tools/headless.js';
@@ -8,7 +8,7 @@ const { proceed, startHand, doAction } = await import('../js/engine.js');
 const actions = await import('../js/actions.js');
 const state = await import('../js/state.js');
 const { BETTING } = await import('../js/config.js');
-const { csum } = await import('../js/chips.js');
+const { csum, tidied } = await import('../js/chips.js');
 const { canRaise, maxRaiseTo, minRaiseTo, myTurn } = await import('../js/table.js');
 state.view.renderHero = () => {};   // no page to draw on
 
@@ -100,4 +100,16 @@ test('Fold and All in ask once more; 取消 leaves you in the hand', async () =>
   actions.confirmAction();
   assert.equal(me.allIn, true);
   assert.equal(me.bet, bet + stack);
+});
+
+test('整理 works in the middle of a hand, on your turn too, and puts the picked chips back', async () => {
+  const me = await myDecision((p, S) => BETTING.includes(S.street) && p.stack > 0);
+  allTwentyFives(me);
+  actions.selectCall();
+  assert.ok(csum(state.PUSH) > 0, 'chips picked');
+  await actions.tidy();
+  assert.equal(csum(state.PUSH), 0, 'picked chips went back');
+  assert.deepEqual(me.chips, tidied({ 1: 0, 5: 0, 10: 0, 25: 8 }));
+  assert.equal(csum(me.chips), 200);
+  assert.ok(myTurn(), 'still your turn');
 });

@@ -283,6 +283,17 @@ export async function adjustMoney(delta){
   commit();if(delta>0)maybeStart();
 }
 export let LOCAL_T=0;
+// 整理: change the stack into the usual mix (chips.js tidyTarget), at any time, also in the middle of a hand
+export async function tidy(){
+  const m=mySeat();if(m<0||!S)return;
+  const p=S.seats[m];setPUSH(Z());setFLASH('');cancelAction();
+  const t=tidied(p.chips);
+  if(DV.every(d=>t[d]===p.chips[d])){view.renderHero();return;}
+  if(M.host){p.chips=t;commit();return;}
+  try{LOCAL_T=Math.max(LOCAL_T,Number((MYDOC||{}).tidyN)||0)+1;await myRef.update({tidyN:LOCAL_T});}
+  catch(e){setFLASH('整理失败，请再试一次。');}
+  view.render();
+}
 export let AUTO_TIDY=store.get('poker.autoTidy')==='1';
 let TIDY_KEY='';
 export function toggleAutoTidy(){AUTO_TIDY=!AUTO_TIDY;store.set('poker.autoTidy',AUTO_TIDY?'1':'0');TIDY_KEY='';view.renderHero();}

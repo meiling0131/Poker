@@ -1,5 +1,5 @@
 // Delegated DOM event handlers.
-import {BET_MENU,cancelAction,commitAllIn,commitRaise,confirmAction,money,openBetMenu,pendingIsCurrent,placeBet,requestAction,selectCall,setPre,setRaiseAt,stillMyTurn,toggleAutoTidy,vote} from '../actions.js';
+import {BET_MENU,cancelAction,commitAllIn,commitRaise,confirmAction,money,openBetMenu,pendingIsCurrent,placeBet,requestAction,selectCall,setPre,setRaiseAt,stillMyTurn,tidy,toggleAutoTidy,vote} from '../actions.js';
 import {Z,pickChips} from '../chips.js';
 import {startHand} from '../engine.js';
 import {SOUND,beep,setSOUND} from '../fx.js';
@@ -179,6 +179,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.moneyGo){confirmMoney();return;}
   if(t.dataset.m){money(t.dataset.m);return;}
   if(t.dataset.autotidy){toggleAutoTidy();return;}
+  if(t.dataset.tidy){tidy();return;}
   if(t.dataset.bank){toggleBuy();return;}
   if(t.dataset.pre){setPre(t.dataset.pre);return;}
   if(t.dataset.statsReset){if(t.dataset.sure){if(M.solo)serverCmd('clearstats');else{store.set('poker.stats.bots','');if(S&&S.stats)delete S.stats.local;render();}}else{t.dataset.sure='1';t.textContent='确认清空？';}return;}

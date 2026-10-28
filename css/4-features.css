@@ -15,9 +15,7 @@
 .custom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text)}
 .custom input{flex:1 1 120px;min-width:0;min-height:44px;border:1px solid #c8b38280;border-radius:10px;background:#152c29;color:#fff4dc;font:600 20px var(--num);padding:6px 12px}
 .custom span{flex-basis:100%;font-size:11px;color:var(--mute)}
-.rail .tidy{flex:none;align-self:center}
-.rail .tidy:disabled{opacity:.35;cursor:default}
-@media(max-width:700px){.betmenu{gap:4px}.betmenu button{font-size:12px;min-height:44px}.confirmbar .btn{min-height:46px;font-size:14px}.rail .tidy{padding:4px 7px;font-size:10.5px}}
+@media(max-width:700px){.betmenu{gap:4px}.betmenu button{font-size:12px;min-height:44px}.confirmbar .btn{min-height:46px;font-size:14px}}
 /* Host inbox: buy-in requests */
 .requests{display:flex;flex-direction:column;gap:6px;border:1px solid #c9b68566;border-radius:12px;padding:8px 10px;background:#2b3330}
 .req{display:flex;align-items:center;gap:8px;font-size:12.5px}
@@ -42,15 +40,21 @@
 /* table talk */
 .av{display:inline-block;font-size:12px;line-height:1;margin-right:3px;vertical-align:-1px}
 .av.big{font-size:18px;margin-right:0}
-.bubble{position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);z-index:6;max-width:140px;width:max-content;
+.bubble{position:absolute;left:0;top:0;max-width:140px;width:max-content;
   background:#fffaf0;color:#1f2321;font-size:12px;font-weight:600;line-height:1.3;padding:5px 9px;border-radius:12px;box-shadow:0 4px 12px #0006;
   text-align:center;animation:pop .28s cubic-bezier(.3,1.6,.6,1);pointer-events:none}
-.bubble::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fffaf0}
+/* bubbles have a layer of their own above the seats; placeNotes() (table-view.js) puts each one by its speaker,
+   the tail turned towards them, and keeps it hidden until then */
+.table .talk{position:absolute;inset:0;pointer-events:none;z-index:9}
+.bubble:not([data-tail]){visibility:hidden}
+.bubble::after{content:"";position:absolute;left:var(--tx,50%);top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fffaf0}
+.bubble[data-tail="up"]::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#fffaf0}
+.bubble[data-tail="left"]::after,.bubble[data-tail="right"]::after{top:var(--ty,50%);transform:translateY(-50%);border-top-color:transparent}
+.bubble[data-tail="left"]::after{left:auto;right:100%;border-right-color:#fffaf0}
+.bubble[data-tail="right"]::after{left:100%;border-left-color:#fffaf0}
+.hero-bubble{font-size:18px}
 .hero{position:relative}
-.hero-bubble{bottom:auto;top:-30px;left:64px;transform:none;font-size:18px;animation-name:pophero}
-.hero-bubble::after{left:16px}
-@keyframes pop{from{transform:translateX(-50%) scale(.4);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
-@keyframes pophero{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 .emo-btn{background:none;border:1px solid #ffffff22;border-radius:999px;font-size:13px;line-height:1;padding:3px 6px;cursor:pointer}
 .emo-btn.on{border-color:var(--brass);background:#c9b68522}
 .emopick{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;background:#1a2321;border:1px solid #ffffff1a;border-radius:12px;padding:6px}
@@ -59,7 +63,7 @@
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
 .confetti span{position:absolute;top:-40px;animation:fall 2.4s cubic-bezier(.2,.6,.4,1) forwards}
 @keyframes fall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(105vh) rotate(540deg);opacity:.9}}
-@media(max-width:700px){.emopick{grid-template-columns:repeat(5,minmax(0,1fr))}.bubble{font-size:11px;max-width:110px;padding:4px 7px}.av.big{font-size:15px}}
+@media(max-width:700px){.emopick{grid-template-columns:repeat(5,minmax(0,1fr))}.bubble{font-size:11px;max-width:124px;padding:4px 7px}.av.big{font-size:15px}}
 /* 我的统计 */
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .stat{background:#1a2321;border:1px solid #ffffff14;border-radius:12px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;gap:2px}

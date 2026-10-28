@@ -1,12 +1,12 @@
 // Your station: cards, chip rail, bet zone, and action buttons.
 import {AUTO_TIDY,BET_MENU,PRE,actionLabels,adjustMoney,autoTidy,betPresets,cancelAction,confirmDetail,confirmLabel,confirmationPlan,layoutRaiseMarks,layoutScaleTicks,pendingIsCurrent,preOptions,raiseScale,scalePoint,stillMyTurn} from '../actions.js';
-import {CCLS,DV,Z,chipsOf25,csum} from '../chips.js';
+import {CCLS,DV,Z,chipsOf25,csum,tidied} from '../chips.js';
 import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SESSION,SUBMITTED,VOTED,setPUSH,setPUSH_TURN,view} from '../state.js';
 import {canAct,handLive,isKicked,isOwner,lockedIn,myName,mySeat,myTurn} from '../table.js';
 import {EMOJIS,EMO_OPEN} from '../talk.js';
 import {chipEl,miniStackC,pilesC} from './chips-view.js';
-import {HOT,betHTML,bubbleHTML,cardHTML,myHoleCards,ringHTML,seatName} from './table-view.js';
+import {HOT,betHTML,cardHTML,myHoleCards,placeNotes,resultCardHTML,ringHTML,seatName} from './table-view.js';
 import {after,dealCard} from './anim.js';
 import {sfx} from '../fx.js';
 import {tableCash} from './menu-view.js';
@@ -92,7 +92,10 @@ export function confirmMoney(){
 }
 export function railHTML(p,enabled){
   const avail=Z();for(const d of DV)avail[d]=Math.max(0,(p.chips[d]||0)-(enabled?PUSH[d]:0));
-  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div><button type="button" class="bank${BUY_OPEN?' on':''}" data-bank="1" aria-label="买入或取出" title="买入或取出">${BANK_ICON}</button></div>`;
+  const t=tidied(p.chips),tidy=DV.every(d=>t[d]===p.chips[d]);
+  return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div>`+
+    `<button type="button" class="tidy" data-tidy="1"${tidy?' disabled':''} aria-label="整理筹码" title="先凑 白10 红6 蓝6，其余换成绿25">整理</button>`+
+    `<button type="button" class="bank${BUY_OPEN?' on':''}" data-bank="1" aria-label="买入或取出" title="买入或取出">${BANK_ICON}</button></div>`;
 }
 function movePiles(delta){
   const n=Math.round(Math.abs(delta)/25);if(!n)return '';
@@ -101,7 +104,9 @@ function movePiles(delta){
 }
 function moneyRack(delta,clock,home){
   const hint=home?`<span class="rack-empty">拖动滑块以调整买入或取出金额。</span>`:'';
-  return `<div class="betzone${delta||home?' has-move':''}" id="moneyRack">${delta?movePiles(delta):''}${hint}${lockedIn(S.seats[mySeat()])?laterLine(delta):''}${clock||''}</div>`;
+  // the hand just ended (you went bust, say): on a phone its result shows here too
+  const res=S.street==='done'?resultCardHTML():'';
+  return `<div class="betzone${delta||home?' has-move':''}${res?' has-result':''}" id="moneyRack">${res}${delta?movePiles(delta):''}${hint}${lockedIn(S.seats[mySeat()])?laterLine(delta):''}${clock||''}</div>`;
 }
 function moneyHTML(p){
   const b=moneyBounds(p),v=moneyValue(p),delta=v-p.stack,buy=delta>=0;
@@ -193,17 +198,19 @@ export function renderHeroInner(){
   const needBuy=p.stack===0&&!p.qBuy&&(S.street==='idle'||S.street==='done');
   if(S.mode!=='bots')BUY_OPEN=false;
   else if(!needBuy)AUTO_BUY=null;
-  else if(AUTO_BUY!==SESSION){AUTO_BUY=SESSION;BUY_OPEN=true;MONEY_AT=moneyBounds(p).start;}
+  else if(AUTO_BUY!==SESSION){AUTO_BUY=SESSION;BUY_OPEN=true;MONEY_AT=Math.min(moneyBounds(p).max,p.stack+BUY);}   // on one buy-in, as the bank button opens it
   const clock=S.deadline?cdSpan(S.deadline,'need cd'):'';
   const L=mine?actionLabels(p):null,waiting=mine&&!M.host&&SUBMITTED===S.turn,dis=waiting?' disabled':'';
   const later=BUY_OPEN?'':moneyNote(p),noted=later?' has-note':'';
+  // the hand's result: on a phone it is shown here, where it covers nothing (the felt has it on a bigger screen)
+  const res=S.street==='done'?resultCardHTML():'',resCls=res?' has-result':'';
   const zone=BUY_OPEN?moneyRack(moneyValue(p)-p.stack,clock?`<span class="rack-clock">${clock}</span>`:'',dragHint(p,moneyValue(p)))
-    :needBuy?`<div class="betzone${noted}"><span class="rack-empty">买入筹码以开始。</span>${later}</div>`
+    :needBuy?`<div class="betzone${noted}${resCls}"><span class="rack-empty">买入筹码以开始。</span>${res}${later}</div>`
     :mine?`<div class="betzone${L.pushed?' has':''}${noted}">
       ${L.pushed?`<div class="bz-chips">${[1,5,10,25].filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join('')}</div>`:`<span class="rack-empty">点击筹码以下注，再次点击以撤回。</span>`}
       ${later}${clock?`<span class="rack-clock">${clock}</span>`:''}
     </div>`
-    :`<div class="betzone${noted}"><span class="rack-empty">未开始下注。</span>${later}</div>`;
+    :`<div class="betzone${noted}${resCls}"><span class="rack-empty">未开始下注。</span>${res}${later}</div>`;
   let ctl='';
   if(BUY_OPEN)ctl=moneyHTML(p);
   else if(mine){
@@ -265,7 +272,6 @@ export function renderHeroInner(){
   const pushed=mine?csum(PUSH):0;
   $('meSeat').innerHTML=`<div class="me${p.folded?' folded':''}${p.win?' win':''}${mine?' turn':''}" data-i="${m}" style="--ph:-${Date.now()%1600}ms">
       ${p.bet>0?`<div class="herobet">${betHTML(p.bet,p.betChips,m)}</div>`:''}
-      ${bubbleHTML(p,'hero-bubble')}
       <div class="hc">${cards}</div>
       <div class="plate">${mine?ringHTML():''}
         ${S.street!=='idle'&&p.inHand&&S.dealer===m?'<i class="dbtn">D</i>':''}${S.street!=='idle'&&p.inHand&&S.sbPos===m?'<i class="blind sb" title="小盲">S</i>':''}${S.street!=='idle'&&p.inHand&&S.bbPos===m?'<i class="blind bb" title="大盲">B</i>':''}<span class="who">${esc(myName())}</span>
@@ -275,6 +281,7 @@ export function renderHeroInner(){
     </div>`;
   el.innerHTML=`${zone}${railHTML(p,mine&&!BUY_OPEN)}<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
   layoutRaiseMarks();if(BUY_OPEN)paintMoneyFill(p,moneyValue(p));
+  placeNotes();
   after();
   setTimeout(autoTidy,0);
 }
