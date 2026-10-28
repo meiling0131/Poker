@@ -2,7 +2,7 @@
 import {PENDING_ACTION,cancelAction,pendingIsCurrent,runPre} from '../actions.js';
 import {celebrate,keepAwake,turnAlert} from '../fx.js';
 import {adoptStake} from '../settings.js';
-import {FLASH,M,S,VIEW,view} from '../state.js';
+import {FLASH,M,S,VIEW,setVIEW,view} from '../state.js';
 import {renderHero} from './hero-view.js';
 import {closingLabel,renderHeader,renderMenu,setBoard} from './menu-view.js';
 import {fetchBoard} from '../player.js';
@@ -18,6 +18,7 @@ export function render(){
   adoptStake();keepAwake();
   const ot=$('overtimePopup');if(ot){const k=overtimeKey();ot.hidden=!k||k===OVERTIME_SEEN;}
   if(PENDING_ACTION&&!pendingIsCurrent())cancelAction();
+  if(VIEW==='records'&&M.mode!=='online')setVIEW('table');   // 记录 is only open in a friends room
   document.body.dataset.view=M.mode?VIEW:'menu';
   renderHeader();
   if(!M.mode){renderProfile();renderMenu();return;}

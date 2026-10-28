@@ -9,6 +9,7 @@ import {H,M,PUSH,S,setPUSH,setSPEED} from './state.js';
 import {mySeat} from './table.js';
 import './ui/events.js';
 import {render} from './ui/render.js';
+import {setNamePopup} from './ui/menu-view.js';
 import {store} from './util.js';
 import {localIdentity,serverDb,serverUrl} from './net.js';
 
@@ -33,7 +34,8 @@ export async function boot(){
   if(urlRoom)M.prefill=urlRoom;
   if(M.mode)return;
   if(urlRoom&&M.db&&M.player)return enterOnline(urlRoom,false);
-  if(urlRoom){render();return;}
+  // an invite link opened before leaving a name: ask for one; saving it reloads the page into the room
+  if(urlRoom){if(M.db)setNamePopup(true);render();return;}
   const last=store.get('poker.mode');
   if(last==='bots'&&(M.player||PLAY_MODE==='practice'))enterBots();
   else if(last==='online'&&M.db&&M.player&&store.get('poker.room'))enterOnline(store.get('poker.room'),false);

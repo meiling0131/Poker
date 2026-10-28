@@ -4,6 +4,7 @@ import {maybeStart,newBotsTable} from './engine.js';
 import {hashPw,onServerClosed,onServerError,onServerMoney,serverCmd,serverLeave} from './net.js';
 import {dayIsOver,fetchPlayer,forgetIdentity} from './player.js';
 import {moneyDone} from './ui/hero-view.js';
+import {openFriends} from './ui/menu-view.js';
 import {commit,leaveTable,normRoom,startOnline} from './online.js';
 import {PLAY_MODE,loadStake,setPLAY_MODE} from './settings.js';
 import {GEN,LOBBY,M,SESSION,SPEED,TT,UNSUBS,setDECK,setFLASH,setGEN,setH,setMYDOC,setMYHOLE,setPROFILE,setS,setSEATDOCS,setSESSION,setSUBMITTED,setUNSUBS,setVIEW,view} from './state.js';
@@ -50,9 +51,11 @@ const REFUSED={
 onServerError((code,room)=>{
   const hadPw=!!M.roomPw;
   toMenu();
+  // a regular table (solo) says why in the lobby; a friends room goes back to 好友模式, asking for the password when that was it
+  if(room==='solo'){setFLASH((REFUSED[code]||(()=>'进不了牌桌。'))(room));view.render();return;}
   if(code==='password'){LOBBY.open=room;setFLASH(hadPw?'密码不对，再试一次。':'这个房间有密码。');}
   else{M.prefill=room;setFLASH((REFUSED[code]||(()=>'进不了这个房间。'))(room));}
-  view.render();
+  openFriends();
 });
 // the server's answer to a buy-in or cash-out carries the balance in the database; a refusal says why
 const MONEY_ERR={

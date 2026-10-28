@@ -24,8 +24,8 @@ export let LOCAL_B=0,LOCAL_C=0;      // my buy / cash-out counters, written to m
 export let tableRef=null,myRef=null;
 
 // ---- local UI ----
-// lobby: a room that asked for a password, and a room being created (waiting for its password)
-export const LOBBY={open:null,confirm:null};
+// lobby: rooms from the server (好友模式), the room row opened to join, the room being created (waiting for its password)
+export const LOBBY={rooms:null,open:null,confirm:null};
 export let FLASH='';                 // one-line message under the controls
 export let VIEW='table';             // 'table' | 'records'
 export let PUSH={1:0,5:0,10:0,25:0}; // chips pushed into the bet zone, by denomination

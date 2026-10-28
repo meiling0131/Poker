@@ -168,6 +168,31 @@ button.mode:hover .go,#menu button.go:hover:not(:disabled),#seatPopup button.go:
 .mode .form .go{margin-top:2px}
 .mode .form label.wide{grid-column:1/-1}
 
+/* ---- 好友模式弹窗：房间列表（点一下展开，有密码再填密码就进），房间号，加入 / 创建 ---- */
+.usernamePopup-card .rooms{display:grid;gap:8px}
+.rooms-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.usernamePopup-card .rooms-h b{font:600 14px/1.3 var(--body);text-align:left;letter-spacing:.02em}
+.rooms-h small{font-size:11px;color:var(--mute)}
+.rlist{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;max-height:190px;overflow-y:auto;overscroll-behavior:contain}
+.room{border-radius:11px;background:#0000002b;border:1px solid #ffffff14}
+.room.open{border-color:var(--brass);background:#00000040}
+.rrow{width:100%;display:flex;align-items:center;gap:8px;padding:9px 10px;background:none;border:0;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.rc{font:700 15px var(--num);letter-spacing:.08em;color:var(--cream)}
+.lock{font-size:12px;line-height:1}
+.rm{flex:1;min-width:0;font-size:11.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{font-size:18px;line-height:1;color:var(--mute);transition:transform .15s}
+.room.open .chev{transform:rotate(90deg)}
+.rjoin{display:grid;grid-template-columns:1fr auto;gap:8px;padding:0 10px 10px}
+.rjoin.nopw{grid-template-columns:1fr}
+.usernamePopup-card .rjoin input{min-width:0;min-height:44px}
+#menu .rjoin .go{min-height:44px;padding:0 18px}
+.rjoin .why{grid-column:1/-1}
+.rempty{margin:0;font-size:12px;color:var(--mute)}
+.usernamePopup-card input#roomIn{font-family:var(--num);letter-spacing:.12em;text-transform:uppercase}
+.usernamePopup-card input#roomIn::placeholder{font-family:var(--body);letter-spacing:0;text-transform:none}
+.friend-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.usernamePopup-card b .code{font-family:var(--num);letter-spacing:.1em;color:#f8d68f}
+
 /* 创建房间：确认房间号，设密码（可不填） */
 .confirm{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;padding:10px;border-radius:12px;background:#0000002b;border:1px dashed #e3a64b99}
 .confirm p{grid-column:1/-1;display:flex;align-items:baseline;gap:6px;margin:0;font-size:13px}

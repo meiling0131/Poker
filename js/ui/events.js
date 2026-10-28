@@ -10,7 +10,7 @@ import {LOBBY,M,PROFILE,PUSH,S,SPEED,setFLASH,setPROFILE,setPUSH,setSPEED,setVIE
 import {bookKey,lockedIn,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
 import {confirmMoney,renderHero,toggleBuy} from './hero-view.js';
-import {nameNext,renderMenu,setNameAsk,setNameNext,setNamePopup,setSettingsDraft,setStats,settingsDraft,shownBalance} from './menu-view.js';
+import {nameNext,openFriends,renderMenu,renderRooms,setNameAsk,setNameNext,setNamePopup,setSettingsDraft,setStats,settingsDraft,shownBalance} from './menu-view.js';
 import {dismissOvertime,render} from './render.js';
 import {cleanPlayerName,displayName,fetchSeatStats,fetchStats,restrictNameInput,savePlayer} from '../player.js';
 import {$,store} from '../util.js';
@@ -99,7 +99,7 @@ document.addEventListener('change',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key!=='Enter'||e.isComposing)return;
   const id=e.target.id;
-  const b=id==='nameIn'?document.querySelector('[data-name="ok"]'):id==='joinPw'?document.querySelector('[data-room="join"]'):id==='cpPw'?document.querySelector('[data-confirm-create]'):null;
+  const b=id==='nameIn'?document.querySelector('[data-name="ok"]'):id==='roomIn'?document.querySelector('[data-room="join"]'):id==='rjPw'?document.querySelector('[data-enter-room]'):id==='cpPw'?document.querySelector('[data-confirm-create]'):null;
   if(b){e.preventDefault();b.click();}
 });
 document.addEventListener('click',e=>{
@@ -125,7 +125,7 @@ document.addEventListener('click',e=>{
     else if(t.dataset.name==='settings-ok')applySettings();
     else if(t.dataset.name==='stats')openStats();
     else if(t.dataset.name.startsWith('stat:')){setNameAsk(t.dataset.name);renderMenu();}
-    else if(t.dataset.name==='dismiss'){setNamePopup(false);renderMenu();}
+    else if(t.dataset.name==='dismiss'){setNamePopup(false);setFLASH('');renderMenu();}
     return;
   }
   if(t.dataset.profileClose){setPROFILE(null);renderTable();return;}
@@ -133,26 +133,33 @@ document.addEventListener('click',e=>{
   if(t.dataset.stake!=null){if(t.disabled||!M.player||PRESETS[+t.dataset.stake].buy>shownBalance())return;applyPreset(+t.dataset.stake);renderMenu();return;}
   if(t.dataset.mode){if(t.disabled||(t.dataset.mode!=='practice'&&!M.player))return;if(PRESETS[PRESET].buy>shownBalance())return;if(readStakeForm())enterBots(t.dataset.mode);return;}
   if(t.dataset.soon)return;
+  // 好友模式: you play under your own name, so a room needs only its code (and a password if it has one)
+  if(t.dataset.friends!=null){if(t.disabled||!M.player)return;setFLASH('');openFriends();return;}
   if(t.dataset.room){
-    const nick=($('nick')&&$('nick').value||'').replace(/\s+/g,' ').trim().slice(0,16);
-    if(!nick){setFLASH('先填一个昵称');renderMenu();$('nick')&&$('nick').focus();return;}
-    M.nick=nick;store.set('poker.nick',nick);setFLASH('');
+    if(!M.player)return;
+    setFLASH('');
     const typed=(($('roomIn')&&$('roomIn').value)||'').trim(),code=normRoom(typed);
     if(t.dataset.room==='create'){
-      if(!readStakeForm())return;
+      if(PRESETS[PRESET].buy>shownBalance()){setFLASH(`余额不够盲注 ${PRESETS[PRESET].sb}/${PRESETS[PRESET].bb} 的最低买入，在大厅换一个小一点的盲注吧。`);renderMenu();return;}
       const room=typed?code:newRoomCode();
       if(room.length<3){setFLASH('房间号要 3–8 位字母或数字。');renderMenu();return;}
       LOBBY.open=null;LOBBY.confirm={code:room,typed:!!typed};renderMenu();$('cpPw')&&$('cpPw').focus();return;
     }
     if(!code){setFLASH('填一下房间号，或者新开一个房间');renderMenu();return;}
     if(code.length<3){setFLASH('房间号要 3–8 位字母或数字。');renderMenu();return;}
-    enterOnline(code,false,($('joinPw')&&$('joinPw').value)||'');return;
+    enterOnline(code,false);return;
   }
   if(t.dataset.confirmCreate){
     if(!LOBBY.confirm||!readStakeForm())return;
     enterOnline(LOBBY.confirm.code,true,($('cpPw')&&$('cpPw').value)||'');return;
   }
   if(t.dataset.cancelCreate){if(LOBBY.confirm&&LOBBY.confirm.typed)M.prefill=LOBBY.confirm.code;LOBBY.confirm=null;setFLASH('');renderMenu();return;}
+  if(t.dataset.openRoom){
+    const c=t.dataset.openRoom;LOBBY.open=LOBBY.open===c?null:c;setFLASH('');renderRooms();
+    $('rjPw')&&$('rjPw').focus();
+    return;
+  }
+  if(t.dataset.enterRoom){enterOnline(t.dataset.enterRoom,false,($('rjPw')&&$('rjPw').value)||'');return;}
   if(t.dataset.copy){
     const txt=roomLink();
     const done=()=>{t.textContent='已复制';setTimeout(()=>{t.textContent='复制链接';},1500);};

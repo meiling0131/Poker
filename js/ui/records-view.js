@@ -40,7 +40,7 @@ export function renderRecords(){
     return `<tr class="${k===M.me?'mine':''}"><td>${esc(nameOfKey(k))}${n.seated?'':' <span class="off">已离桌</span>'}</td><td>${fmt(n.in)}</td><td>${fmt(n.out)}</td><td>${fmt(n.onTable)}</td><td class="${n.net>0?'pos':n.net<0?'neg':''}">${sgn(n.net)}</td></tr>`;}).join('');
   const invite=S.mode==='online'?`<section class="panel"><h2>邀请朋友 <span>房间 ${esc(M.room)}</span></h2>
       <div class="invite"><code id="linktxt">${esc(roomLink())}</code><button class="mini" data-copy="1">复制链接</button></div>
-      <p>朋友打开链接、填个昵称就能进来，不需要注册账号。</p></section>`:'';
+      <p>朋友打开链接、留个名字就能进来，不需要注册账号。</p></section>`:'';
   const people=S.mode==='online'?`<section class="panel"><h2>玩家 <span>${S.seats.length} 在座${(S.pending||[]).length?` · ${S.pending.length} 排队`:''} · 上限 10</span></h2>
       <div class="people">${S.seats.map(p=>`<span class="person">${esc(seatName(p))}${p.stack===0?' · 未买入':''}${p.leaving?' · 离座中':''}${isOwner()&&p.uid!==M.me&&!isKicked(p.uid)?kickBtn(p.uid):''}</span>`).join('')}${(S.pending||[]).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 排队${isOwner()?kickBtn(u):''}</span>`).join('')||''}</div>
       ${isOwner()&&S.kicked&&Object.keys(S.kicked).length?`<div class="people">${Object.keys(S.kicked).map(u=>`<span class="person wait">${esc(nameOfUid(u))} · 已请出<button class="kick" data-unkick="${esc(u)}">允许回来</button></span>`).join('')}</div>`:''}
@@ -53,5 +53,5 @@ export function renderRecords(){
       ${S.ledger.length?`<ol class="rec">${S.ledger.map(r=>`<li><time>${tm(r.t)}</time><span class="k">${esc(nameOfKey(r.k))}</span><span class="${r.kind==='buy'?'buy':'cash'}">${r.kind==='buy'?'买一手':r.kind==='cash'?'退一手':'离桌带走'} ${fmt(r.amt)}</span></li>`).join('')}</ol>`:'<p>还没有买入或退出记录。</p>'}</section>
     <section class="panel"><h2>牌局记录 <span>最近 ${S.log.length} 条</span></h2>
       <ol class="lg">${S.log.map(l=>`<li class="${l.cls}">${names(l.t)}</li>`).join('')}</ol></section>
-    <p class="note">洗牌用 crypto.getRandomValues 做无偏 Fisher–Yates，每手重洗一副 52 张。人机局在你的浏览器里洗牌发牌；联机局由 Verve 服务器（Cloudflare）洗牌发牌，每位玩家的底牌经加密连接只发给本人，其他人（包括房主）的浏览器里都没有，摊牌时才亮出来。轮到真人时限 45 秒，超时自动过牌或弃牌。</p>`;
+    <p class="note">洗牌用 crypto.getRandomValues 做无偏 Fisher–Yates，每手重洗一副 52 张。练习模式在你的浏览器里洗牌发牌；正常模式和好友房间由 Verve 服务器（Cloudflare）洗牌发牌，每位玩家的底牌经加密连接只发给本人，其他人（包括房主）的浏览器里都没有，摊牌时才亮出来。轮到真人时限 45 秒，超时自动过牌或弃牌。</p>`;
 }

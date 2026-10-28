@@ -28,6 +28,12 @@ export async function hashPw(room,pw){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`verve:${room}:${pw}`));
   return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,'0')).join('');
 }
+// rooms people are in right now, for 好友模式: [{code,n,online,pw,sb,bb,host}]
+export async function fetchRooms(){
+  const r=await fetch(serverUrl()+'/rooms',{cache:'no-store'});
+  if(!r.ok)throw new Error('rooms '+r.status);
+  return r.json();
+}
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const snap=v=>({exists:v!=null,data:()=>clone(v)});
 export function serverDb(base,id){
