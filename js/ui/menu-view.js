@@ -74,8 +74,9 @@ function bestHandHTML(d){
 }
 // The stats popup, shared by the lobby's 查看数据 and a player's card at the table.
 // data: the stats (undefined while loading, null before the first hand, 'error'); card(k): the attributes a card
-// opens its explanation with; foot: the buttons at the bottom; note: the line above the cards' counts.
-export function statsView({tag,data,card,foot,today=true}){
+// opens its explanation with; foot: the buttons at the bottom; note: the line above the cards' counts;
+// about: a line under the name (a bot's avatar and how it plays).
+export function statsView({tag,data,card,foot,today=true,about=''}){
   const body=data===undefined?'<p class="name-note">正在读取…</p>'
     :data==='error'?'<p class="name-note">没能读取数据，请稍后再试。</p>'
     :`<div class="stat-grid">${COUNT_CARDS.map(c=>`<button type="button" class="stat-card" ${card(c.k)}><b>${fmt(data?data[c.k]||0:0)}</b><small>${c.zh}</small></button>`).join('')}</div>
@@ -83,7 +84,7 @@ export function statsView({tag,data,card,foot,today=true}){
         <div class="stat-grid">${STAT_CARDS.map(c=>`<button type="button" class="stat-card" ${card(c.k)}><b>${pctOf(c,data)}</b><span>${c.en}</span><small>${c.zh}</small></button>`).join('')}</div>
         ${data?'':`<p class="name-note">打完第一手后开始统计。</p>`}${today?'':'<p class="name-note">练习模式：本次练习的数据，不计入排行。</p>'}`;
   return `
-        <div id="usernamePopupTitle" class="popup-tag">${tag}</div>${body}
+        <div id="usernamePopupTitle" class="popup-tag">${tag}</div>${about}${body}
         <div class="usernamePopup-actions">${foot}</div>`;
 }
 export function statView({k,data,foot,today=true}){

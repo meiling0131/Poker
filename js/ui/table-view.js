@@ -1,9 +1,10 @@
 // The felt: seats, board, pot.
 import {SUITS,best5,cardTxt,rankOf,rankStr,suitOf} from '../cards.js';
-import {STREET_CN} from '../config.js';
+import {BOT_BLURB,STREET_CN} from '../config.js';
 import {H,M,MYHOLE,PROFILE,S,SUBMITTED} from '../state.js';
 import {N,bookKey,mySeat,nameOfUid,names,potTotal} from '../table.js';
 import {miniStack,miniStackC,pilesC,potStack,topChip} from './chips-view.js';
+import {avatarOf} from '../talk.js';
 import {$,cdSpan,esc,fmt} from '../util.js';
 import {GREW,after,dealCard,flipCard,sync} from './anim.js';
 import {statView,statsView} from './menu-view.js';
@@ -154,9 +155,11 @@ export function profileHTML(){
   const p=S.seats.find(q=>bookKey(q)===PROFILE);if(!p)return '';
   const live=profileLive(),own=(S.stats||{})[PROFILE];
   const data=live?(PDATA.key===PROFILE?PDATA.data:undefined):(own&&own.hands?own:null);
+  // a bot's card says how it plays, under its avatar
+  const about=p.kind==='bot'&&BOT_BLURB[p.id]?`<p class="name-note bot-blurb"><span class="bot-av" aria-hidden="true">${avatarOf(p)}</span>${esc(BOT_BLURB[p.id])}</p>`:'';
   const inner=PVIEW
     ?statView({k:PVIEW,data,today:live,foot:'<button type="button" class="go plain" data-pstat="">返回</button>'})
-    :statsView({tag:`<span class="greet tag">${esc(seatName(p))}</span>`,data,today:live,card:k=>`data-pstat="${k}"`,
+    :statsView({tag:`<span class="greet tag">${esc(seatName(p))}</span>`,data,today:live,about,card:k=>`data-pstat="${k}"`,
       foot:'<button type="button" class="go plain" data-profile-close="1">返回</button>'});
   return `<button type="button" class="usernamePopup-bg" data-profile-close="1" aria-label="关闭"></button>
     <div class="usernamePopup-card seatcard" role="dialog" aria-modal="true" aria-labelledby="usernamePopupTitle">${inner}</div>`;

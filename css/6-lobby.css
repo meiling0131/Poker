@@ -52,6 +52,9 @@ button.greet.tag:hover{filter:brightness(1.1)}
 .stat-card small{font:600 12px/1.3 var(--body);color:var(--mute)}
 .stat-big{margin:0;text-align:center;font:700 40px/1.1 var(--num);color:var(--cream)}
 .stat-card:only-child,.stat-grid .stat-card:last-child:nth-child(odd){grid-column:1/-1}
+/* a bot's card: its avatar and how it plays, under the name */
+.usernamePopup-card .bot-blurb{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:13px;line-height:1.6;color:var(--text)}
+.bot-av{font-size:30px;line-height:1}
 /* 最大赢池: the amount, the five winning cards and their hand type */
 .stat-best{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;border-radius:12px;border:1px solid var(--line2);background:var(--sk-deep,var(--panel2))}
 /* only the block's own label, amount and hand type: the cards inside keep the table's own card style */
