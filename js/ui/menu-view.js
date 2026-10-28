@@ -1,5 +1,5 @@
 // Header and lobby.
-import {PLAY_MODE,PRESET,PRESETS,SB,BB} from '../settings.js';
+import {PLAY_MODE,PRESET,PRESETS,SB,BB,SKINS} from '../settings.js';
 import {FLASH,LOBBY,M,S,VIEW} from '../state.js';
 import {displayName} from '../player.js';
 import {fetchRooms} from '../net.js';
@@ -105,9 +105,10 @@ export function statView({k,data,foot,today=true}){
         <p class="name-note">${day}：${fmt(n)} / ${fmt(dn)} ${c.denLbl}</p>
         <div class="usernamePopup-actions">${foot}</div>`;
 }
-// 设置: changes are a draft until 确认. sound: every sound effect (游戏音效); speed: how long a bot thinks (ms).
+// 设置: changes are a draft until 确认. sound: every sound effect (游戏音效); speed: how long a bot thinks (ms);
+// skin: which floor's table (牌桌).
 export const SPEEDS=[[1100,'较慢'],[650,'中等'],[250,'较快']];
-let DRAFT={sound:true,speed:650};
+let DRAFT={sound:true,speed:650,skin:'f1'};
 export function setSettingsDraft(d){DRAFT=Object.assign({},DRAFT,d);}
 export function settingsDraft(){return DRAFT;}
 function settingsHTML(named,back){
@@ -115,6 +116,7 @@ function settingsHTML(named,back){
         <b id="usernamePopupTitle">设置</b>
         <div class="set-row"><span>游戏音效</span><div class="seg">${[[false,'关闭'],[true,'启用']].map(([v,l])=>`<button type="button" data-set-sound="${v?1:0}"${DRAFT.sound===v?' class="on"':''}>${l}</button>`).join('')}</div></div>
         <div class="set-row"><span>机器人速度</span><div class="seg">${SPEEDS.map(([v,l])=>`<button type="button" data-set-speed="${v}"${DRAFT.speed===v?' class="on"':''}>${l}</button>`).join('')}</div></div>
+        <div class="set-row"><span>牌桌</span><div class="seg">${SKINS.map(([k,l,d])=>`<button type="button" data-set-skin="${k}" title="${d}"${DRAFT.skin===k?' class="on"':''}>${l}</button>`).join('')}</div></div>
         <div class="usernamePopup-actions">
           <button type="button" class="go amber" data-name="settings-ok">确认</button>
           ${back('dismiss','取消')}

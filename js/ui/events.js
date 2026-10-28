@@ -5,7 +5,7 @@ import {startHand} from '../engine.js';
 import {SOUND,beep,setSOUND} from '../fx.js';
 import {enterBots,enterOnline,exitTable} from '../modes.js';
 import {approveBuy,joinTable,kick,leaveTable,newRoomCode,normRoom,roomLink,unkick} from '../online.js';
-import {SHOW_HAND,PRESET,PRESETS,applyPreset,readStakeForm,setSHOW_HAND} from '../settings.js';
+import {SHOW_HAND,SKIN,PRESET,PRESETS,applyPreset,readStakeForm,setSHOW_HAND,setSkin} from '../settings.js';
 import {LOBBY,M,PROFILE,PUSH,S,SPEED,setFLASH,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
 import {bookKey,lockedIn,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
@@ -66,6 +66,7 @@ function applySettings(){
   const d=settingsDraft();
   if(d.sound!==SOUND){setSOUND(d.sound);store.set('poker.sfx',SOUND?'on':'off');if(SOUND)beep();}
   setSPEED(d.speed);store.set('poker.speed',String(d.speed));
+  setSkin(d.skin);
   setNamePopup(false);renderMenu();
 }
 // 查看数据: fetched each time it opens, so it is today's numbers as of the last hand
@@ -108,9 +109,10 @@ document.addEventListener('click',e=>{
   if(PROFILE&&!e.target.closest('.seatcard')){setPROFILE(null);if(S)renderTable();}
   const t=e.target.closest('button');if(!t)return;
   // 设置: a draft of the current settings; 确认 applies it, 取消 drops it
-  if(t.dataset.settings!=null){setSettingsDraft({sound:SOUND,speed:SPEED});setNamePopup(true);setNameAsk('settings');renderMenu();return;}
+  if(t.dataset.settings!=null){setSettingsDraft({sound:SOUND,speed:SPEED,skin:SKIN});setNamePopup(true);setNameAsk('settings');renderMenu();return;}
   if(t.dataset.setSound){setSettingsDraft({sound:t.dataset.setSound==='1'});renderMenu();return;}
   if(t.dataset.setSpeed){setSettingsDraft({speed:+t.dataset.setSpeed});renderMenu();return;}
+  if(t.dataset.setSkin){setSettingsDraft({skin:t.dataset.setSkin});renderMenu();return;}
   // the name pill: no name yet asks for one; with a name it opens the menu (查看数据, 修改名字, 清除账号, 返回)
   if(t.dataset.greet!=null){setNamePopup(true);if(M.player){openStats();return;}setNameAsk('');renderMenu();$('nameIn')&&$('nameIn').focus();return;}
   if(t.dataset.name){

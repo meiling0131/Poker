@@ -32,7 +32,10 @@ export function adoptStake(){if(S&&S.stakes&&validStake(S.stakes.sb,S.stakes.bb)
 export function setPLAY_MODE(v){PLAY_MODE=v;}
 export function setSHOW_HAND(v){SHOW_HAND=v;}
 
-export let SKIN='f1';
-export function applySkin(){SKIN='f1';document.body.dataset.skin='f1';}
-export function setSkin(){applySkin();}
+// 牌桌皮肤 (设置 → 牌桌): 'f1' Verve 一楼（会议室：胡桃木长桌、千鸟格扶手椅）| 'f2' Verve 二楼（休息区：石面方桌、皮沙发）
+export const SKINS=[['f1','一楼','会议室 · 胡桃木长桌'],['f2','二楼','休息区 · 皮沙发']];
+const validSkin=v=>SKINS.some(([k])=>k===v);
+export let SKIN=validSkin(store.get('poker.skin'))?store.get('poker.skin'):'f1';
+export function applySkin(){document.body.dataset.skin=SKIN;}
+export function setSkin(v){SKIN=validSkin(v)?v:'f1';store.set('poker.skin',SKIN);applySkin();}
 
