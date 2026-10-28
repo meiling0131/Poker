@@ -55,12 +55,57 @@ body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
 .me .card.big{--w:var(--hw);--h:calc(var(--w)*1.4);border-radius:calc(var(--w)*.12)}
 .me.folded .hc{opacity:.4}
 .me .plate{position:relative;z-index:1;display:flex;align-items:center;gap:6px;padding:5px 8px 5px 10px;border-radius:999px;width:auto;white-space:nowrap}
-.me .plate .who{font-weight:600;font-size:13px}
+.me .plate .who{font-weight:600;font-size:13px;display:inline-block;vertical-align:middle;max-width:7em;overflow:hidden;text-overflow:ellipsis}
 .me .plate .stk{font:700 17px var(--num);color:var(--cream);margin:0}
 .me .plate .pushed{font:600 12px var(--num);color:var(--win)}
-.me.turn .plate{border-color:var(--brass);box-shadow:0 0 0 2px #c9b68533,0 0 14px #c9b68540}
+.me.turn .plate{border-color:var(--brass)}
 .me-sub{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;white-space:nowrap}
-.me-sub .hand{color:var(--win)}
+body[data-skin] .preacts button.light{background:#f6f1e655;color:#2a1a0e;border:0}
+body[data-skin] .preacts button.any{background:#e4c15a55;color:#241a0c;border:0}
+body[data-skin] .preacts button.light.on{background:#f6f1e6;color:#2a1a0e;border:0;box-shadow:0 0 8px 1px #fff5}
+body[data-skin] .preacts button.any.on{background:#e4c15a;color:#241a0c;border:0;box-shadow:0 0 8px 1px #ffe08a66}
+.hero .bz-chips .hint.hand{color:var(--win);font-weight:700;opacity:1}
+.hero .bz-sum .need.cd{font-weight:400;color:var(--brass)}
+body[data-skin] .actions .btn.call,body[data-skin] .actions .btn.raise:not(.off),body[data-skin] .raisebox .btn.raise:not(.allin){background:#d8ceb8;color:#2a1a0e;border-color:transparent}
+body[data-skin] .btn.bet:not(.allin){background:var(--btn-raise);color:var(--btn-raise-ink);border-color:transparent}
+body[data-skin] .btn.bet.allin,body[data-skin] .raisebox .btn.allin,body[data-skin] .confirmbar .btn.allin,body[data-skin] .betmenu button.btn.allin{background:#8f5c54;color:var(--btn-allin-ink);border-color:#ffffff1c;box-shadow:inset 0 1px 0 #ffffff10}
+.raisebox{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.raisebox .raise-num{font:700 40px/1 var(--num);color:var(--cream);letter-spacing:.02em}
+.raise-scale{position:relative;width:100%;height:54px}
+.raise-line{position:absolute;left:0;right:0;top:8px;height:8px;border-radius:99px;background:#ffffff22;overflow:hidden}
+.raise-line .fill{display:block;height:100%;width:0;border-radius:99px;background:var(--brass,#d0ad68)}
+.raise-ticks{position:absolute;left:0;right:0;top:2px;height:20px;pointer-events:none;z-index:1}
+.raise-ticks i{position:absolute;top:0;width:2px;height:20px;margin-left:-1px;border-radius:1px;background:#f4efe4}
+.raise-scale input[type=range]{position:absolute;top:0;left:0;width:100%;height:24px;margin:0;background:transparent;appearance:none;cursor:pointer;z-index:2}
+.raise-scale input[type=range]:disabled{cursor:default}
+.raise-scale input[type=range]::-webkit-slider-runnable-track{height:8px;background:transparent}
+.raise-scale input[type=range]::-webkit-slider-thumb{appearance:none;width:18px;height:18px;margin-top:-5px;border:0;border-radius:50%;background:#f6f1e6;box-shadow:0 1px 3px #0008}
+.raise-scale input[type=range]::-moz-range-track{height:8px;background:transparent;border:0}
+.raise-scale input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:#f6f1e6}
+.raise-marks{position:absolute;left:0;right:0;top:28px;height:18px;z-index:3}
+.raise-marks button{position:absolute;top:0;border:0;background:none;padding:0;cursor:pointer;font:600 10px inherit;color:var(--mute);white-space:nowrap;line-height:1.2}
+.raise-marks button:hover{color:var(--cream)}
+.raisebox .confirmbar{width:100%}
+.moneybox .money-read{display:flex;flex-direction:column;align-items:center;gap:4px}
+.moneybox .money-avail{color:#8f877c;font-size:12px;line-height:1.3}
+.moneybox .raise-scale{height:28px}
+.moneybox .raise-line .fill{position:absolute;top:0;height:100%;width:0}
+.moneybox .raise-line .fill.plus{background:#2f7d4f}
+.moneybox .raise-line .fill.minus{background:#a8463c}
+body[data-skin] .hero .betzone.has-move,body[data-skin] .hero .betzone.has-note{height:auto;max-height:none;min-height:96px;flex-direction:column;gap:6px}
+.hero .betzone .rack-copy{display:flex;flex-direction:column;align-items:center;gap:2px}
+.hero .betzone .rack-later{color:#8f877c;font-size:12px;line-height:1.4;text-align:center}
+.hero .betzone .pile .n.plus{color:#7dcea0}
+.hero .betzone .pile .n.minus{color:#e07a72}
+body[data-skin] .hero .main.endbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+body[data-skin] .hero .main .btn.next{background:#f6f1e6;color:#2a1a0e;border-color:transparent}
+body[data-skin] .hero .main .btn.quit{background:var(--quit-red);color:#fff4f2;border-color:transparent}
+body[data-skin] .moneybox .confirmbar .btn.tidybtn{background:#f6f1e655;color:#2a1a0e;border-color:transparent}
+body[data-skin] .moneybox .confirmbar .btn.tidybtn.on{background:#f6f1e6;box-shadow:0 0 8px 1px #fff5}
+body[data-skin] .moneybox .confirmbar .btn.go-buy{background:#2f7d4f;color:#f4fbf6;border-color:transparent}
+body[data-skin] .moneybox .confirmbar .btn.go-cash{background:#a8463c;color:#fff3ef;border-color:transparent}
+body[data-skin] .moneybox .confirmbar .btn:disabled{opacity:.4}
+body[data-skin] .betmenu button.btn.allin small{color:var(--btn-allin-ink);opacity:.8}
 .me .herobet{position:absolute;left:auto;transform:none;right:calc(100% + 6px);top:calc(var(--hw)*.45);z-index:2}   /* beside your cards, clear of the board */
 .me .hero-bubble{top:auto;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);animation-name:pop}
 
@@ -68,11 +113,42 @@ body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
 .hero,.hero.win{flex:none;align-self:center;width:min(1000px,100%);margin:0;padding:12px 18px;border-radius:20px;
   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);grid-template-areas:"zone ctl" "rail ctl";gap:4px 22px;align-items:center;box-shadow:0 10px 26px #0005;
   min-height:158px}                       /* the usual height, so the table doesn't jump between turns */
-.hero .betzone{grid-area:zone;width:100%;min-height:34px;padding:0 4px 4px;align-self:end}
+body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{grid-area:zone;width:100%;height:96px;min-height:96px;max-height:96px;margin:0;padding:10px 14px;align-self:start;display:flex;align-items:center;justify-content:center;position:relative;box-sizing:border-box;overflow:hidden;border:1px dashed rgba(244,236,220,.42);border-radius:14px;background:#0c0806}
+.hero .betzone .bz-chips{flex:none;display:grid;grid-template-columns:repeat(2,max-content);align-content:center;justify-content:center;align-items:center;gap:6px 18px;width:auto;max-width:100%;height:auto;overflow:hidden}
+.hero .betzone .bz-chips .pull{padding:0}
+.hero .betzone .piles{width:auto;min-height:0;justify-content:center}
+.hero .betzone .pile{flex-direction:row;align-items:center;padding:0;gap:6px}
+.hero .betzone .pile .col{flex-direction:row;align-items:center}
+.hero .betzone .pile .col .chip-d+.chip-d{margin-bottom:0;margin-left:calc(var(--cs) * -0.55)}
+.hero .betzone .pile .n{margin:0;font:700 18px/1 var(--num);color:var(--cream)}
+.hero .betzone .rack-empty{color:#8f877c;font-size:12.5px;line-height:1.45;text-align:center}
+.hero .betzone .rack-clock{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:10;padding:2px 4px;border-radius:8px;background:#0c0806;box-shadow:0 0 8px 4px #0c0806}
 .hero .rail,.hero .rail.live{grid-area:rail;width:100%;padding:0;gap:10px;background:none;border:0;border-radius:0}
+.hero .rail .bank,.hero .buyin .bank{flex:none;align-self:center;width:40px;height:40px;padding:0;border:0;border-radius:12px;background:#ffffff14;color:var(--cream);cursor:pointer;display:grid;place-items:center}
+.hero .rail .bank svg,.hero .buyin .bank svg{width:22px;height:22px;display:block}
+.hero .rail .bank.on,.hero .buyin .bank.on{background:var(--brass,#d0ad68);color:#2a1a0e}
 .hero .towers{gap:10px}
 .hero .tw{height:58px}
 .hero .controls{grid-area:ctl;margin:0;padding:0;border:0;gap:7px;width:100%}
+.buyin{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%}
+.buyin-side{display:flex;align-items:center;gap:14px;min-width:0}
+.buyin-icon{display:flex;align-items:flex-end;flex:none}
+.buyin .towers{width:auto;flex:none;grid-template-columns:repeat(4,36px);gap:4px}
+.buyin .tower{padding:0;cursor:default}
+.buyin .tw{height:52px}
+.buyin .disc{--dw:28px}
+.buyin .face{width:28px}
+.buyin .face .chip-d{--cs:28px}
+.buyin-rule{width:1px;align-self:stretch;background:#ffffff28;margin:2px 0}
+.buyin-copy{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.buyin-copy b{font:700 40px/1 var(--num);color:var(--cream);letter-spacing:.02em}
+.buyin-copy .k,.buyin-copy .left{font-size:13px;font-weight:600;color:var(--mute);line-height:1.35}
+.buyin-ops{display:flex;flex-direction:column;gap:8px;width:148px;flex:none}
+.buyin-step{display:flex;flex-direction:column;gap:8px}
+.buyin-ops button{min-height:40px;border-radius:12px;border:1px solid #dce4cb2b;background:#123628cc;color:var(--cream);font:700 16px var(--num);cursor:pointer}
+.buyin-ops button.down{background:#5c2226cc}
+.buyin-ops button.ok{background:var(--amber);color:var(--amber-ink);border-color:transparent;font-family:var(--body);min-height:44px}
+.buyin-ops button:disabled{opacity:.38;cursor:default}
 .hero .controls:only-child{grid-column:1/-1}
 .hero .btn{min-height:48px}
 .hero .wait{font-size:12.5px;line-height:1.5;padding:0}
@@ -128,6 +204,7 @@ body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
   .table .pot{gap:5px;font-size:11px}.table .pot b{font-size:17px}
   .table .result{font-size:11px;line-height:1.35;max-width:82cqw}
   .table .plate{padding:3px 2px;border-radius:8px}
+  .table .plate .ring{border-radius:12px}
   .table .nm{font-size:11px;line-height:13px}
   .table .stk{font-size:12px;line-height:14px;margin:0}
   .table .stk .chip-d{--cs:10px}
@@ -138,17 +215,28 @@ body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
   .me .plate .who{font-size:12px}.me .plate .stk{font-size:15px}
   .me-sub{font-size:11px;margin-top:2px}
   .hero,.hero.win{width:100%;padding:8px 10px;border-radius:16px;grid-template-columns:1fr;grid-template-areas:"zone" "rail" "ctl";gap:4px;min-height:202px;align-content:start}
-  .hero .recap,.hero .seat-hint{display:none}   /* the table already says who won */
-  .hero .betzone{min-height:26px;padding:0 2px 2px}
+  .hero .recap{display:none}   /* the table already says who won */
+  body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{height:96px;min-height:96px;max-height:96px;padding:8px 12px}
   .hero .towers{gap:4px}
   .hero .tw{height:44px}
   .hero .tower{padding:0}
   .hero .controls{gap:5px;padding-top:4px}
   .hero .btn,.actions .btn{min-height:44px;font-size:13px}
   .hero .wait{font-size:11.5px;line-height:15px}
+  .buyin{flex-direction:column;align-items:stretch;gap:12px}
+  .buyin .towers{grid-template-columns:repeat(4,30px);gap:2px}
+  .buyin .tw{height:40px}
+  .buyin .disc{--dw:24px}
+  .buyin .face{width:24px}
+  .buyin .face .chip-d{--cs:24px}
+  .buyin-copy b{font-size:32px}
+  .buyin-ops{width:100%}
+  .buyin-step{flex-direction:row}
+  .buyin-step button{flex:1}
   .hero .cbtn{min-height:32px;padding:4px 8px;font-size:12px}
   .hero .cashier .lbl{font-size:11px}
-  .preacts button{min-height:36px}
+  .preacts{gap:5px}
+  .preacts button{min-height:48px;font-size:13px}
 }
 @media(max-width:700px) and (max-height:620px){
   .hero,.hero.win{min-height:180px}

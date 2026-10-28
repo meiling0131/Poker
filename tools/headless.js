@@ -2,6 +2,7 @@
 // Import this before any game module (game modules must then be loaded with dynamic import()).
 const noop = () => {};
 globalThis.window = globalThis;
+globalThis.addEventListener ??= noop;
 globalThis.document = { addEventListener: noop, getElementById: () => null, querySelectorAll: () => [], body: { dataset: {} }, visibilityState: 'hidden' };
 const mem = new Map();
 globalThis.localStorage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };

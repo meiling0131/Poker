@@ -1,13 +1,12 @@
 // The felt: seats, board, pot.
 import {SUITS,best5,cardTxt,rankOf,rankStr,suitOf} from '../cards.js';
-import {ACT_MS,BETTING,BOT_BLURB,STREET_CN} from '../config.js';
-import {H,M,MYHOLE,PROFILE,S} from '../state.js';
-import {N,bookKey,mySeat,nameOfUid,names,needToStart,potTotal} from '../table.js';
-import {avatarOf} from '../talk.js';
+import {STREET_CN} from '../config.js';
+import {H,M,MYHOLE,PROFILE,S,SUBMITTED} from '../state.js';
+import {N,bookKey,mySeat,nameOfUid,names,potTotal} from '../table.js';
 import {miniStack,miniStackC,pilesC,potStack,topChip} from './chips-view.js';
-import {$,esc,fmt} from '../util.js';
-import {canSwapNow} from '../seats.js';
+import {$,cdSpan,esc,fmt} from '../util.js';
 import {GREW,after,dealCard,flipCard,sync} from './anim.js';
+import {statView,statsView} from './menu-view.js';
 
 // Every action redraws the table; a bubble pops in only the first time it is drawn, then stays still.
 const SHOWN=new Set();
@@ -30,8 +29,14 @@ export function myHoleCards(){
 }
 export function seatName(p){return p.kind==='bot'?p.name:nameOfUid(p.uid);}
 export const betHTML=(a,c,i)=>`<div class="bet${i!=null&&GREW.has(i)?' pop':''}"${i!=null?` data-bet-seat="${i}"`:''}>${c?miniStackC(c):miniStack(a)}${fmt(a)}</div>`;
-// a player on the clock (online): a ring round the plate drains over their time to act
-export const ringHTML=()=>S.deadline?`<i class="ring" style="animation-duration:${ACT_MS}ms;animation-delay:-${Math.max(0,ACT_MS-(S.deadline-Date.now()))}ms"></i>`:'';
+// a bar around the profile, draining across the time this player has to act
+export function ringHTML(){
+  if(!S.deadline||!S.actMs)return '';
+  const left=S.deadline-Date.now();
+  if(left<=0)return '<i class="ring done"></i>';
+  const gone=Math.max(0,S.actMs-left);
+  return `<i class="ring" style="animation-duration:${S.actMs}ms;animation-delay:-${Math.round(gone)}ms"></i>`;
+}
 // Where the seats go, in % of the table, going clockwise from the seat on your left.
 // Wide screens: round an ellipse, leaving the bottom middle for your own seat.
 // Phones: rows along the top and down both sides, clear of the board in the middle.
@@ -68,17 +73,22 @@ export function seatHTML(i,pos,compact){
   let cards='';
   const hot=HOT;
   if(p.inHand&&!p.folded&&S.street!=='idle')cards=[0,1].map(k=>{const c=p.shown?p.shown[k]:null;return cardHTML(c,'mini'+(c!=null&&hot.has(c)&&p.win?' hot':''),dealCard(i,k));}).join('');
-  const tag=!p.inHand||S.street==='idle'?'':i===S.sbPos?'小盲':i===S.bbPos?'大盲':'';
+  const liveSeat=p.inHand&&S.street!=='idle';
+  const marks=[
+    liveSeat&&i===S.dealer?'<i class="dbtn">D</i>':'',
+    liveSeat&&i===S.sbPos?'<i class="blind sb" title="小盲">S</i>':'',
+    liveSeat&&i===S.bbPos?'<i class="blind bb" title="大盲">B</i>':'',
+  ].join('');
   let act;
   if(S.runout&&S.runout.stage==='vote'&&S.runout.voters.includes(i))act=`<div class="act vote">${S.runout.votes[i]?(S.runout.votes[i]===2?'选：跑两次':'选：跑一次'):'选择中…'}</div>`;
-  else if(S.actor===i&&S.deadline&&p.kind==='human')act=`<div class="act">思考中 <span class="cd" data-until="${S.deadline}"></span></div>`;
+  else if(S.actor===i&&S.deadline&&p.kind==='human')act=`<div class="act">思考中 ${cdSpan(S.deadline)}</div>`;
   else if(p.bet>0&&!p.shown)act=betHTML(p.bet,p.betChips,i);
   else act=`<div class="act">${esc((p.shown?p.handName:p.last)||(p.qBuy?'买入待生效':''))||'&nbsp;'}</div>`;
-  const ring=S.actor===i&&p.kind==='human'?ringHTML():'';
+  const ring=S.actor===i?ringHTML():'';
   return `<div class="${cls.join(' ')}" data-i="${i}" style="--x:${pos.x.toFixed(2)}%;--y:${pos.y.toFixed(2)}%;--px:${pos.mx}%;--py:${pos.my}%;--ph:-${Date.now()%1600}ms">
     <div class="mc">${cards}</div>
     ${bubbleHTML(p)}
-    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${ring}${i===S.dealer&&S.street!=='idle'?'<div class="dbtn">D</div>':''}${tag?`<div class="blind" title="${tag}">${tag==='小盲'?'小':'大'}</div>`:''}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}"><span class="av" aria-hidden="true">${avatarOf(p)}</span>${esc(seatName(p))}</div><div class="stk">${topChip(p.stack)}<span class="num">${fmt(p.stack)}</span></div></div>
+    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${ring}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}">${marks}<span>${esc(seatName(p))}</span></div><div class="stk">${topChip(p.stack)}<span class="num">${fmt(p.stack)}</span></div></div>
     ${act}
   </div>`;
 }
@@ -95,12 +105,12 @@ function winningCards(){
   });
   return hot;
 }
-// the result card pops up over the felt once per hand, then fades on its own
+// the result card pops up over the felt once per hand and stays until the next hand is dealt
 let RC_AT=0,RC_HAND=-1;
 export function resultCardHTML(){
   if(!S.msg.length)return '';
   if(RC_HAND!==S.hand){RC_HAND=S.hand;RC_AT=Date.now();}
-  const age=Date.now()-RC_AT;if(age>3400)return '';
+  const age=Date.now()-RC_AT;
   const lines=S.msg.slice(0,3).map(names);
   return `<div class="resultcard" style="--age:-${age}ms">${lines[0]}${lines.length>1?`<small>${lines.slice(1).join('<br>')}</small>`:''}</div>`;
 }
@@ -115,44 +125,40 @@ export function renderTable(){
   const R=S.runout,twice=R&&R.times===2&&R.stage!=='vote';
   const boardCards=(cards,key,size)=>{const out=[];for(let k=0;k<5;k++){const c=cards[k];out.push(cardHTML(c,size+(c!=null&&HOT.has(c)?' hot':''),c!=null?flipCard(key,k):''));}return out.join('');};
   let result='';
-  if(S.street==='idle')result=names(S.msg[0]||'');
+  if(!M.ready)result='正在等待连接...';
   else if(S.street==='done')result=resultCardHTML();
-  else if(S.actor>=0&&S.actor!==m&&BETTING.includes(S.street))result=`<span class="pill-note">${esc(seatName(S.seats[S.actor]))} 思考中…</span>`;
-  if(S.mode==='online'&&S.street==='idle'){
-    const bought=S.seats.filter(p=>p.stack>0).length;
-    result=`等待玩家 <b class="cnt">${bought}/${needToStart()}</b><br>${S.started?'有人买入后继续':'买一手入座，满 2 人自动开局'}<br><span class="roomcode">房间号 ${esc(M.room)}</span>`;
-  }
+  else if(R&&R.stage==='vote')result='正在等待选择...';
+  else if((R&&R.stage==='deal')||(S.actor<0&&S.street!=='idle'))result='正在等待发牌…';
+  else if(!M.host&&SUBMITTED===S.turn)result='正在等待房主响应...';
+  else if(S.street==='idle')result=S.mode==='online'?'正在等待玩家...':'正在等待开局...';
+  else if(m>=0&&S.seats[m].inHand&&!S.seats[m].folded&&!myHoleCards())result='正在等待发牌…';
   let board2='';
   if(twice)board2=`<div class="board two"><span class="bl">2</span>${boardCards(S.board2||R.base,'b','bd sm')}</div>`;
-  if(R&&R.stage==='vote')result=`全下！跑几次？<span class="cd" data-until="${R.deadline}"></span>`;
   let seats='';
   for(let k=seated?1:0;k<n;k++){const i=seated?(m+k)%n:k;seats+=seatHTML(i,pos[k],compact);}
   tb.innerHTML=`<div class="center${twice?' twice':''}"><div class="pot">${twice?'':pilesC(S.potChips,{size:13,max:5})+potStack(S.potChips)}<span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b class="num">${fmt(potTotal())}</b></div><div class="board${twice?' one':''}${HOT.size?' showdown':''}">${twice?'<span class="bl">1</span>':''}${boardCards(S.board,'a',twice?'bd sm':'bd')}</div>${board2}
       <div class="result${S.street==='done'?' done':''}">${result}</div></div>
-    ${seats}
-    ${profileHTML()}`;
+    ${seats}`;
+  renderProfile();
   after();
 }
-// profile card: tap a seat to see who they are, how they play, and (between hands) swap seats
-const pctOf=(a,b)=>b?Math.round(a*100/b)+'%':'—';
+// A player's card: tap a seat for the same stats popup as the lobby's 查看数据, without the name being tappable.
+// Regular tables and friend rooms read today's stats from the database (/stats); a practice table, which has no
+// database, shows this session's own counts. PVIEW: '' for the cards, or the card whose explanation is open.
+let PVIEW='',PDATA={key:null,data:undefined};
+export function setProfileView(v){PVIEW=v||'';}
+export function setProfileData(key,data){PDATA={key,data};}
+export const profileLive=()=>!!(M.server&&(M.solo||M.mode==='online'));
 export function profileHTML(){
-  if(!PROFILE)return '';
-  const i=S.seats.findIndex(q=>bookKey(q)===PROFILE),p=S.seats[i];if(!p)return '';
-  const st=(S.stats||{})[PROFILE]||{},h=st.h||0,me=i===mySeat();
-  const blurb=p.kind==='bot'?(BOT_BLURB[p.name]||''):me?'这是你。':'真人玩家';
-  let swap='';
-  if(mySeat()>=0&&!me){
-    const lbl=S.mode==='online'&&!M.host?'申请和 TA 换座位':'和 TA 换座位';
-    // bots mode: only between hands; online: you can ask any time, the swap happens after the hand
-    swap=canSwapNow()||S.mode==='online'
-      ?`<button class="btn swap" data-swap="${i}">${lbl}</button>${canSwapNow()?'':'<p class="pnote">这一手结束后换</p>'}`
-      :`<button class="btn swap" disabled>${lbl}</button><p class="pnote">这一手结束后才能换座位</p>`;
-  }
-  const tile=(v,l)=>`<div><b>${v}</b><span>${l}</span></div>`;
-  return `<div class="profile" role="dialog" aria-label="${esc(seatName(p))} 的资料">
-    <button class="pclose" data-profile-close="1" aria-label="关闭">×</button>
-    <div class="phead"><span class="pav" aria-hidden="true">${avatarOf(p)}</span><div><b>${esc(seatName(p))}</b><span>${esc(blurb)}</span></div></div>
-    <div class="pstats">${tile(fmt(h),'手数')}${tile(pctOf(st.vp||0,h),'入池率')}${tile(pctOf(st.pr||0,h),'翻前加注')}${tile(fmt(st.w||0),'赢的手数')}${tile(st.sd?pctOf(st.sdw||0,st.sd):'—','摊牌胜率')}${tile(fmt(st.big||0),'最大底池')}</div>
-    ${swap}
-  </div>`;
+  if(!PROFILE||!S)return '';
+  const p=S.seats.find(q=>bookKey(q)===PROFILE);if(!p)return '';
+  const live=profileLive(),own=(S.stats||{})[PROFILE];
+  const data=live?(PDATA.key===PROFILE?PDATA.data:undefined):(own&&own.hands?own:null);
+  const inner=PVIEW
+    ?statView({k:PVIEW,data,today:live,foot:'<button type="button" class="go plain" data-pstat="">返回</button>'})
+    :statsView({tag:`<span class="greet tag">${esc(seatName(p))}</span>`,data,today:live,card:k=>`data-pstat="${k}"`,
+      foot:'<button type="button" class="go plain" data-profile-close="1">返回</button>'});
+  return `<button type="button" class="usernamePopup-bg" data-profile-close="1" aria-label="关闭"></button>
+    <div class="usernamePopup-card seatcard" role="dialog" aria-modal="true" aria-labelledby="usernamePopupTitle">${inner}</div>`;
 }
+export function renderProfile(){const el=$('seatPopup');if(!el)return;const h=M.mode?profileHTML():'';el.hidden=!h;if(el.innerHTML!==h)el.innerHTML=h;}

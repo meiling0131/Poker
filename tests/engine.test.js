@@ -31,6 +31,26 @@ test('after you close a betting round it is no longer your turn (no double actio
   assert.ok(actions > 40, 'played enough of my own actions to exercise the check');
 });
 
+test('bots sit by their player id; their book and stats are kept under it', async () => {
+  const { BOT_PLAYERS, BOT_NAMES } = await import('../js/config.js');
+  const bots = state.S.seats.filter(p => p.kind === 'bot');
+  assert.deepEqual(bots.map(p => p.id), BOT_PLAYERS.map(b => b.id));
+  assert.ok(bots.every(p => p.name === BOT_NAMES[p.id]));
+  const keys = Object.keys(state.S.book).filter(k => k.startsWith('ubot'));
+  assert.ok(keys.length > 0 && keys.every(k => BOT_NAMES[k]));
+  assert.ok(!Object.keys(state.S.book).some(k => k.startsWith('bot:')));
+});
+
+test('a practice table keeps the database\'s counts too, for the player cards', async () => {
+  for (const [k, st] of Object.entries(state.S.stats)) {
+    assert.equal(st.hands, st.h, `${k}: one per hand dealt`);
+    assert.equal(st.vpip, st.vp, `${k}: vpip`);
+    assert.equal(st.pfr, st.pr, `${k}: pfr`);
+    assert.ok(st.wsd <= st.wtsd && st.wwsf <= st.saw_flop && st.ats <= st.ats_opp && st.hands_won <= st.hands);
+    if (st.biggest_win_amount) assert.match(st.biggest_win_hand, /^(([2-9TJQKA][shdc]|NA),){4}([2-9TJQKA][shdc]|NA)$/);
+  }
+});
+
 test('chips are conserved hand after hand', async () => {
   const S = state.S;
   const onTable = S.seats.reduce((a, p) => a + p.stack + (p.street === 'done' ? 0 : p.total), 0);
@@ -38,17 +58,4 @@ test('chips are conserved hand after hand', async () => {
   // mid-hand: stacks plus what is committed this hand equal everything bought in
   assert.equal(S.seats.reduce((a, p) => a + p.stack + p.total, 0), bought);
   assert.ok(onTable > 0);
-});
-
-test('换座位: swapping two seats moves the players and keeps the dealer button with its player', async () => {
-  const { swapSeats, canSwapNow } = await import('../js/seats.js');
-  const S = state.S;
-  while (S.street !== 'done' && S.street !== 'idle') { if (!runNextTimer()) break; await null; if (myTurn()) { doAction(S.seats[0], 'fold'); proceed(); } }
-  assert.ok(canSwapNow(), 'between hands');
-  const a = S.seats[0], b = S.seats[3], dealer = S.seats[S.dealer];
-  assert.ok(swapSeats(0, 3));
-  assert.equal(S.seats[0], b);
-  assert.equal(S.seats[3], a);
-  assert.equal(S.seats[S.dealer], dealer, 'dealer button follows its player');
-  assert.equal(swapSeats(2, 2), false);
 });

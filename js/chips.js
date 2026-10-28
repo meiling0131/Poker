@@ -1,9 +1,10 @@
 // Chips are the money: physical chip counts, exact payments, change and tidying. No DOM, no state.
 import {BUY,BUY_SET,DENOMS} from './config.js';
 
+const RACK=BUY_SET.reduce((s,[v,n])=>s+v*n,0);
 export function chipBreakdown(a){
   a=Math.max(0,Math.floor(a));
-  const sets=Math.floor(a/BUY);let rem=a-sets*BUY;
+  const sets=Math.floor(a/RACK);let rem=a-sets*RACK;
   const out={25:0,10:0,5:0,1:0};
   BUY_SET.forEach(([v,n])=>out[v]+=n*sets);
   for(const [v] of DENOMS){const k=Math.floor(rem/v);out[v]+=k;rem-=k*v;}
@@ -16,7 +17,9 @@ export const Z=()=>({1:0,5:0,10:0,25:0});
 export const csum=c=>c?(c[1]||0)+5*(c[5]||0)+10*(c[10]||0)+25*(c[25]||0):0;
 export function cadd(a,b){for(const d of DV)a[d]=(a[d]||0)+((b&&b[d])||0);return a;}
 export function greedyC(x){const c=Z();for(const d of DV){c[d]=Math.floor(x/d);x-=c[d]*d;}return c;}
-export const BUY_CHIPS=()=>({1:10,5:6,10:6,25:4});
+export const BUY_CHIPS=()=>chipBreakdown(BUY);
+// A buy-in or cash-out is paid in 25s only.
+export function chipsOf25(amt){const out=Z();out[25]=Math.floor(Math.abs(Math.round(amt))/25);return out;}
 // Chips are the money: every payment moves real chips, and change is only made when no exact set exists.
 // exactPick: chips from `pool` worth exactly `amt`, preferring the largest denominations; null if impossible.
 export function exactPick(pool,amt){

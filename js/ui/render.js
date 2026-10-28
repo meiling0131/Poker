@@ -4,21 +4,28 @@ import {celebrate,keepAwake,turnAlert} from '../fx.js';
 import {adoptStake} from '../settings.js';
 import {FLASH,M,S,VIEW,view} from '../state.js';
 import {renderHero} from './hero-view.js';
-import {renderHeader,renderMenu} from './menu-view.js';
+import {closingLabel,renderHeader,renderMenu,setBoard} from './menu-view.js';
+import {fetchBoard} from '../player.js';
 import {renderRecords} from './records-view.js';
-import {renderTable} from './table-view.js';
-import {$,esc,localDay} from '../util.js';
+import {renderProfile,renderTable} from './table-view.js';
+import {$,dayPhase,easternDay,esc,resetInLabel,secsLeft} from '../util.js';
 
+// 超时牌桌: shown once per overtime hand, to everyone at the table, until 确认
+let OVERTIME_SEEN='';
+const overtimeKey=()=>S&&S.overtime&&M.mode?`${M.room}:${S.hand}`:'';
+export function dismissOvertime(){OVERTIME_SEEN=overtimeKey();render();}
 export function render(){
   adoptStake();keepAwake();
+  const ot=$('overtimePopup');if(ot){const k=overtimeKey();ot.hidden=!k||k===OVERTIME_SEEN;}
   if(PENDING_ACTION&&!pendingIsCurrent())cancelAction();
   document.body.dataset.view=M.mode?VIEW:'menu';
   renderHeader();
-  if(!M.mode){renderMenu();return;}
+  if(!M.mode){renderProfile();renderMenu();return;}
   if(!S){
-    $('table').innerHTML=`<div class="center"><div class="result">${M.ready?`房间 ${esc(M.room||'')} 还没开，或者房主不在线。<br>确认房间号没错，等房主打开就会自动出现。`:'正在连接牌桌…'}</div></div>`;
+    const msg=!M.ready?'正在等待连接...':M.mode==='online'?'正在等待玩家...':'正在等待开局...';
+    $('table').innerHTML=`<div class="center"><div class="result">${msg}</div></div>`;
     $('meSeat').innerHTML='';
-    $('hero').innerHTML=`<div class="wait">${M.ready?'牌桌还没开。':'连接中…'}${FLASH?`<br>${esc(FLASH)}`:''}</div>`;
+    $('hero').innerHTML=FLASH?`<div class="flash">${esc(FLASH)}</div>`:'';
     $('records').innerHTML='';return;
   }
   runPre();turnAlert();celebrate();
@@ -26,11 +33,20 @@ export function render(){
   renderTable();renderHero();
   tick();
 }
-export let DISPLAY_DAY=localDay();
+export let DISPLAY_DAY=easternDay();
+let DISPLAY_PHASE=dayPhase(),POLL_AT=0,BOARD_AT=0;
 export function tick(){
   document.querySelectorAll('[data-bubble-until]').forEach(e=>{if(+e.dataset.bubbleUntil<Date.now())e.remove();});
-  const day=localDay();if(day!==DISPLAY_DAY){DISPLAY_DAY=day;render();return;}
-  document.querySelectorAll('[data-until]').forEach(e=>{const s=Math.max(0,Math.ceil((+e.dataset.until-Date.now())/1000));e.textContent=s+'s';});
+  const day=easternDay();if(day!==DISPLAY_DAY){DISPLAY_DAY=day;render();return;}
+  // 23:55 and 00:00: ask the server where the day stands; while it is still closing, ask again every 10 s
+  const phase=dayPhase();
+  if(phase!==DISPLAY_PHASE){DISPLAY_PHASE=phase;if(view.refreshPlayer)view.refreshPlayer();render();return;}
+  if(M.closing&&phase!=='closing'&&Date.now()>POLL_AT){POLL_AT=Date.now()+10000;if(view.refreshPlayer)view.refreshPlayer();}
+  // the lobby's board: on arrival, then every 30 s while the lobby is open
+  if(!M.mode&&M.server&&Date.now()>BOARD_AT){BOARD_AT=Date.now()+30000;fetchBoard().then(b=>{if(b&&setBoard(b)&&!M.mode)renderMenu();}).catch(()=>{});}
+  const cd=$('dayCountdown');if(cd)cd.textContent=closingLabel();
+  const reset=$('balReset');if(reset) reset.textContent=resetInLabel();
+  document.querySelectorAll('[data-until]').forEach(e=>{e.textContent=secsLeft(e.dataset.until);});
 }
 setInterval(tick,1000);
 view.render=render;

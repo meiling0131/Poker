@@ -28,8 +28,8 @@ test('hand categories rank in order', () => {
 
 test('names', () => {
   assert.equal(handName(score('As Ks Qs Js Ts 3d 2c')), '皇家同花顺');
-  assert.equal(handName(score('As Ad Ah 9c 9s 3d 2c')), '葫芦 A带9');
-  assert.equal(handName(score('As 2d 3h 4c 5s 9d Jc')), '顺子 到5'); // the wheel
+  assert.equal(handName(score('As Ad Ah 9c 9s 3d 2c')), '葫芦');
+  assert.equal(handName(score('As 2d 3h 4c 5s 9d Jc')), '顺子'); // the wheel
 });
 
 test('wheel loses to a six-high straight', () => {
@@ -42,8 +42,9 @@ test('kickers decide equal pairs; the board can play', () => {
 });
 
 test('preflop description', () => {
-  assert.equal(describe(cards('As Ks'), []), 'AK 同花');
-  assert.equal(describe(cards('9h 9c'), []), '一对 9');
+  assert.equal(describe(cards('As Ks'), []), '同花');
+  assert.equal(describe(cards('9h 9c'), []), '一对');
+  assert.equal(describe(cards('Ah Kd'), []), '高牌');
 });
 
 test('shuffled deck is a permutation of 52', () => {

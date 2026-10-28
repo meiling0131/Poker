@@ -1,9 +1,10 @@
 // Table animations: hole cards dealt from the middle, board cards flipping in, bets sliding into the
-// pot, the pot sliding to the winner.
+// pot, the pot sliding to the winner — and the sounds that go with them (sfx in fx.js).
 // The table is redrawn on every change, so an animation is a start time, not a DOM node: a card that is
 // still mid-flight when it is redrawn gets a negative animation-delay and carries on where it was.
 // Chips that move between redraws (a bet that is now in the pot) fly as copies in a fixed overlay.
-import {BETTING} from '../config.js';
+import {BETTING,DEAL_STEP} from '../config.js';
+import {sfx} from '../fx.js';
 import {S} from '../state.js';
 import {potTotal} from '../table.js';
 import {miniStack} from './chips-view.js';
@@ -24,14 +25,21 @@ export function sync(){
   GREW.clear();rolls=[];
   if(!S){prev=null;return;}
   const now=Date.now();
-  // nothing drawn for a while (another tab, the records page): just show the table as it is now
-  if(!prev||reduced()||now-prev.t>4000){return;}
+  // nothing drawn for a while (another tab, the records page): just show the table as it is now, silently.
+  // (Reduced motion still gets the sounds: its animations are switched off in the CSS.)
+  if(!prev||document.hidden||now-prev.t>4000){return;}
   S.seats.forEach((p,i)=>{if((p.bet||0)>(prev.bets[i]||0)&&prev.hand===S.hand)GREW.add(i);});
   if(S.hand!==prev.hand){
     flips={hand:S.hand,t:{}};
-    if(BETTING.includes(S.street)&&!S.board.length)startDeal(now);
+    if(BETTING.includes(S.street)&&!S.board.length){
+      startDeal(now);
+      // a card sound as the cards fly (fold-card.mp3 for now), never closer than DEAL_SOUND_GAP: nearer cards share one
+      let last=-Infinity;
+      for(const t of [...deal.start.values()].flat().sort((x,y)=>x-y))if(t-last>=DEAL_SOUND_GAP){sfx('fold-card',t);last=t;}
+    }
     return;
   }
+  actionSounds();
   // bets that were on the table and are now in the pot — or, when the hand just ended with one
   // winner, straight to that player
   const ended=prev.street!=='done'&&S.street==='done',winners=S.seats.map((p,i)=>p.win?i:-1).filter(i=>i>=0);
@@ -41,7 +49,7 @@ export function sync(){
   // cards that were in front of a player who has now folded slide into the muck
   S.seats.forEach((p,i)=>{if(prev.cardAt[i]&&p.folded&&!prev.folded[i])queue.push({kind:'muck',from:prev.cardAt[i],html:prev.cardHTML[i]});});
   let at=now+(collected?COLLECT-80:0),flipped=false;
-  const grow=(key,len,was)=>{for(let k=was;k<len;k++){flips.t[key+k]=at;at+=FLIP_STEP;flipped=true;}};
+  const grow=(key,len,was)=>{for(let k=was;k<len;k++){flips.t[key+k]=at;sfx('card-drop',at-now);at+=FLIP_STEP;flipped=true;}};
   grow('a',S.board.length,prev.board);
   if(S.board2)grow('b',S.board2.length,prev.board2!=null?prev.board2:(S.runout&&S.runout.base?S.runout.base.length:0));
   let winAt=0;
@@ -49,11 +57,25 @@ export function sync(){
     const delay=Math.max(0,at-now)+(flipped?FLIP_DUR:0)+(collected?120:0);
     const inPot=prev.pot-prev.bets.reduce((x,y)=>x+y,0);       // what was already in the middle
     if(lone==null||inPot>0)S.seats.forEach((p,i)=>{if(p.win)queue.push({kind:'pot',to:i,delay,amount:lone!=null?inPot:(p.won||prev.pot)});});
+    if(winners.length)sfx('collect-chips',lone!=null&&inPot<=0?0:delay);   // as the chips leave for the winner
     winAt=delay+TO_WINNER*.6;
   }
   // stacks and the pot count to their new values (a winner's stack waits for the chips to arrive)
   S.seats.forEach((p,i)=>{const was=prev.stacks[i];if(was!=null&&was!==p.stack)rolls.push([`[data-i="${i}"] .stk .num`,was,p.stack,p.win?winAt:0]);});
   const pot=potTotal();if(prev.pot!==pot&&pot>0)rolls.push(['#table .pot .num',prev.pot,pot,collected?COLLECT-80:0]);
+}
+// every action since the last drawing, in order: fold, check, chips in (call, raise), or all in
+const ACTION_STEP=120,DEAL_SOUND_GAP=110;
+function actionSounds(){
+  let at=0;
+  S.seats.forEach((p,i)=>{
+    const h=p.hist||[];
+    for(let k=prev.hist[i]||0;k<h.length;k++){
+      const t=h[k].t,last=k===h.length-1;
+      const name=t==='fold'?'fold-card':t==='check'?'check':(t==='call'||t==='raise')?(last&&p.allIn?'allin':'place-bet'):null;
+      if(name){sfx(name,at);at+=ACTION_STEP;}
+    }
+  });
 }
 function roll(sel,from,to,delay){
   const el=document.querySelector(sel);if(!el||reduced())return;
@@ -64,7 +86,7 @@ function roll(sel,from,to,delay){
 function startDeal(now){
   const n=S.seats.length,order=[];
   for(let k=1;k<=n;k++){const i=(S.dealer+k)%n;if(S.seats[i].inHand)order.push(i);}
-  const L=order.length,step=L>1?Math.min(70,560/(2*L-1)):0,start=new Map();
+  const L=order.length,step=L>1?DEAL_STEP:0,start=new Map();
   order.forEach((i,j)=>start.set(i,[j*step,(L+j)*step]));
   deal={hand:S.hand,t0:now,start};
 }
@@ -124,7 +146,7 @@ export function after(){
     const r=el.getBoundingClientRect();if(!r.width||!el.children.length)return;
     const i=el.closest('.seat').dataset.i;cardAt[i]={x:r.left+r.width/2,y:r.top+r.height/2};cardHTML[i]=el.outerHTML.replace(/ data-deal="1" style="[^"]*"/g,'');
   });
-  prev={t:Date.now(),hand:S.hand,street:S.street,board:S.board.length,board2:S.board2?S.board2.length:null,pot:potTotal(),bets:S.seats.map(p=>p.bet||0),stacks:S.seats.map(p=>p.stack),folded:S.seats.map(p=>!!p.folded),betAt,betHTML,cardAt,cardHTML};
+  prev={t:Date.now(),hand:S.hand,street:S.street,hist:S.seats.map(p=>(p.hist||[]).length),board:S.board.length,board2:S.board2?S.board2.length:null,pot:potTotal(),bets:S.seats.map(p=>p.bet||0),stacks:S.seats.map(p=>p.stack),folded:S.seats.map(p=>!!p.folded),betAt,betHTML,cardAt,cardHTML};
 }
 let layer=null;
 function fly(html,from,to,delay,dur,fade){

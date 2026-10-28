@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#1b5877">
+<meta name="theme-color" content="#125c38">
 <meta name="apple-mobile-web-app-title" content="Verve">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -14,42 +14,52 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600;6..96,700&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
-<link rel="stylesheet" href="css/0-tokens.css?v=dfd73eea">
-<link rel="stylesheet" href="css/1-base.css?v=c2e73f37">
+<link rel="stylesheet" href="css/0-tokens.css?v=92720dc4">
+<link rel="stylesheet" href="css/1-base.css?v=3c23a47a">
 <link rel="stylesheet" href="css/2-layout.css?v=5ebdfe1a">
-<link rel="stylesheet" href="css/3-theme.css?v=24c8dfe5">
-<link rel="stylesheet" href="css/4-features.css?v=f3843a06">
-<link rel="stylesheet" href="css/5-skins.css?v=88a9054c">
-<link rel="stylesheet" href="css/6-lobby.css?v=b3ddbcf7">
-<link rel="stylesheet" href="css/7-table.css?v=e4231255">
-<link rel="stylesheet" href="css/8-polish.css?v=79131979">
+<link rel="stylesheet" href="css/3-theme.css?v=00856970">
+<link rel="stylesheet" href="css/4-features.css?v=444a2e10">
+<link rel="stylesheet" href="css/5-skins.css?v=70ce0260">
+<link rel="stylesheet" href="css/6-lobby.css?v=d720d0f7">
+<link rel="stylesheet" href="css/7-table.css?v=2878c169">
+<link rel="stylesheet" href="css/8-polish.css?v=b8b0f6ae">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="row">
-      <button class="flr f1" data-skin="f1" aria-label="Verve 一楼 · 会议室"><i aria-hidden="true"></i><span><b>一楼</b><small>会议室</small></span></button>
       <h1>Verve Poker</h1>
-      <button class="flr f2" data-skin="f2" aria-label="Verve 二楼 · 休息区"><i aria-hidden="true"></i><span><b>二楼</b><small>休息区</small></span></button>
       <div class="right">
-      <div class="nav" id="nav" hidden><button data-view="table" class="on">牌桌</button><button data-view="records">记录</button></div>
-      <button class="ghost icon" id="homeBtn" hidden aria-label="回到主页">主页</button>
+      <div class="nav" id="nav" hidden><button data-view="table" class="on">牌桌</button><button data-view="records" disabled title="暂未开放">记录</button></div>
       <div class="morewrap">
-        <button class="ghost icon" id="moreBtn" hidden aria-label="设置" aria-expanded="false">设置</button>
-        <div class="more" id="more" hidden>
-          <label class="hintToggle"><span>牌型提示</span><input id="handHints" type="checkbox" role="switch"></label>
-          <label class="hintToggle"><span>轮到我时提醒</span><input id="soundOn" type="checkbox" role="switch"></label>
-          <div class="skinpick"><span>牌桌</span><div class="seg" id="skin" role="group" aria-label="牌桌皮肤"><button data-skin="f1">一楼</button><button data-skin="f2">二楼</button></div></div>
-          <div class="seg" id="speed" hidden>
-            <button data-speed="1100">慢</button><button data-speed="650" class="on">中</button><button data-speed="250">快</button>
-          </div>
-          <button class="ghost" id="restart" hidden>重置牌桌</button>
-        </div>
+        <button class="ghost icon" id="exitBtn" hidden>退出牌桌</button>
       </div>
       </div>
     </div>
     <div class="pills" id="pills"></div>
   </header>
+  <div id="exitPopup" hidden>
+    <button type="button" class="usernamePopup-bg" data-exit="no" aria-label="关闭"></button>
+    <div class="usernamePopup-card" role="dialog" aria-modal="true" aria-labelledby="exitTitle">
+      <b id="exitTitle">退出牌桌</b>
+      <p class="name-note">您仍在游戏中。要退出牌桌，您将直接弃牌。</p>
+      <div class="usernamePopup-actions">
+        <button type="button" class="go danger" data-exit="ok">确认</button>
+        <button type="button" class="go plain" data-exit="no">取消</button>
+      </div>
+    </div>
+  </div>
+  <div id="overtimePopup" hidden>
+    <div class="usernamePopup-bg" aria-hidden="true"></div>
+    <div class="usernamePopup-card" role="alertdialog" aria-modal="true" aria-labelledby="overtimeTitle">
+      <b id="overtimeTitle">超时牌桌</b>
+      <p class="name-note">该牌桌将在 12:05AM 被强制结束。届时您将会被弃牌，但下注的筹码将被退回。</p>
+      <div class="usernamePopup-actions">
+        <button type="button" class="go amber" data-overtime="ok">确认</button>
+      </div>
+    </div>
+  </div>
+  <div id="seatPopup" hidden></div>
   <section id="menu"></section>
   <section id="game">
     <div class="stage" id="stage">
@@ -64,36 +74,36 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/actions.js": "./js/actions.js?v=8fa89d64",
-    "./js/bots.js": "./js/bots.js?v=e3f263b3",
-    "./js/cards.js": "./js/cards.js?v=1bcc6e31",
-    "./js/chips.js": "./js/chips.js?v=3f7919fa",
-    "./js/config.js": "./js/config.js?v=515e945b",
-    "./js/engine.js": "./js/engine.js?v=a0a2d280",
-    "./js/fx.js": "./js/fx.js?v=14ba4118",
-    "./js/main.js": "./js/main.js?v=d04fb650",
-    "./js/modes.js": "./js/modes.js?v=8e5ecdcb",
-    "./js/net.js": "./js/net.js?v=0d2cd3ea",
-    "./js/online.js": "./js/online.js?v=598bd6a2",
+    "./js/actions.js": "./js/actions.js?v=2ec2fbbd",
+    "./js/bots.js": "./js/bots.js?v=d8cd7f75",
+    "./js/cards.js": "./js/cards.js?v=6a50951e",
+    "./js/chips.js": "./js/chips.js?v=e4813bf0",
+    "./js/config.js": "./js/config.js?v=f6a20337",
+    "./js/engine.js": "./js/engine.js?v=197ddc2b",
+    "./js/fx.js": "./js/fx.js?v=935761a2",
+    "./js/main.js": "./js/main.js?v=1182ac18",
+    "./js/modes.js": "./js/modes.js?v=6b85d447",
+    "./js/net.js": "./js/net.js?v=e75eccb6",
+    "./js/online.js": "./js/online.js?v=4eb0225f",
+    "./js/player.js": "./js/player.js?v=4c41463f",
     "./js/pots.js": "./js/pots.js?v=8f05ccbd",
-    "./js/seats.js": "./js/seats.js?v=92b28207",
-    "./js/settings.js": "./js/settings.js?v=d5e2f333",
-    "./js/state.js": "./js/state.js?v=5ab5373e",
-    "./js/stats.js": "./js/stats.js?v=0d3ca5fb",
-    "./js/table.js": "./js/table.js?v=2474fb57",
-    "./js/talk.js": "./js/talk.js?v=5951a82a",
-    "./js/ui/anim.js": "./js/ui/anim.js?v=99f7eed4",
+    "./js/settings.js": "./js/settings.js?v=3e294b73",
+    "./js/state.js": "./js/state.js?v=c37fb618",
+    "./js/stats.js": "./js/stats.js?v=e16b0de5",
+    "./js/table.js": "./js/table.js?v=90c49688",
+    "./js/talk.js": "./js/talk.js?v=9e162303",
+    "./js/ui/anim.js": "./js/ui/anim.js?v=98b743f7",
     "./js/ui/chips-view.js": "./js/ui/chips-view.js?v=06f96ca9",
-    "./js/ui/events.js": "./js/ui/events.js?v=8c01ed81",
-    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=172ac96b",
-    "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=09a58af6",
-    "./js/ui/records-view.js": "./js/ui/records-view.js?v=d8d5ab82",
-    "./js/ui/render.js": "./js/ui/render.js?v=46f28dd3",
-    "./js/ui/table-view.js": "./js/ui/table-view.js?v=180930e4",
-    "./js/util.js": "./js/util.js?v=3449b6dd"
+    "./js/ui/events.js": "./js/ui/events.js?v=55ae651e",
+    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=8bccd053",
+    "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=d3b9397b",
+    "./js/ui/records-view.js": "./js/ui/records-view.js?v=4e75c634",
+    "./js/ui/render.js": "./js/ui/render.js?v=ed6612bd",
+    "./js/ui/table-view.js": "./js/ui/table-view.js?v=ba19207f",
+    "./js/util.js": "./js/util.js?v=3a30a08d"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=d04fb650"></script>
+<script type="module" src="js/main.js?v=1182ac18"></script>
 </body>
 </html>

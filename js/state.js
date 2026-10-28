@@ -2,7 +2,7 @@
 
 // ---- session ----
 // M.mode: null (menu) | 'bots' | 'online'
-export const M={room:null,creating:false,nick:'',mode:null,db:null,uid:null,me:null,host:false,online:false,server:false,ready:false,booted:false};
+export const M={room:null,creating:false,nick:'',mode:null,db:null,uid:null,me:null,host:false,online:false,server:false,ready:false,booted:false,player:null,solo:false,closing:false};
 export let SESSION=0;      // bumped on every mode switch; async work from an older session drops its result
 export let GEN=0;          // bumped when the table restarts; timers from an older generation do nothing
 export let UNSUBS=[];      // Firestore listeners to detach on the next mode switch
@@ -24,21 +24,19 @@ export let LOCAL_B=0,LOCAL_C=0;      // my buy / cash-out counters, written to m
 export let tableRef=null,myRef=null;
 
 // ---- local UI ----
-// lobby: rooms from the server, the room row opened to join, the room being created (waiting for its password)
-export const LOBBY={rooms:null,open:null,confirm:null};
+// lobby: a room that asked for a password, and a room being created (waiting for its password)
+export const LOBBY={open:null,confirm:null};
 export let FLASH='';                 // one-line message under the controls
 export let VIEW='table';             // 'table' | 'records'
-export let CONFIRM_RESET=false;      // 重置牌桌 waits for a second tap
 export let PUSH={1:0,5:0,10:0,25:0}; // chips pushed into the bet zone, by denomination
 export let PUSH_TURN=-1;             // the turn PUSH belongs to
 export let VOTED=null;               // my run-it-twice vote, until the host records it
-export let SPEED=650;                // bots mode pace (ms)
+export let SPEED=650;                // bots mode pace (ms): 较慢 1100, 中等 650, 较快 250
 export let PROFILE=null;             // book key of the player whose profile card is open
 
 // The UI registers its renderers here, so game code can redraw without importing the UI.
 export const view={render(){},renderHero(){}};
 
-export function setCONFIRM_RESET(v){CONFIRM_RESET=v;}
 export function setDECK(v){DECK=v;}
 export function setFLASH(v){FLASH=v;}
 export function setGEN(v){GEN=v;}

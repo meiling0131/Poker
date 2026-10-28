@@ -4,9 +4,13 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "lint": "eslint .",
+    "lint": "npx -y eslint@10 .",
     "stamp": "node tools/stamp.js",
-    "check": "eslint . && node --test tests/*.test.js",
+    "check": "npm run lint && npm test",
+    "build": "mkdir -p dist && rm -rf dist/* && mkdir -p dist/sounds && cp -r index.html css js manifest.webmanifest icons dist/ && cp sounds/*.mp3 dist/sounds/",
+    "dev": "npm run build && wrangler dev --test-scheduled",
+    "db:migrate": "wrangler d1 migrations apply verve --remote",
+    "deploy": "npm run check && npm run build && wrangler deploy",
     "serve": "python3 -m http.server 8000",
     "sim": "node tools/simulate.js",
     "bench": "node tools/benchmark.js"
