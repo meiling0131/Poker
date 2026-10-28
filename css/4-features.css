@@ -8,7 +8,7 @@
 .btn.go.red{background:#b3443b;border-color:#f0a59a40;color:#fff3ef}
 .confirmInfo{font-size:12px;color:var(--mute);text-align:center;font-variant-numeric:tabular-nums;min-height:15px}
 .confirmInfo.err{color:#ffb6a7}
-.betmenu{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.betmenu{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .betmenu button{min-height:46px;line-height:1.2;font-weight:600;background:#22302d;border-color:#ffffff22}
 .betmenu button small{display:block;font:500 10.5px var(--num);color:var(--mute);margin-top:2px}
 .betmenu button:disabled{opacity:.35;cursor:default}
@@ -29,11 +29,16 @@
 .person .kick.warn{background:#b3443b;color:#fff3ef;border-color:#b3443b}
 .person [data-unkick]{border-color:var(--line2);color:var(--mute)}
 /* 提前操作 */
-.preacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.preacts button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:10px;border:1px solid #ffffff22;background:#22302d;color:var(--text);font:inherit;font-size:12.5px;cursor:pointer;padding:4px 6px}
-.preacts button i{width:14px;height:14px;flex:none;border-radius:4px;border:1.5px solid #ffffff55}
-.preacts button.on{background:#3f8a5f40;border-color:#8fd3a8aa;color:#e8f7ee}
-.preacts button.on i{background:#3f8a5f;border-color:#8fd3a8;box-shadow:inset 0 0 0 2px #22302d}
+.preacts{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"check any" "cf cf";gap:8px}
+.preacts button[data-pre="cf"]{grid-area:cf}
+.preacts button[data-pre="call"]{grid-area:check}
+.preacts button[data-pre="any"]{grid-area:any}
+.preacts button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:48px;border-radius:12px;border:0;font:inherit;font-weight:700;font-size:15px;line-height:1.15;cursor:pointer;padding:8px 4px}
+.preacts button small{display:block;font-size:10.5px;font-weight:400;line-height:1.2;opacity:.75;margin-top:1px}
+.preacts button.light{background:#f6f1e655;color:#2a1a0e}
+.preacts button.any{background:#e4c15a55;color:#241a0c}
+.preacts button.light.on{background:#f6f1e6;box-shadow:0 0 8px 1px #fff5}
+.preacts button.any.on{background:#e4c15a;box-shadow:0 0 8px 1px #ffe08a66}
 /* table talk */
 .av{display:inline-block;font-size:12px;line-height:1;margin-right:3px;vertical-align:-1px}
 .av.big{font-size:18px;margin-right:0}
@@ -51,9 +56,6 @@
 .emopick{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;background:#1a2321;border:1px solid #ffffff1a;border-radius:12px;padding:6px}
 .emopick button{background:none;border:0;font-size:22px;line-height:1;padding:6px 0;border-radius:8px;cursor:pointer}
 .emopick button:active{background:#ffffff14;transform:scale(1.2)}
-.verdict{text-align:center;font-size:15px;font-weight:700;padding:6px 0 2px;color:var(--text);animation:pophero .35s ease-out}
-.verdict.up{color:#f3d77e}
-.verdict.down{color:#e9a99f}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
 .confetti span{position:absolute;top:-40px;animation:fall 2.4s cubic-bezier(.2,.6,.4,1) forwards}
 @keyframes fall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(105vh) rotate(540deg);opacity:.9}}
@@ -65,34 +67,23 @@
 .stat span{font-size:12px;color:var(--text)}
 .stat i{font-style:normal;font-size:10.5px;color:var(--mute)}
 .panel .mini[data-stats-reset]{align-self:flex-start}
-.bubble.still,.verdict.still{animation:none}
+.bubble.still{animation:none}
 
 /* 座位：点开资料卡；盲注小圆标 */
 .table .plate[data-seat]{cursor:pointer}
 .table .plate[data-seat]:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
-.blind{position:absolute;top:-8px;right:-8px;z-index:3;width:18px;height:18px;border-radius:50%;background:#e9d9a8;color:#2a2214;
-  font:700 10px/18px var(--body);text-align:center;box-shadow:0 1px 2px #0008}
+.nm{display:flex;align-items:center;justify-content:center;gap:3px}
+.nm>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.nm .dbtn,.nm .blind,.me .plate .dbtn,.me .plate .blind{position:static;top:auto;right:auto;left:auto;flex:none;display:inline-grid;place-items:center;width:16px;height:16px;margin:0;line-height:16px;font-size:10px;color:var(--ink)}
+.nm .blind.sb,.me .plate .blind.sb{color:var(--cream)}
+.blind{position:absolute;top:-7px;right:-7px;z-index:3;width:16px;height:16px;border-radius:50%;color:var(--ink);
+  font:700 10px/16px var(--display);text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+.blind.sb{background:var(--chip-b);color:var(--cream)}
+.blind.bb{background:#f0c84a}
 .table .nm{letter-spacing:-.01em}
 @media(max-width:700px){
-  .blind{width:15px;height:15px;font-size:9px;line-height:15px;top:-6px;right:-6px}
   .table .nm .av{margin-right:1px;font-size:10px}
   .table .nm{letter-spacing:-.03em}
 }
 /* 资料卡 */
-.profile{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:min(300px,86%);
-  background:var(--panel);border:1px solid #c9b68566;border-radius:16px;padding:14px;box-shadow:0 18px 40px #000a;
-  display:flex;flex-direction:column;gap:10px;animation:pophero .2s ease-out}
-.pclose{position:absolute;top:6px;right:8px;background:none;border:0;color:var(--mute);font-size:20px;line-height:1;padding:4px 6px;cursor:pointer}
-.phead{display:flex;gap:10px;align-items:center;padding-right:20px}
-.pav{font-size:34px;line-height:1}
-.phead b{display:block;font-size:16px;color:var(--cream)}
-.phead div span{display:block;font-size:12px;line-height:1.5;color:var(--mute);margin-top:2px}
-.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.pstats div{background:#00000026;border-radius:10px;padding:7px 4px;text-align:center}
-.pstats b{display:block;font:700 15px var(--num);color:var(--cream)}
-.pstats span{font-size:10.5px;color:var(--mute)}
-.btn.swap{min-height:42px;background:var(--brass);color:var(--brass-ink);font-size:14px}
-.btn.swap:disabled{opacity:.45}
-.pnote{margin:-4px 0 0;font-size:11px;color:var(--mute);text-align:center}
-.seat-hint{margin:2px 0 0;font-size:11px;color:var(--mute);text-align:center}
 @media(max-width:700px){.table .nm.long{font-size:9.5px}}

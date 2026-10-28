@@ -12,7 +12,7 @@ import {store} from './util.js';
 // (so a renamed workers.dev address keeps working); else the configured SERVER_URL; '' = no online play
 export function serverUrl(){
   try{const q=new URLSearchParams(location.search).get('server');if(q!==null)store.set('poker.server',q);}catch(e){}
-  let self='';try{if(/\.workers\.dev$/.test(location.hostname))self=location.origin;}catch(e){}
+  let self='';try{const h=location.hostname;if(h==='localhost'||h==='127.0.0.1'||h==='::1'||h==='[::1]'||/\.workers\.dev$/.test(h))self=location.origin;}catch(e){}
   return (store.get('poker.server')||self||SERVER_URL||'').replace(/\/+$/,'');
 }
 const rand=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');
@@ -28,13 +28,12 @@ export async function hashPw(room,pw){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`verve:${room}:${pw}`));
   return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,'0')).join('');
 }
-// rooms people are in right now: [{code,n,online,pw,sb,bb,host}]
+// rooms people are in right now, for 好友模式: [{code,n,online,pw,sb,bb,host}]
 export async function fetchRooms(){
   const r=await fetch(serverUrl()+'/rooms',{cache:'no-store'});
   if(!r.ok)throw new Error('rooms '+r.status);
   return r.json();
 }
-
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const snap=v=>({exists:v!=null,data:()=>clone(v)});
 export function serverDb(base,id){
@@ -46,9 +45,11 @@ export function serverDb(base,id){
   function connect(R){
     if(room===R&&sock)return;
     close();room=R;table=null;mySeat=null;gotTable=gotSeat=false;refused=false;
-    const u=new URL(base.replace(/^http/,'ws')+'/room/'+R);
+    const solo=R==='solo';
+    const u=new URL(base.replace(/^http/,'ws')+(solo?'/solo':'/room/'+R));
     u.searchParams.set('uid',id.uid);u.searchParams.set('token',id.token);
-    if(M.creating){u.searchParams.set('create','1');u.searchParams.set('sb',SB);u.searchParams.set('bb',BB);}
+    if(solo){u.searchParams.set('create','1');u.searchParams.set('bots','1');u.searchParams.set('sb',SB);u.searchParams.set('bb',BB);}
+    else if(M.creating){u.searchParams.set('create','1');u.searchParams.set('sb',SB);u.searchParams.set('bb',BB);}
     if(M.roomPw)u.searchParams.set('pw',M.roomPw);
     const s=sock=new WebSocket(u);
     s.onopen=()=>{for(const m of outbox.splice(0))s.send(m);};
@@ -56,6 +57,8 @@ export function serverDb(base,id){
       let m;try{m=JSON.parse(e.data);}catch(err){return;}
       if(m.t==='table'){table=m.S;gotTable=true;for(const f of tableSubs)f(snap(table));}
       else if(m.t==='seat'){mySeat=m.doc;gotSeat=true;for(const f of seatSubs)f(snap(mySeat));}
+      else if(m.t==='money'){SERVER.onMoney(m);return;}
+      else if(m.t==='closed'){SERVER.onClosed();return;}
       else if(m.t==='error'){ // turned away (password, taken code, no such room): stop here, don't retry
         const R2=room;refused=true;outbox=[];tableSubs.clear();seatSubs.clear();close();
         for(const w of waiters.splice(0))w.r();
@@ -89,7 +92,14 @@ export function serverDb(base,id){
   SERVER.send=send;
   return {doc,collection:()=>({onSnapshot:()=>()=>{}})};
 }
-const SERVER={send:()=>{},onError:()=>{}};
+const SERVER={send:()=>{},onError:()=>{},onMoney:()=>{},onClosed:()=>{}};
 export function onServerError(f){SERVER.onError=f;}
+export function onServerMoney(f){SERVER.onMoney=f;}
+// the table closed for the day (23:55 Eastern): everyone goes back to the lobby
+export function onServerClosed(f){SERVER.onClosed=f;}
+// a buy-in (positive) or cash-out (negative); the server checks it against the database and answers with the balance
+export function serverMoney(delta){SERVER.send({t:'money',delta});}
+// stand up for good: fold if still playing, take the whole stack home; the server answers with left:true
+export function serverLeave(){SERVER.send({t:'leave'});}
 // owner commands, run by the server after it checks the sender owns the room
 export function serverCmd(name,...args){SERVER.send({t:'cmd',name,args});}

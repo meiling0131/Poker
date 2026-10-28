@@ -1,19 +1,16 @@
 /* 牌桌细节：轮到谁的呼吸灯和倒计时环、数字滚动时的样式、下注弹出、手机上的底池筹码堆、
    手机的下注抽屉、更大的筹码塔点击区、按钮按下的手感。动画的时间由 js/ui/anim.js 算好。 */
 
-/* ---- 轮到谁：座位牌呼吸；联机计时的人外面有一圈 45 秒的弧线 ---- */
+/* ---- 轮到谁：一圈进度条包住座位牌，按这一动的时限走完 ---- */
 @property --p{syntax:'<percentage>';inherits:false;initial-value:100%}
-.seat.turn .plate,.me.turn .plate{animation:turnpulse 1.6s ease-in-out infinite;animation-delay:var(--ph,0ms)}
-@keyframes turnpulse{0%,100%{box-shadow:0 0 0 2px #c9b68533,0 0 14px #c9b68530}50%{box-shadow:0 0 0 3px #c9b68588,0 0 24px #c9b68770}}
-.ring{position:absolute;inset:-5px;z-index:0;border-radius:17px;padding:3px;pointer-events:none;
-  background:conic-gradient(var(--brass) var(--p),#ffffff1a 0);
+.ring{position:absolute;inset:-4px;z-index:3;border-radius:16px;padding:4px;pointer-events:none;
+  background:conic-gradient(#f0d48a var(--p),#00000066 0);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
   mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
   animation:ringdown linear forwards}
+.ring.done{animation:none;--p:0%}
 .me .plate .ring{border-radius:999px}
 @keyframes ringdown{from{--p:100%}to{--p:0%}}
-.tbar{height:3px;border-radius:2px;margin:2px 0;background:linear-gradient(var(--brass),var(--brass)) no-repeat,#ffffff14;background-size:var(--p) 100%;animation:ringdown linear forwards}
-
 /* ---- 下注的筹码从座位牌滑出来（你自己的从牌边滑出）；弃掉的牌滑向桌心（js/ui/anim.js 用 .fly 复制件） ---- */
 .bet.pop{animation:betpop .34s cubic-bezier(.3,1.4,.6,1)}
 @keyframes betpop{from{transform:translateY(-14px) scale(.5);opacity:0}to{transform:none;opacity:1}}
@@ -23,13 +20,12 @@
 .fly .mc .card{--w:24px;--h:34px}
 .fly .mc .card+.card{margin-left:-8px}
 
-/* ---- 结果卡：牌打完在桌中央弹出，三秒后自己淡掉；别人思考时是一粒小药丸 ---- */
+/* ---- 结果卡：牌打完在桌中央弹出，一直留到下一手开始；别人思考时是一粒小药丸 ---- */
 .resultcard{display:inline-block;pointer-events:none;max-width:min(420px,92cqw);padding:9px 16px;border-radius:14px;
   background:#1a1512ee;border:1px solid #e2d4a877;color:var(--win);font-size:14px;font-weight:600;line-height:1.5;text-align:center;box-shadow:0 10px 30px #0008;
-  animation:rcin .32s cubic-bezier(.3,1.4,.6,1) var(--age,0ms) both,rcout .45s ease-in calc(2900ms + var(--age,0ms)) forwards}
+  animation:rcin .32s cubic-bezier(.3,1.4,.6,1) var(--age,0ms) both}
 .resultcard small{display:block;font-weight:500;font-size:11px;color:var(--mute);margin-top:2px}
 @keyframes rcin{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
-@keyframes rcout{from{opacity:1}to{opacity:0;transform:translateY(-10px) scale(.95)}}
 .pill-note{display:inline-block;padding:2px 10px;border-radius:999px;background:#00000055;color:#d9d3c4;font-size:11.5px;line-height:16px}
 .stk .num,.pot .num{font-variant-numeric:tabular-nums}
 
@@ -74,4 +70,4 @@
   .hero .towers{gap:6px}
   .rail.live .tower:not(:disabled):active{background:#ffffff14;transform:translateY(-3px)}
 }
-@media(prefers-reduced-motion:reduce){.seat.turn .plate,.me.turn .plate,.bet.pop,.sheet,.sheet-bg,.resultcard{animation:none}}
+@media(prefers-reduced-motion:reduce){.bet.pop,.sheet,.sheet-bg,.resultcard{animation:none}}

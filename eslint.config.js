@@ -6,7 +6,7 @@ const browser = Object.fromEntries([
   'URL', 'WebSocket', 'fetch', 'performance', 'requestAnimationFrame',
 ].map(n => [n, 'readonly']));
 const node = Object.fromEntries(['process', 'URL', 'structuredClone', 'Request', 'setImmediate'].map(n => [n, 'readonly']));
-const worker = Object.fromEntries(['WebSocketPair', 'Response', 'URL', 'console', 'setTimeout', 'clearTimeout', 'crypto'].map(n => [n, 'readonly']));
+const worker = Object.fromEntries(['WebSocketPair', 'Response', 'URL', 'console', 'setTimeout', 'clearTimeout', 'crypto', 'TextEncoder', 'Uint8Array'].map(n => [n, 'readonly']));
 
 export default [
   {
