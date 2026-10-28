@@ -5,7 +5,8 @@
    动画（发牌、翻牌、筹码、赢家）的时间由 js/ui/anim.js 算好，写在 --d（开始前还要等多久，可以是负数）。 */
 
 /* ---- 一屏的骨架 ---- */
-body[data-view="table"]{height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+/* svh: the height with the browser's bars showing (iOS 26 Safari floats its address bar over the bottom of the page) */
+body[data-view="table"]{height:100dvh;height:100svh;overflow:hidden;display:flex;flex-direction:column}
 body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
 #game{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
 .stage{position:relative;flex:1;min-height:0;isolation:isolate;container-type:size;
@@ -200,7 +201,7 @@ body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{grid-area:zone
 
 /* ---- 电脑：大屏留出更多桌面 ---- */
 @media(min-width:701px){
-  body[data-view="table"]{padding:10px 22px 14px}
+  body[data-view="table"]{padding:max(10px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left))}
   .hero:not(:has(.betzone)) .rail{grid-row:1/-1}       /* chips beside the buttons fill the left side */
   body[data-view="table"] .top{padding-block:0 6px}
 }

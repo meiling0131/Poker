@@ -1,6 +1,7 @@
 /* 牌桌外观（房间、灯光、皮质操作台）和 iPhone 尺寸；后面的规则会覆盖前面的。 */
 /* Immersive room: one continuous felt surface for every seat. */
-body{padding:18px 28px 24px;background-attachment:fixed;background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed;color:var(--text)}
+/* The page keeps clear of a notch, a Dynamic Island and the home indicator (the safe areas) here, once: on the body. */
+body{padding:max(18px,env(safe-area-inset-top)) max(28px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(28px,env(safe-area-inset-left));background-attachment:fixed;background:radial-gradient(ellipse at 50% 30%,#1d2725 0%,#141a19 70%) fixed;color:var(--text)}
 .wrap{gap:18px}
 .top{padding:0 18px;border-bottom:1px solid #dbca9b18}
 h1{font-size:23px}
@@ -56,8 +57,7 @@ h1{font-size:23px}
 /* Phones: page padding inside the safe area, a compact header. */
 @media(max-width:700px){
  .wrap{gap:8px}h1{font-size:18px}
- html{padding:0}
- body{padding: max(6px,env(safe-area-inset-top)) 8px max(6px,env(safe-area-inset-bottom))}
+ body{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
  .top{padding:2px 4px 5px;gap:4px}.top .row{flex-wrap:nowrap;gap:5px}.top .right{gap:4px}
  .top h1{font-size:clamp(14px,4vw,18px)}.nav button{padding:4px 9px;min-height:30px;font-size:12px}.ghost.icon{min-height:30px;padding:4px 8px;font-size:11px}
  .top .pills{display:flex;gap:10px}

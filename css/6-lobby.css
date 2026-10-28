@@ -66,9 +66,9 @@ button.greet.tag:hover{filter:brightness(1.1)}
 /* not .stat: the 记录 page's stat boxes use that class, and the skins paint it as a dark panel */
 .card.bigwin{--w:40px;--h:56px;border-radius:6px}
 @media (max-width:420px){.card.bigwin{--w:34px;--h:48px}}
-#usernamePopup,#seatPopup{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px}
+#usernamePopup,#seatPopup{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
 #seatPopup[hidden]{display:none}
-#usernamePopup .usernamePopup-card,#seatPopup .usernamePopup-card{max-height:calc(100dvh - 48px);overflow-y:auto}
+#usernamePopup .usernamePopup-card,#seatPopup .usernamePopup-card{max-height:calc(100dvh - max(24px,env(safe-area-inset-top)) - max(24px,env(safe-area-inset-bottom)));overflow-y:auto}
 .usernamePopup-bg{position:absolute;inset:0;border:0;padding:0;background:#00000088;cursor:pointer}
 .usernamePopup-card{position:relative;width:min(360px,100%);display:flex;flex-direction:column;gap:14px;padding:22px 18px 16px;border-radius:18px;
   border:1px solid var(--sk-edge,var(--line));background:var(--sk-card,var(--panel));box-shadow:inset 0 1px 0 #ffffff14,0 18px 50px #000a}
@@ -81,14 +81,14 @@ button.greet.tag:hover{filter:brightness(1.1)}
 .usernamePopup-actions{display:flex;flex-direction:column;gap:8px}
 .usernamePopup-actions .go{margin:0}
 #usernamePopup .go.danger{background:#5c2226cc;color:#ffd7d4;box-shadow:inset 0 0 0 1px #ffffff18;--glow:transparent}
-#exitPopup{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px}
+#exitPopup{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
 #exitPopup[hidden]{display:none}
 #exitPopup .go{display:block;width:100%;padding:14px 8px;border:0;border-radius:11px;text-align:center;font:700 16px var(--body);letter-spacing:.04em;cursor:pointer}
 #exitPopup .go.danger{background:#a8322e;color:#fff1ef;box-shadow:inset 0 1px 0 #ffffff33,inset 0 -2px 0 #00000026}
 #exitPopup .go.plain{background:#ffffff14;color:var(--text);box-shadow:inset 0 0 0 1px #ffffff26}
 #exitPopup .go:hover{filter:brightness(1.08)}
 /* 超时牌桌: the old day's hand is running past 00:00 Eastern; one 确认 closes it */
-#overtimePopup{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px}
+#overtimePopup{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
 #overtimePopup[hidden]{display:none}
 #overtimePopup .usernamePopup-bg{cursor:default}
 #overtimePopup .go{display:block;width:100%;padding:14px 8px;border:0;border-radius:11px;text-align:center;font:700 16px var(--body);letter-spacing:.04em;cursor:pointer;background:var(--btn-raise,#c9b685);color:var(--btn-raise-ink,#231f15)}
