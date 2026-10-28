@@ -4,7 +4,8 @@
 //   /rooms        the room list, kept by the Lobby Durable Object (server/lobby.js)
 //   /audit        local dev only: checks balances against transactions (server/audit.js)
 //   every minute  the day's close at 23:55 Eastern and its cleanup after 00:05 (server/day.js)
-// Deploy: npm run deploy (lint, tests, build, wrangler deploy). New migrations first: npm run db:migrate
+// Deploy: push to main (.github/workflows/deploy.yml: lint, tests, build, new migrations, wrangler deploy),
+//   or by hand: npm run db:migrate, then npm run deploy
 {
   "name": "verve",
   "account_id": "792f38e2a1626a385a054e767dd35a1b",

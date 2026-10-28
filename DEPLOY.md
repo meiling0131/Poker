@@ -8,21 +8,22 @@ The whole game is one Cloudflare Worker named `verve`:
 
 Its address is whatever Cloudflare gives it: `https://verve.<your-subdomain>.workers.dev`, or a custom domain if you add one.
 
-There are two ways to deploy. Both read the same `wrangler.jsonc`, so the Worker, its bindings, the Durable Objects and the schedule come out the same either way:
+There are three ways to deploy. All read the same `wrangler.jsonc`, so the Worker, its bindings, the Durable Objects and the schedule come out the same either way:
 
 - **A. From your machine**, with `npm run deploy`. You decide when it goes out.
 - **B. From Cloudflare's dashboard**, by linking the GitHub repository. Cloudflare builds and deploys on every push to `main`.
+- **C. From GitHub Actions**, with `.github/workflows/deploy.yml` in this repository. It deploys on every push to `main`, and from the Actions tab when you run it by hand.
 
-Both need the database first.
+Use one of B and C, not both: each would deploy every push. All of them need the database first.
 
 ## 1. Create the database (once)
 
-The `database_id` in `wrangler.jsonc` is a placeholder (`00000000-…`). Create the real database either way:
+`wrangler.jsonc` names Sicheng Li's Cloudflare account and the `verve` database in it, which already exists. To deploy to a different account, create the database there either way:
 
 - **Dashboard:** go to **Storage & Databases → D1 SQL Database → Create**, name it `verve`, then copy its **Database ID**.
 - **Command line:** run `npx wrangler login`, then `npx wrangler d1 create verve`, and copy the `database_id` it prints.
 
-Put that id in the `d1_databases` entry of `wrangler.jsonc`, replacing the zeros, and commit it.
+Put that id in the `d1_databases` entry of `wrangler.jsonc` and commit it.
 
 `wrangler.jsonc` also names an `account_id`. It must be the Cloudflare account you deploy to. Change it if you use a different account. You can see your account id in the dashboard URL, or by running `npx wrangler whoami`.
 
@@ -81,6 +82,14 @@ From then on, every push to `main` builds and deploys automatically. A push to a
 - **Bindings come from `wrangler.jsonc`.** That covers D1 `DB`, the Durable Objects `ROOM` and `LOBBY`, the schedule and the static files. Don't add them in the dashboard, because each deploy replaces dashboard-only settings with what `wrangler.jsonc` says.
 - **Migration permissions.** If the migration step fails with an authentication error, the build's API token lacks D1 access. Open the Worker's **Settings → Build**, and edit its API token to include **D1: Edit**, or pick a token that has it.
 - **Mixing the two routes.** You can still use route A with the repo linked. Whatever deploys last is what's live.
+
+## C. Deploy from GitHub Actions
+
+`.github/workflows/deploy.yml` runs on every push to `main`: eslint, the tests, `npm run build`, then `wrangler d1 migrations apply verve --remote` and `wrangler deploy`. A failing check stops it before anything is uploaded, and a newer push waits for the deploy before it rather than cutting a migration short.
+
+It needs one repository secret, **Settings → Secrets and variables → Actions → `CLOUDFLARE_API_TOKEN`**: an API token from the account in `wrangler.jsonc` (**My Profile → API Tokens**) with **Workers Scripts: Edit** and **D1: Edit**. A token from any other account fails at the migration step with an authentication error.
+
+To deploy without a push, open **Actions → Deploy to Cloudflare → Run workflow**.
 
 ## Check it is live
 

@@ -1,0 +1,33 @@
+# Every push to main: lint + tests, then build, apply new D1 migrations and deploy the Worker to the
+# Cloudflare account in wrangler.jsonc. The repo secret CLOUDFLARE_API_TOKEN must be a token from that
+# account with Workers Scripts: Edit and D1: Edit (DEPLOY.md, "C. Deploy from GitHub Actions").
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# one deploy at a time; a newer push waits rather than cutting a migration short
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx -y eslint@10 .
+      - run: npm test
+      - run: npm run build
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wranglerVersion: "4"
+          command: |
+            d1 migrations apply verve --remote
+            deploy

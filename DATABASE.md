@@ -2,7 +2,7 @@
 
 Player records live in a Cloudflare D1 database named `verve`. The Worker binding is `DB`. The tables are created by `migrations/0001_players.sql`, `migrations/0002_transactions.sql`, `migrations/0003_day.sql` and `migrations/0004_live_board.sql`.
 
-This is the local database. Creating the remote one needs a Cloudflare API token, so `database_id` in `wrangler.jsonc` is still a local placeholder. The Worker writes `players` and `transactions`: the day's bot rows, the starting cash, buy-ins, cash-outs, stacks taken home, every bet and payout of a hand, the bots' buy-ins at each table, a `games` row for every seat of every hand, and each hand added to that player's `stats` row. `leaderboard` is not written yet.
+The live database is the `verve` D1 in the Cloudflare account named in `wrangler.jsonc`; `npm run dev` uses a local copy. The Worker writes `players` and `transactions`: the day's bot rows, the starting cash, buy-ins, cash-outs, stacks taken home, every bet and payout of a hand, the bots' buy-ins at each table, a `games` row for every seat of every hand, and each hand added to that player's `stats` row. `leaderboard` is not written yet.
 
 From the project folder:
 
