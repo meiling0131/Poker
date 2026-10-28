@@ -52,6 +52,9 @@ export function stakesFor(code, S) {
   return t && validStake(t.sb, t.bb) ? { sb: t.sb, bb: t.bb } : { sb: PRESETS[0].sb, bb: PRESETS[0].bb };
 }
 
+const BOT_PLANS = ['bluffing', 'real', 'bl', 'bluffs'];
+const publicSeat = p => { if (p.kind !== 'bot') return p; const q = { ...p }; for (const k of BOT_PLANS) delete q[k]; return q; };
+
 export class Room {
   constructor(ctx, env) {
     this.ctx = ctx;
@@ -419,11 +422,13 @@ export class Room {
     for (const ws of this.ctx.getWebSockets()) this.sendTable(ws, this.ctx.getTags(ws)[0]);
   }
   // A regular table's page has no 记录, so its log, ledger, book and stats stay here: half of every update.
+  // A bot's plans (Kmetsch counting his way to a bluff) are its own: its seat goes out without them.
   sendTable(ws, uid) {
     const { S, H } = this.c;
     let mine = null;
     if (S) { const i = S.seats.findIndex(p => p.uid === uid); if (i >= 0 && H[i] && H[i].length) mine = { h: S.hand, c: H[i] }; }
-    const pub = S && (S.mode === 'bots' ? { ...S, log: undefined, ledger: undefined, book: undefined, stats: undefined, mine } : { ...S, mine });
+    const seats = S && S.seats.map(publicSeat);
+    const pub = S && (S.mode === 'bots' ? { ...S, seats, log: undefined, ledger: undefined, book: undefined, stats: undefined, mine } : { ...S, seats, mine });
     try { ws.send(JSON.stringify({ t: 'table', S: pub || null })); } catch (e) { /* closed */ }
   }
 

@@ -4,7 +4,7 @@ import {M,MYDOC,S,myRef,setFLASH,view} from './state.js';
 import {later,mySeat} from './table.js';
 import {BOT} from './config.js';
 
-export const BOT_AV={[BOT.JOE]:'🐯',[BOT.SC]:'🐰',[BOT.LAOZHOU]:'🐢',[BOT.NAILONG]:'🐲',[BOT.KMETSCH]:'🐻',[BOT.AFANG]:'🐱'};
+export const BOT_AV={[BOT.JOE]:'🐯',[BOT.SC]:'🐰',[BOT.ST]:'🐺',[BOT.NAILONG]:'🐲',[BOT.KMETSCH]:'🐻',[BOT.DWAN]:'🦈'};
 export const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
 export function avatarOf(p){
   if(p.kind==='bot')return BOT_AV[p.id]||'🤖';
@@ -30,6 +30,10 @@ export const PERSONA_LINES={
   [BOT.SC]:{fold:['其实我能赢'],call:['看看','先看一张'],check:['看牌'],raise:['加一点点','小加一手']},
   [BOT.KMETSCH]:{raise:['这把是真的','我有牌'],call:['跟一下'],bluff:['信我，我有','这把我认真的','你敢跟吗？','我从不诈唬'],
     win:['我说了我有','嘿嘿'],fold:['这次算你赢']},
+  [BOT.ST]:{call:['先 limp 一下','我看看','你在偷吧？跟'],check:['过'],raise:['打大一点','这个池子我要了'],allin:['全下，开牌吧'],
+    win:['运气好','大池子就是要赢'],bust:['再来一个买入']},
+  [BOT.DWAN]:{raise:['你没那么强','加注，你怎么办？','再来一枪'],call:['我觉得你在诈唬','跟，我不信'],allin:['全下，你敢跟吗？'],
+    fold:['这把让你'],win:['durrrr','承让'],bust:['下一手再来']},
 };
 // a bot that always says its line for a given action
 export const PERSONA_ALWAYS={[BOT.NAILONG]:{raise:1},[BOT.SC]:{fold:1}};
