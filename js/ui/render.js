@@ -7,7 +7,7 @@ import {renderHero} from './hero-view.js';
 import {closingLabel,renderHeader,renderMenu,setBoard} from './menu-view.js';
 import {fetchBoard} from '../player.js';
 import {renderRecords} from './records-view.js';
-import {renderProfile,renderTable} from './table-view.js';
+import {drawAll,renderProfile,renderTable} from './table-view.js';
 import {$,dayPhase,easternDay,esc,resetInLabel,secsLeft} from '../util.js';
 
 // 超时牌桌: shown once per overtime hand, to everyone at the table, until 确认
@@ -31,7 +31,7 @@ export function render(){
   }
   runPre();turnAlert();celebrate();
   if(VIEW==='records'){renderRecords();tick();return;}
-  renderTable();renderHero();
+  drawAll(()=>{renderTable();renderHero();});
   tick();
 }
 export let DISPLAY_DAY=easternDay();

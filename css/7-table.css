@@ -31,6 +31,9 @@ body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
 .card.bd{--w:var(--bw);--h:calc(var(--w)*1.4);border-radius:calc(var(--w)*.12)}
 .card.bd.sm{--w:calc(var(--bw)*.72)}
 .table .result{position:static;transform:none;width:auto;max-width:min(420px,90cqw);font-size:13px;line-height:1.45;min-height:1.45em;text-align:center}
+/* a small screen with no room for the hand's result between the board and your cards: it is drawn on top (and goes
+   after a few seconds, see placeResult in table-view.js) */
+.table:has(.result.done) .center{z-index:6}
 
 /* ---- 别人的座位 ---- */
 .table .seat{left:var(--x);top:var(--y);width:var(--sw);transform:translate(-50%,-50%)}
@@ -43,7 +46,7 @@ body[data-view="table"] .wrap{flex:1;min-height:0;width:100%;gap:8px}
 .table .act{max-width:calc(var(--sw) + 20px);font-size:11.5px;min-height:15px}
 .table .bet{font-size:12px;padding:3px 8px}
 .table .seat.show .mc{margin-bottom:calc(var(--mw)*-.2);height:calc(var(--mw)*2)}
-.table .seat.show .mc .card{--w:calc(var(--mw)*1.45)}       /* shown hands are big enough to read */
+.table .seat.show .mc .card{--w:calc(var(--mw)*1.45);--h:calc(var(--w)*1.4)}   /* shown hands are big enough to read */
 .table .seat.show .mc .card+.card{margin-left:2px}
 
 /* ---- 你的座位：两张大牌，下面是名字和筹码 ---- */
@@ -117,7 +120,6 @@ body[data-skin] .moneybox .confirmbar .btn.go-cash{background:#a8463c;color:#fff
 body[data-skin] .moneybox .confirmbar .btn:disabled{opacity:.4}
 body[data-skin] .betmenu button.btn.allin small{color:var(--btn-allin-ink);opacity:.8}
 .me .herobet{position:absolute;left:auto;transform:none;right:calc(100% + 6px);top:calc(var(--hw)*.45);z-index:2}   /* beside your cards, clear of the board */
-.me .hero-bubble{top:auto;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);animation-name:pop}
 
 /* ---- 最下面的操作区 ---- */
 .hero,.hero.win{flex:none;align-self:center;width:min(1000px,100%);margin:0;padding:12px 18px;border-radius:20px;
@@ -132,11 +134,14 @@ body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{grid-area:zone
 .hero .betzone .pile .col .chip-d+.chip-d{margin-bottom:0;margin-left:calc(var(--cs) * -0.55)}
 .hero .betzone .pile .n{margin:0;font:700 18px/1 var(--num);color:var(--cream)}
 .hero .betzone .rack-empty{color:#8f877c;font-size:12.5px;line-height:1.45;text-align:center}
+.hero .betzone .resultcard{display:none}   /* phones only, below */
 .hero .betzone .rack-clock{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:10;padding:2px 4px;border-radius:8px;background:#0c0806;box-shadow:0 0 8px 4px #0c0806}
 .hero .rail,.hero .rail.live{grid-area:rail;width:100%;padding:0;gap:10px;background:none;border:0;border-radius:0}
 .hero .rail .bank,.hero .buyin .bank{flex:none;align-self:center;width:40px;height:40px;padding:0;border:0;border-radius:12px;background:#ffffff14;color:var(--cream);cursor:pointer;display:grid;place-items:center}
 .hero .rail .bank svg,.hero .buyin .bank svg{width:22px;height:22px;display:block}
 .hero .rail .bank.on,.hero .buyin .bank.on{background:var(--brass,#d0ad68);color:#2a1a0e}
+.hero .rail .tidy{flex:none;align-self:center;height:40px;padding:0 10px;border:0;border-radius:12px;background:#ffffff14;color:var(--cream);font:600 13px/1 var(--body);white-space:nowrap;cursor:pointer}
+.hero .rail .tidy:disabled{opacity:.35;cursor:default}
 .hero .towers{gap:10px}
 .hero .tw{height:58px}
 .hero .controls{grid-area:ctl;margin:0;padding:0;border:0;gap:7px;width:100%}
@@ -212,7 +217,7 @@ body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{grid-area:zone
   .table .center.twice{top:43%}
   .table .pot .piles{display:none}
   .table .pot{gap:5px;font-size:11px}.table .pot b{font-size:17px}
-  .table .result{font-size:11px;line-height:1.35;max-width:82cqw}
+  .table .result{font-size:11px;line-height:1.35;max-width:calc(82cqw - var(--sw) - 8px)}   /* between the side seats */
   .table .plate{padding:3px 2px;border-radius:8px}
   .table .plate .ring{border-radius:12px}
   .table .nm{font-size:11px;line-height:13px}
@@ -226,8 +231,15 @@ body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{grid-area:zone
   .me-sub{font-size:11px;margin-top:2px}
   .hero,.hero.win{width:100%;padding:8px 10px;border-radius:16px;grid-template-columns:1fr;grid-template-areas:"zone" "rail" "ctl";gap:4px;min-height:202px;align-content:start}
   .hero .recap{display:none}   /* the table already says who won */
+  /* the hand's result goes in the bet zone, which is empty by then, instead of on the crowded felt */
+  body[data-skin] .hero .betzone.has-result{height:auto;max-height:none;flex-direction:column;gap:4px}
+  .hero .betzone.has-result .rack-empty{display:none}
+  .hero .betzone .resultcard{display:block;max-width:100%;padding:0;background:none;border:0;box-shadow:none;font-size:13.5px}
+  .table.seated .result .resultcard{display:none}
   body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{height:96px;min-height:96px;max-height:96px;padding:8px 12px}
   .hero .towers{gap:4px}
+  .hero .rail{gap:6px}
+  .hero .rail .tidy{padding:0 8px;font-size:12px}
   .hero .tw{height:44px}
   .hero .tower{padding:0}
   .hero .controls{gap:5px;padding-top:4px}
@@ -247,6 +259,16 @@ body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{grid-area:zone
   .hero .cashier .lbl{font-size:11px}
   .preacts{gap:5px}
   .preacts button{min-height:48px;font-size:13px}
+}
+/* shorter phones (iPhone SE/8, small Androids): a lower bet zone and chip rail leave the table more room */
+@media(max-width:700px) and (max-height:760px){
+  .hero,.hero.win{min-height:164px}
+  body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{height:62px;min-height:62px;max-height:62px;padding:6px 10px}
+  body[data-skin] .hero .betzone.has-move,body[data-skin] .hero .betzone.has-note{min-height:62px}
+  .hero .betzone .bz-chips{gap:4px 16px}
+  .hero .tw{height:38px}
+  .resultcard{font-size:12.5px;line-height:1.4;padding:6px 11px}
+  .resultcard small{font-size:10.5px;margin-top:1px}
 }
 @media(max-width:700px) and (max-height:620px){
   .hero,.hero.win{min-height:180px}
