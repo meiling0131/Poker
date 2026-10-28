@@ -19,8 +19,6 @@
   --display: "Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
   --body: -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
   --num: "IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  padding-top: env(safe-area-inset-top,0px);
-  padding-bottom: env(safe-area-inset-bottom,0px);
   --felt: #245348;
   --felt-hi: #306456;
   --rail: #142b25;
