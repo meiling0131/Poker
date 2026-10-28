@@ -13,6 +13,10 @@
   plays six bots with their own styles or friends in a private room, and competes for the day's best on a shared leaderboard.
 </p>
 
+<p align="center">
+  <a href="https://verve.vpoker.workers.dev"><b>▶ Play now</b></a>
+</p>
+
 ---
 
 ## How it got here
@@ -31,7 +35,7 @@ The original game had the engine, the six bots, the chip-true table, practice pl
 - **Bots.** Each bot has a fixed id, and its displayed name comes from the database. Every table has its own copy of each bot, which buys its chips from the bank.
 - **The table.** The dealer, small blind and big blind are marked with D, S and B chips beside the names. A 45-second ring counts down each turn, and your hand type is shown as you play. Cards are dealt one at a time, and the bots wait until every card has landed.
 - **The player card.** Tapping a seat opens the same stats popup as the lobby's 查看数据 (view stats).
-- **The lobby.** A casino-green background, your balance in large type, a name pill, a scrolling leaderboard, the stake tiles and flat buttons.
+- **The lobby.** Your balance in large type, a name pill, a scrolling leaderboard, the stake tiles and flat buttons.
 - **Sound.** The generated beep is replaced by sound files for your turn, the run-it-twice choice, every action, each card dealt, each board card, the payout and completed bank transactions.
 
 ### Added
@@ -65,7 +69,7 @@ These were dropped in the fork and are back after the merge:
 - **好友模式 (friends).** The lobby button opens the rooms people are in right now: tap one to join, with its password if it has one. Or type a room code to join it, or create a room (an empty code picks one at random) with an optional password; a new room plays at the stake picked in the lobby. You play under your own name. An invite link opened before leaving a name asks for one, then goes into the room. In a room, **记录** (records) has the invite link, the players (the owner can remove them) and the ledger.
 - **Confirmations for Fold and All in.** Fold, and a Bet that puts your whole stack in, turn the buttons into 取消 + 确认 Fold / 确认 All in. Everything else goes straight through.
 - **The bet presets.** 1/3 Pot, 1/2 Pot, 2/3 Pot, Pot and Custom, now on the raise slider.
-- **The second floor.** 设置 → 牌桌 picks the first-floor meeting room (walnut table, houndstooth armchairs) or the second-floor lounge (dark stone table, leather sofas).
+- **The second floor and the blue walls.** 设置 → 牌桌 picks the first-floor meeting room (walnut table, houndstooth armchairs, blue walls under a pendant light) or the second-floor lounge (dark stone table, leather sofas, teal walls under a slatted ceiling with light strips). The fork had painted both casino green.
 - **The bots' personalities.** A bot's card shows its avatar and how it plays, above its stats.
 - **Deploying on every push to `main`**, through GitHub Actions (see [DEPLOY.md](DEPLOY.md)).
 
@@ -79,7 +83,6 @@ These were dropped in the fork and are back after the merge:
 - **The 整理 (tidy) button.** Replaced by the 自动整理筹码 switch.
 - **The table's top-bar extras.** The 主页 (home) button and the settings menu are gone, and hand hints are always on.
 - **The win/loss banner.** The 这把 +N / −N line and the bust message are gone.
-- **Online play from the GitHub Pages copy.** A copy served anywhere but the Worker offers practice only, unless opened with `?server=<the Worker's address>`.
 
 ### Still in progress
 
@@ -94,7 +97,7 @@ These were dropped in the fork and are back after the merge:
 
 ## How to play
 
-1. Open the game (the deployed Worker's address, or http://127.0.0.1:8787 when running it locally) and tap the name pill to leave a name. Your balance for the day is 1,000.
+1. Open **[verve.vpoker.workers.dev](https://verve.vpoker.workers.dev)** (or http://127.0.0.1:8787 when running it locally) and tap the name pill to leave a name. Your balance for the day is 1,000.
 2. Pick a stake and tap **进入游戏** (enter game). The bank panel opens: slide to the amount and tap **买入** (buy in). **练习模式** (practice) gives pretend chips that are never recorded.
 3. To play friends, tap **好友模式**: pick a room from the list, or type a room code and tap **加入房间** (join) or **创建房间** (create). Send them the link from **记录**.
 4. On your turn, tap chips or use **Call** / **Raise** to pick an amount, then **Bet** to send it. **Fold** folds. Fold and All in ask once more.
@@ -170,7 +173,7 @@ npm run stamp        # refresh the version numbers in index.html (after any js o
 npm run check        # eslint + tests; also fails if the import map is stale
 ```
 
-A push to `main` deploys: `.github/workflows/deploy.yml` runs the checks, applies new migrations and deploys the Worker. It needs the repository secret `CLOUDFLARE_API_TOKEN`, a token from the Cloudflare account in `wrangler.jsonc` with Workers Scripts: Edit and D1: Edit. See [DEPLOY.md](DEPLOY.md) for that and the other ways to deploy.
+A push to `main` deploys to https://verve.vpoker.workers.dev: `.github/workflows/deploy.yml` runs the checks, makes sure the D1 database `verve` exists (creating it the first time), applies new migrations and deploys the Worker. It needs the repository secret `CLOUDFLARE_API_TOKEN`, a token from the Cloudflare account in `wrangler.jsonc` with Workers Scripts: Edit and D1: Edit. See [DEPLOY.md](DEPLOY.md) for that and the other ways to deploy. A copy served anywhere else, like GitHub Pages, plays against the same server (`SERVER_URL` in `js/config.js`).
 
 ### Server routes
 

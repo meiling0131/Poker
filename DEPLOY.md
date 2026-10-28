@@ -6,7 +6,7 @@ The whole game is one Cloudflare Worker named `verve`:
 - **The database:** D1, named `verve`.
 - **A scheduled job:** runs every minute and closes the day at midnight Eastern.
 
-Its address is whatever Cloudflare gives it: `https://verve.<your-subdomain>.workers.dev`, or a custom domain if you add one.
+It runs at https://verve.vpoker.workers.dev (the account's workers.dev subdomain is `vpoker`), or at a custom domain if you add one.
 
 There are three ways to deploy. All read the same `wrangler.jsonc`, so the Worker, its bindings, the Durable Objects and the schedule come out the same either way:
 
@@ -18,12 +18,12 @@ Use one of B and C, not both: each would deploy every push. All of them need the
 
 ## 1. Create the database (once)
 
-`wrangler.jsonc` names Sicheng Li's Cloudflare account and the `verve` database in it, which already exists. To deploy to a different account, create the database there either way:
+`wrangler.jsonc` names the account (`account_id`) and the database only by its name, `verve`: wrangler finds it by that name. Route C creates it on its first run. For A and B, create it once either way:
 
-- **Dashboard:** go to **Storage & Databases → D1 SQL Database → Create**, name it `verve`, then copy its **Database ID**.
-- **Command line:** run `npx wrangler login`, then `npx wrangler d1 create verve`, and copy the `database_id` it prints.
+- **Dashboard:** go to **Storage & Databases → D1 SQL Database → Create** and name it `verve`.
+- **Command line:** run `npx wrangler login`, then `npx wrangler d1 create verve`.
 
-Put that id in the `d1_databases` entry of `wrangler.jsonc` and commit it.
+Name it `verve` and it is found by name; adding its id to the `d1_databases` entry of `wrangler.jsonc` is optional.
 
 `wrangler.jsonc` also names an `account_id`. It must be the Cloudflare account you deploy to. Change it if you use a different account. You can see your account id in the dashboard URL, or by running `npx wrangler whoami`.
 
@@ -56,7 +56,7 @@ npm run deploy
 
 ## B. Deploy from the Cloudflare dashboard (link the GitHub repo)
 
-Cloudflare builds the project from GitHub and deploys it on each push. First, push the repo with the real `database_id` (and the right `account_id`) committed.
+Cloudflare builds the project from GitHub and deploys it on each push. First, create the database (step 1) and push the repo with the right `account_id`.
 
 1. In the Cloudflare dashboard, go to **Workers & Pages → Create → Workers → Import a repository**.
 2. Choose **GitHub** and authorise the Cloudflare app. Give it access to this repository.
@@ -85,9 +85,9 @@ From then on, every push to `main` builds and deploys automatically. A push to a
 
 ## C. Deploy from GitHub Actions
 
-`.github/workflows/deploy.yml` runs on every push to `main`: eslint, the tests, `npm run build`, then `wrangler d1 migrations apply verve --remote` and `wrangler deploy`. A failing check stops it before anything is uploaded, and a newer push waits for the deploy before it rather than cutting a migration short.
+`.github/workflows/deploy.yml` runs on every push to `main`: eslint, the tests, `npm run build`, then it makes sure the D1 database `verve` exists (`wrangler d1 create verve` the first time), runs `wrangler d1 migrations apply verve --remote` and `wrangler deploy`. A failing check stops it before anything is uploaded, and a newer push waits for the deploy before it rather than cutting a migration short.
 
-It needs one repository secret, **Settings → Secrets and variables → Actions → `CLOUDFLARE_API_TOKEN`**: an API token from the account in `wrangler.jsonc` (**My Profile → API Tokens**) with **Workers Scripts: Edit** and **D1: Edit**. A token from any other account fails at the migration step with an authentication error.
+It needs one repository secret, **Settings → Secrets and variables → Actions → `CLOUDFLARE_API_TOKEN`**: an API token from the account in `wrangler.jsonc` (**My Profile → API Tokens**) with **Workers Scripts: Edit** and **D1: Edit**. A token without D1 access stops the run at the database step, with an authentication error, before anything is deployed.
 
 To deploy without a push, open **Actions → Deploy to Cloudflare → Run workflow**.
 

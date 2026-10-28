@@ -4,17 +4,18 @@
 //   /rooms        the room list, kept by the Lobby Durable Object (server/lobby.js)
 //   /audit        local dev only: checks balances against transactions (server/audit.js)
 //   every minute  the day's close at 23:55 Eastern and its cleanup after 00:05 (server/day.js)
-// Deploy: push to main (.github/workflows/deploy.yml: lint, tests, build, new migrations, wrangler deploy),
-//   or by hand: npm run db:migrate, then npm run deploy
+// Deploy: push to main (.github/workflows/deploy.yml: lint, tests, build, the database, new migrations,
+//   wrangler deploy), or by hand: npm run db:migrate, then npm run deploy
+// The D1 database is found by its name, verve, in this account; the workflow creates it if it is missing.
 {
   "name": "verve",
-  "account_id": "792f38e2a1626a385a054e767dd35a1b",
+  "account_id": "99abcf9b0878a8b932cb0fcc9c9b3140",
   "main": "server/worker.js",
   "compatibility_date": "2026-10-06",
   "workers_dev": true,
   "triggers": { "crons": ["* * * * *"] },
   "assets": { "directory": "./dist" },
   "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "Room" }, { "name": "LOBBY", "class_name": "Lobby" }] },
-  "d1_databases": [{ "binding": "DB", "database_name": "verve", "database_id": "879d828c-6350-42cc-bfc0-6ba3a74f2755", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "verve", "migrations_dir": "migrations" }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }, { "tag": "v2", "new_sqlite_classes": ["Lobby"] }]
 }

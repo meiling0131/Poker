@@ -1,9 +1,9 @@
 // Game constants and where the Verve server is.
 
-// Verve server for online rooms (https URL of the Cloudflare Worker). Pages served by the Worker
-// itself connect to their own address instead (see net.js); this one is for copies served elsewhere (npm run serve).
-// Empty: such a copy offers practice only, unless opened with ?server=<the Worker's address>.
-export const SERVER_URL='';
+// The Verve server (https URL of the Cloudflare Worker): regular tables, friends rooms and the database.
+// Pages served by the Worker itself connect to their own address instead (see net.js); this one is for
+// copies served elsewhere, like GitHub Pages. Empty: such a copy offers practice only.
+export const SERVER_URL='https://verve.vpoker.workers.dev';
 export const STREET_CN={idle:'等待',dealing:'发牌',preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',done:'结算'};
 export const BETTING=['preflop','flop','turn','river'];
 export let BUY=200;
