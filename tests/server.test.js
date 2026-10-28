@@ -1,5 +1,6 @@
 // The Verve server (server/room.js) run in Node with a fake Durable Object context: two rooms
 // share one copy of the engine, so each must only ever see its own table.
+import './clock.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runNextTimer } from '../tools/headless.js';

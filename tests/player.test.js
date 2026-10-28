@@ -1,3 +1,4 @@
+import './clock.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanPlayerName, getPlayer, setPlayer } from '../server/player.js';
