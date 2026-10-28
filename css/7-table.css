@@ -71,6 +71,10 @@ body[data-skin] .btn.bet:not(.allin){background:var(--btn-raise);color:var(--btn
 body[data-skin] .btn.bet.allin,body[data-skin] .raisebox .btn.allin,body[data-skin] .confirmbar .btn.allin,body[data-skin] .betmenu button.btn.allin{background:#8f5c54;color:var(--btn-allin-ink);border-color:#ffffff1c;box-shadow:inset 0 1px 0 #ffffff10}
 .raisebox{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
 .raisebox .raise-num{font:700 40px/1 var(--num);color:var(--cream);letter-spacing:.02em}
+/* the amount is also the Custom box: tap it (or Custom) and type an exact raise-to */
+.raisebox input.raise-num{width:6em;max-width:100%;padding:0 0 3px;border:0;border-bottom:1px dashed #ffffff40;border-radius:0;background:none;text-align:center;appearance:textfield;-moz-appearance:textfield}
+.raisebox input.raise-num::-webkit-inner-spin-button,.raisebox input.raise-num::-webkit-outer-spin-button{appearance:none;margin:0}
+.raisebox input.raise-num:focus{outline:none;border-bottom:1px solid var(--brass,#d0ad68)}
 .raise-scale{position:relative;width:100%;height:54px}
 .raise-line{position:absolute;left:0;right:0;top:8px;height:8px;border-radius:99px;background:#ffffff22;overflow:hidden}
 .raise-line .fill{display:block;height:100%;width:0;border-radius:99px;background:var(--brass,#d0ad68)}
@@ -82,10 +86,16 @@ body[data-skin] .btn.bet.allin,body[data-skin] .raisebox .btn.allin,body[data-sk
 .raise-scale input[type=range]::-webkit-slider-thumb{appearance:none;width:18px;height:18px;margin-top:-5px;border:0;border-radius:50%;background:#f6f1e6;box-shadow:0 1px 3px #0008}
 .raise-scale input[type=range]::-moz-range-track{height:8px;background:transparent;border:0}
 .raise-scale input[type=range]::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:#f6f1e6}
-.raise-marks{position:absolute;left:0;right:0;top:28px;height:18px;z-index:3}
-.raise-marks button{position:absolute;top:0;border:0;background:none;padding:0;cursor:pointer;font:600 10px inherit;color:var(--mute);white-space:nowrap;line-height:1.2}
-.raise-marks button:hover{color:var(--cream)}
+/* Min. and All in sit either side of the slider */
+.raise-row{display:flex;align-items:center;gap:10px;width:100%}
+.raise-row .raise-scale{flex:1;min-width:0;height:24px}
+.raise-end{flex:none;border:0;background:none;padding:4px 0;cursor:pointer;font:600 11px/1.2 inherit;color:var(--mute);white-space:nowrap}
+.raise-end:hover{color:var(--cream)}
 .raisebox .confirmbar{width:100%}
+/* 1/3, 1/2, 2/3 Pot, Pot and Custom under the slider; a preset short of a min-raise is greyed out */
+.raise-presets{width:100%;grid-template-columns:repeat(5,minmax(0,1fr))}
+.raise-presets button{min-height:42px;padding:4px 0;font-size:12px;color:var(--text);border:1px solid #ffffff22;border-radius:10px;cursor:pointer}
+@media(max-width:700px){.raise-presets button{min-height:40px;font-size:11.5px}}
 .moneybox .money-read{display:flex;flex-direction:column;align-items:center;gap:4px}
 .moneybox .money-avail{color:#8f877c;font-size:12px;line-height:1.3}
 .moneybox .raise-scale{height:28px}

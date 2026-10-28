@@ -1,5 +1,5 @@
 // Delegated DOM event handlers.
-import {BET_MENU,act,cancelAction,commitAllIn,commitRaise,confirmAction,money,openBetMenu,pendingIsCurrent,placeBet,requestAction,selectCall,setPre,setRaiseAt,stillMyTurn,toggleAutoTidy,vote} from '../actions.js';
+import {BET_MENU,cancelAction,commitAllIn,commitRaise,confirmAction,money,openBetMenu,pendingIsCurrent,placeBet,requestAction,selectCall,setPre,setRaiseAt,stillMyTurn,toggleAutoTidy,vote} from '../actions.js';
 import {Z,pickChips} from '../chips.js';
 import {startHand} from '../engine.js';
 import {SOUND,beep,setSOUND} from '../fx.js';
@@ -203,6 +203,7 @@ document.addEventListener('click',e=>{
   if(a==='confirm'){confirmAction();return;}
   if(a==='raise-go'){commitRaise();return;}
   if(t.dataset.raiseTo!=null){setRaiseAt(Number(t.dataset.raiseTo));return;}
+  if(t.dataset.raiseCustom){const el=$('raiseNum');if(el){el.focus();el.select();}return;}
   if(t.dataset.preset){
     if(t.dataset.preset==='custom')requestAction('raise',minRaiseTo(p),null,true);
     else requestAction('raise',Number(t.dataset.preset));
@@ -220,7 +221,7 @@ document.addEventListener('click',e=>{
     renderHero();return;
   }
   if(a==='allin'){commitAllIn(p);return;}
-  if(a==='fold'){cancelAction();act('fold');return;}
+  if(a==='fold'){requestAction('fold');return;}
   if(a==='call'){selectCall();return;}
   if(a==='raise'){openBetMenu();return;}
   if(a==='bet'){placeBet();return;}

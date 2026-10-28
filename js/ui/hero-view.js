@@ -1,5 +1,5 @@
 // Your station: cards, chip rail, bet zone, and action buttons.
-import {AUTO_TIDY,BET_MENU,PRE,actionLabels,adjustMoney,autoTidy,cancelAction,layoutRaiseMarks,layoutScaleTicks,preOptions,raiseScale,scalePoint,stillMyTurn} from '../actions.js';
+import {AUTO_TIDY,BET_MENU,PRE,actionLabels,adjustMoney,autoTidy,betPresets,cancelAction,confirmDetail,confirmLabel,confirmationPlan,layoutRaiseMarks,layoutScaleTicks,pendingIsCurrent,preOptions,raiseScale,scalePoint,stillMyTurn} from '../actions.js';
 import {CCLS,DV,Z,chipsOf25,csum} from '../chips.js';
 import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SESSION,SUBMITTED,VOTED,setPUSH,setPUSH_TURN,view} from '../state.js';
@@ -163,9 +163,10 @@ function preactsHTML(){
   return `<div class="preacts" role="group" aria-label="提前操作">${preOptions().map(o=>{const on=PRE&&PRE.hand===S.hand&&PRE.kind===o.k;return `<button data-pre="${o.k}" aria-pressed="${on}" class="${o.tone}${on?' on':''}">${o.en}<small>${o.zh}</small></button>`;}).join('')}</div>`;
 }
 export function renderHero(){
-  const focus=document.activeElement&&document.activeElement.id==='betAmt';
+  // a redraw while you type an amount keeps what you typed, and the cursor
+  const a=document.activeElement,id=a&&(a.id==='betAmt'||a.id==='raiseNum')?a.id:'',typed=id?a.value:'';
   renderHeroInner();
-  const inp=focus&&$('betAmt');if(inp){inp.focus();const n=inp.value.length;try{inp.setSelectionRange(n,n);}catch(e){}}
+  const inp=id&&$(id);if(inp){inp.value=typed;inp.focus();const n=inp.value.length;try{inp.setSelectionRange(n,n);}catch(e){}}
 }
 export function renderHeroInner(){
   const el=$('hero'),m=mySeat();
@@ -206,16 +207,26 @@ export function renderHeroInner(){
   let ctl='';
   if(BUY_OPEN)ctl=moneyHTML(p);
   else if(mine){
-    if(stillMyTurn(BET_MENU)&&L.canR){
+    if(pendingIsCurrent()){
+      const plan=confirmationPlan(),red=plan.type==='fold'||plan.allIn;
+      ctl+=`<div class="confirmbar">
+        <button class="btn cancel" data-a="cancel">取消</button>
+        <button class="btn go ${red?'red':'green'}" id="confirmGo" data-a="confirm"${plan.error?' disabled':''}>${plan.error?'确认':confirmLabel(p,plan)}</button>
+      </div><div class="confirmInfo${plan.error?' err':''}" id="confirmInfo">${esc(plan.error||confirmDetail(plan))}</div>`;
+    }else if(stillMyTurn(BET_MENU)&&L.canR){
       const sc=raiseScale(p);
       ctl+=`<div class="raisebox" style="--min:${sc.minPct}%;--val:${sc.pct}%">
-        <b class="raise-num" id="raiseNum">${fmt(sc.value)}</b>
-        <div class="raise-scale" id="raiseScale" style="--min:${sc.minPct}%;--val:${sc.pct}%">
-          <div class="raise-line"><b class="fill"></b></div>
-          <div class="raise-ticks">${sc.marks.map(m=>`<i data-v="${m.v}"></i>`).join('')}</div>
-          <input id="raiseRange" type="range" min="0" max="${sc.max}" step="1" value="${sc.value}"${sc.max<=sc.min?' disabled':''} aria-label="加注金额">
-          <div class="raise-marks">${sc.marks.filter(m=>m.label).map(m=>`<button type="button" data-raise-to="${m.v}" data-v="${m.v}">${m.k}</button>`).join('')}</div>
+        <input class="raise-num" id="raiseNum" type="number" inputmode="numeric" min="${sc.min}" max="${sc.max}" step="1" value="${sc.value}" aria-label="加注到（Custom 自定义金额）"${dis}>
+        <div class="raise-row">
+          <button type="button" class="raise-end" data-raise-to="${sc.min}">Min.</button>
+          <div class="raise-scale" id="raiseScale" style="--min:${sc.minPct}%;--val:${sc.pct}%">
+            <div class="raise-line"><b class="fill"></b></div>
+            <div class="raise-ticks">${sc.marks.map(m=>`<i data-v="${m.v}"></i>`).join('')}</div>
+            <input id="raiseRange" type="range" min="0" max="${sc.max}" step="1" value="${sc.value}"${sc.max<=sc.min?' disabled':''} aria-label="加注金额">
+          </div>
+          <button type="button" class="raise-end" data-raise-to="${sc.max}">All in</button>
         </div>
+        <div class="presets betmenu raise-presets">${betPresets(p).map(x=>`<button type="button" data-raise-to="${x.to||''}"${x.to?'':' disabled'}>${x.k}<small>${x.to?(x.to>=sc.max?'All in':fmt(x.to)):'—'}</small></button>`).join('')}<button type="button" data-raise-custom="1">Custom<small>自定义</small></button></div>
         <div class="confirmbar">
           <button class="btn cancel" data-a="cancel">取消</button>
           <button class="btn ${sc.allIn?'allin':'raise'}" id="raiseGo" data-a="raise-go"${dis}>${sc.allIn?'All in':`Raise<small>${fmt(sc.value)}</small>`}</button>
@@ -226,7 +237,7 @@ export function renderHeroInner(){
       <button class="btn call" data-a="call"${dis}>${L.callLbl}</button>
       <button class="btn raise" data-a="raise"${dis||!L.canR?' disabled':''}>Raise<small>加注</small></button>
       <button class="btn fold" data-a="fold"${dis}>Fold<small>弃牌</small></button>
-      <button class="btn bet${L.betAllIn?' allin':''}" data-a="bet"${dis||!L.betOk?' disabled':''}>Bet<small>下注</small></button>
+      <button class="btn bet${L.betAllIn?' allin':''}" data-a="bet"${dis||!L.betOk?' disabled':''}>Bet<small>${L.change?`下注 ${fmt(L.betAmt)} · 找零 ${fmt(L.change)}`:'下注'}</small></button>
     </div>`;
     }
   }else{

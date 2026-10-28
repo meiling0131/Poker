@@ -36,7 +36,7 @@ export function runPre(){
   const turn=S.turn;
   setTimeout(()=>{if(S&&S.turn===turn&&myTurn())act(type,0,null);},0);
 }
-// Actions are confirmed in place: the four buttons turn into 取消 + 确认 …; Check goes straight through.
+// Fold and All in are confirmed in place: the four buttons turn into 取消 + 确认 …; everything else goes straight through.
 export function cancelAction(){PENDING_ACTION=null;BET_MENU=null;}
 export const stillMyTurn=x=>x&&S&&x.session===SESSION&&x.hand===S.hand&&x.turn===S.turn&&myTurn()&&(M.host||SUBMITTED!==S.turn);
 export const pendingIsCurrent=()=>stillMyTurn(PENDING_ACTION);
@@ -60,12 +60,15 @@ export function confirmationPlan(){
   return {type:a.type,to,amount,chips,change,total:p.bet+amount,allIn:amount>0&&amount>=p.stack};
 }
 export function confirmLabel(p,plan){
-  if(plan.allIn)return `All in ${fmt(plan.amount)}`;
-  if(plan.type==='fold')return 'Fold';
-  if(plan.type==='call')return `Call ${fmt(plan.amount)}`;
-  return `Raise ${fmt(plan.to)}`;
+  if(plan.type==='fold')return '确认 Fold';
+  if(plan.allIn)return `确认 All in ${fmt(plan.amount)}`;
+  if(plan.type==='call')return `确认 Call ${fmt(plan.amount)}`;
+  return `确认 Raise ${fmt(plan.to)}`;
 }
-export function confirmDetail(){return '';}
+export function confirmDetail(plan){
+  if(plan.type==='fold')return '弃掉这一手牌';
+  return `本次投入 ${fmt(plan.amount)} · 本轮合计 ${fmt(plan.total)}${plan.change?` · 找零 ${fmt(plan.change)}`:''}`;
+}
 export function requestAction(type,to=0,chips=null,custom=false){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
   if(type==='check'){cancelAction();act('check');return;}
@@ -83,29 +86,30 @@ export function openBetMenu(){
   RAISE_AT=minRaiseTo(p);
   BET_MENU={session:SESSION,hand:S.hand,turn:S.turn};view.renderHero();
 }
+// What Call or the raise slider meant to put in. A stack of big chips (a buy-in is all 25s) can't make 6 or 37
+// exactly, so the chips picked come to more; Bet then pays the amount meant and the rest comes back as change,
+// instead of betting every chip pushed. Chips you push or pull yourself drop it: then the chips are the bet.
+let INTENT=null;
+function intend(type,to){INTENT={type,to,session:SESSION,hand:S.hand,turn:S.turn,chips:Object.assign({},PUSH)};}
+const intentNow=()=>INTENT&&stillMyTurn(INTENT)&&DV.every(d=>(PUSH[d]||0)===(INTENT.chips[d]||0))?INTENT:null;
 // Call picks the chips you must put in. Check, with nothing to call, goes straight through.
 export function selectCall(){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
   const p=S.seats[mySeat()],toCall=Math.max(0,S.currentBet-p.bet);
   cancelAction();
   if(toCall<=0){act('check');return;}
-  setPUSH(pickChips(p.chips,Math.min(toCall,p.stack)));
+  setPUSH(pickChips(p.chips,Math.min(toCall,p.stack)));intend('call',0);
   view.renderHero();
 }
+// The slider runs to All in. Min. and All in are named beside it; the pot presets (1/3, 1/2, 2/3, Pot) are
+// ticks on it and buttons under it (betPresets), so their names never crowd each other on a small pot.
 export function raiseScale(p){
   const min=minRaiseTo(p),max=maxRaiseTo(p);
-  const toCall=Math.max(0,S.currentBet-p.bet),pot=potTotal();
   let value=Math.round(RAISE_AT)||min;
   if(value<min)value=min;
   if(value>max)value=max;
   const at=v=>max>0?Math.min(100,Math.max(0,v/max*100)):0;
-  const marks=[
-    {k:'Min.',v:min,label:true},
-    {k:'',v:S.currentBet+Math.round((pot+toCall)/3),label:false},
-    {k:'',v:S.currentBet+Math.round((pot+toCall)/2),label:false},
-    {k:'Pot',v:S.currentBet+pot+toCall,label:true},
-    {k:'All in',v:max,label:true},
-  ].map(m=>({...m,v:Math.round(m.v),at:at(m.v)}));
+  const marks=[min,...betPresets(p).map(b=>b.v),max].map(v=>({v:Math.round(v),at:at(v)}));
   return {min,max,value,allIn:max>0&&value>=max,pct:at(value),minPct:at(min),marks};
 }
 // Where the slider thumb's center sits for a value, so ticks land on the same point.
@@ -125,41 +129,14 @@ export function layoutScaleTicks(scale){
   const input=scale.querySelector('input[type=range]');
   if(fill&&input)fill.style.width=scalePoint(scale,+input.value)+'px';
 }
-// Nudge mark labels apart when their preferred spots overlap, keeping each inside the bar.
-export function layoutRaiseMarks(){
-  const scale=$('raiseScale');if(!scale)return;
-  const w=scale.clientWidth;if(!w)return;
-  layoutScaleTicks(scale);
-  const marks=[...scale.querySelectorAll('.raise-marks button')];
-  if(!marks.length)return;
-  const gap=6;
-  const items=marks.map(el=>{
-    const width=el.offsetWidth,x=scalePoint(scale,+el.dataset.v);
-    return {el,x,width,left:Math.max(0,Math.min(w-width,x-width/2))};
-  }).sort((a,b)=>a.x-b.x);
-  for(let i=1;i<items.length;i++){
-    const minLeft=items[i-1].left+items[i-1].width+gap;
-    if(items[i].left<minLeft)items[i].left=minLeft;
-  }
-  const end=items[items.length-1];
-  const overflow=end.left+end.width-w;
-  if(overflow>0){
-    for(let i=items.length-1;i>=0;i--)items[i].left-=overflow;
-    items[0].left=Math.max(0,items[0].left);
-    for(let i=1;i<items.length;i++){
-      const minLeft=items[i-1].left+items[i-1].width+gap;
-      if(items[i].left<minLeft)items[i].left=minLeft;
-    }
-    const over2=items[items.length-1].left+items[items.length-1].width-w;
-    if(over2>0)items.forEach(it=>{it.left-=over2;});
-  }
-  items.forEach(it=>{it.el.style.left=Math.max(0,it.left)+'px';it.el.style.transform='none';});
-}
+// The raise slider's ticks and filled bar (Min. and All in are named beside it, the presets under it).
+export function layoutRaiseMarks(){layoutScaleTicks($('raiseScale'));}
 function paintRaise(){
   const p=S&&mySeat()>=0?S.seats[mySeat()]:null;if(!p)return;
   const sc=raiseScale(p);RAISE_AT=sc.value;
   const num=$('raiseNum'),go=$('raiseGo'),scale=$('raiseScale'),range=$('raiseRange');
-  if(num)num.textContent=fmt(sc.value);
+  // the number is the Custom box: while you type in it, it keeps what you typed
+  if(num&&document.activeElement!==num)num.value=String(sc.value);
   if(scale)scale.style.setProperty('--val',sc.pct+'%');
   if(range&&String(range.value)!==String(sc.value))range.value=String(sc.value);
   if(go){go.classList.toggle('allin',sc.allIn);go.classList.toggle('raise',!sc.allIn);go.innerHTML=sc.allIn?'All in':`Raise<small>${fmt(sc.value)}</small>`;}
@@ -170,21 +147,23 @@ export function commitRaise(){
   if(!stillMyTurn(BET_MENU))return;
   const p=S.seats[mySeat()],sc=raiseScale(p);
   const chips=pickChips(p.chips,Math.max(0,sc.value-p.bet));
-  cancelAction();setPUSH(chips);view.renderHero();
+  cancelAction();setPUSH(chips);intend('raise',sc.value);view.renderHero();
 }
 export function placeBet(){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
   const p=S.seats[mySeat()],L=actionLabels(p);
   if(!L.betOk)return;
   const chips=Object.assign({},PUSH);
+  // putting the whole stack in asks once more, like Fold
+  if(L.betAllIn){requestAction(L.betType,L.betType==='raise'?L.to:0,chips);return;}
   cancelAction();act(L.betType,L.betType==='raise'?L.to:0,chips);
 }
-// 常用下注：raise-to totals, null when below the minimum; anything past the stack becomes All in
+// 常用下注：raise-to totals, null when below the minimum; anything past the stack becomes All in (v: where it falls)
 export function betPresets(p){
   const toCall=Math.max(0,S.currentBet-p.bet),pot=potTotal(),minTo=minRaiseTo(p),maxTo=maxRaiseTo(p);
   // raise to: the current bet, plus that share of the pot once you have called
-  return [['1/2 Pot',1/2],['Pot',1]]
-    .map(([k,f])=>{const t=S.currentBet+Math.round((pot+toCall)*f);return {k,to:t<minTo?null:Math.min(t,maxTo)};});
+  return [['1/3 Pot',1/3],['1/2 Pot',1/2],['2/3 Pot',2/3],['Pot',1]]
+    .map(([k,f])=>{const t=S.currentBet+Math.round((pot+toCall)*f);return {k,v:t,to:t<minTo?null:Math.min(t,maxTo)};});
 }
 export function confirmAction(){
   const plan=confirmationPlan();
@@ -194,6 +173,7 @@ export function confirmAction(){
 }
 document.addEventListener('input',e=>{
   if(e.target.id==='raiseRange'){RAISE_AT=Number(e.target.value);paintRaise();return;}
+  if(e.target.id==='raiseNum'){const v=Math.round(Number(e.target.value));if(v>0){RAISE_AT=v;paintRaise();}return;}
   if(e.target.id!=='betAmt')return;
   CUSTOM_VAL=e.target.value;
   const plan=confirmationPlan(),go=$('confirmGo'),info=$('confirmInfo');
@@ -211,7 +191,10 @@ document.addEventListener('keydown',e=>{
   if(!pendingIsCurrent()&&!stillMyTurn(BET_MENU))return;
   if(e.key==='Escape'){e.preventDefault();cancelAction();view.renderHero();}
   else if(e.key==='Enter'&&!e.isComposing&&pendingIsCurrent()){e.preventDefault();if(!e.repeat)confirmAction();}
+  else if(e.key==='Enter'&&!e.isComposing&&e.target.id==='raiseNum'){e.preventDefault();if(!e.repeat)commitRaise();}
 });
+// leaving the Custom box shows the amount the slider settled on (within Min. and All in)
+document.addEventListener('focusout',e=>{if(e.target.id==='raiseNum')e.target.value=String(RAISE_AT||e.target.value);});
 export async function act(type,to,chips){
   if(!myTurn())return;
   to=to||0;chips=chips||null;
@@ -329,7 +312,11 @@ export function actionLabels(p){
   if(toCall>0&&(pushed===toCall||(allIn&&p.stack<=toCall))){betOk=true;betType='call';}
   else if(canR&&pushed>toCall&&(to>=minTo||allIn)){betOk=true;betType='raise';}
   else if(canR&&toCall===0&&pushed>0&&(to>=minTo||allIn)){betOk=true;betType='raise';}
-  r.betOk=betOk;r.betType=betType;r.betAllIn=betOk&&allIn;
+  r.betOk=betOk;r.betType=betType;r.betAllIn=betOk&&allIn;r.betAmt=pushed;r.change=0;
+  // Call or the slider picked more chips than it meant: Bet pays what was meant (betAmt), the rest is change
+  const it=intentNow(),amt=it?(it.type==='call'?Math.min(toCall,p.stack):Math.min(it.to,p.bet+p.stack)-p.bet):0;
+  if(it&&amt>0&&pushed>=amt&&(it.type==='call'?toCall>0:canR))
+    Object.assign(r,{betOk:true,betType:it.type,to:p.bet+amt,betAmt:amt,change:pushed-amt,betAllIn:amt>=p.stack});
   return r;
 }
 export function commitAllIn(p){
