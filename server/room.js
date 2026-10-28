@@ -418,11 +418,13 @@ export class Room {
   broadcast() {
     for (const ws of this.ctx.getWebSockets()) this.sendTable(ws, this.ctx.getTags(ws)[0]);
   }
+  // A regular table's page has no 记录, so its log, ledger, book and stats stay here: half of every update.
   sendTable(ws, uid) {
     const { S, H } = this.c;
     let mine = null;
     if (S) { const i = S.seats.findIndex(p => p.uid === uid); if (i >= 0 && H[i] && H[i].length) mine = { h: S.hand, c: H[i] }; }
-    try { ws.send(JSON.stringify({ t: 'table', S: S ? { ...S, mine } : null })); } catch (e) { /* closed */ }
+    const pub = S && (S.mode === 'bots' ? { ...S, log: undefined, ledger: undefined, book: undefined, stats: undefined, mine } : { ...S, mine });
+    try { ws.send(JSON.stringify({ t: 'table', S: pub || null })); } catch (e) { /* closed */ }
   }
 
   // ---- connections ----

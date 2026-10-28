@@ -6,8 +6,8 @@ import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SESSION,SUBMITTED,VOTED,setPUSH,setPUSH_T
 import {canAct,handLive,isKicked,isOwner,lockedIn,myName,mySeat,myTurn} from '../table.js';
 import {EMOJIS,EMO_OPEN} from '../talk.js';
 import {chipEl,miniStackC,pilesC} from './chips-view.js';
-import {HOT,betHTML,cardHTML,myHoleCards,placeNotes,resultCardHTML,ringHTML,seatName} from './table-view.js';
-import {after,dealCard} from './anim.js';
+import {HOT,betHTML,cardHTML,draw,myHoleCards,resultCardHTML,ringHTML,seatName,settle} from './table-view.js';
+import {dealCard} from './anim.js';
 import {sfx} from '../fx.js';
 import {tableCash} from './menu-view.js';
 import {$,cdSpan,esc,fmt} from '../util.js';
@@ -270,7 +270,7 @@ export function renderHeroInner(){
   if(EMO_OPEN)ctl=`<div class="emopick" role="group" aria-label="表情">${EMOJIS.map(e=>`<button data-emo="${e}">${e}</button>`).join('')}</div>`+ctl;
   // your seat sits on the table, below the board; the panel underneath is chips and buttons
   const pushed=mine?csum(PUSH):0;
-  $('meSeat').innerHTML=`<div class="me${p.folded?' folded':''}${p.win?' win':''}${mine?' turn':''}" data-i="${m}" style="--ph:-${Date.now()%1600}ms">
+  draw($('meSeat'),`<div class="me${p.folded?' folded':''}${p.win?' win':''}${mine?' turn':''}" data-i="${m}" style="--ph:-${Date.now()%1600}ms">
       ${p.bet>0?`<div class="herobet">${betHTML(p.bet,p.betChips,m)}</div>`:''}
       <div class="hc">${cards}</div>
       <div class="plate">${mine?ringHTML():''}
@@ -278,11 +278,9 @@ export function renderHeroInner(){
         <b class="stk"><span class="num">${fmt(p.stack-pushed)}</span></b>${pushed?`<span class="pushed">→ ${fmt(pushed)}</span>`:''}
         <button class="emo-btn${EMO_OPEN?' on':''}" data-emo-open="1" aria-label="发表情" aria-expanded="${EMO_OPEN}">😀</button>
       </div>
-    </div>`;
-  el.innerHTML=`${zone}${railHTML(p,mine&&!BUY_OPEN)}<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
-  layoutRaiseMarks();if(BUY_OPEN)paintMoneyFill(p,moneyValue(p));
-  placeNotes();
-  after();
+    </div>`);
+  if(draw(el,`${zone}${railHTML(p,mine&&!BUY_OPEN)}<div class="controls">${hostRequestsHTML()}${ctl}</div>`)){layoutRaiseMarks();if(BUY_OPEN)paintMoneyFill(p,moneyValue(p));}
+  settle();
   setTimeout(autoTidy,0);
 }
 view.renderHero=renderHero;

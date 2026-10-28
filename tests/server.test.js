@@ -183,6 +183,17 @@ test('leaving folds at once and returns the stack, not the chips already in the 
   assert.equal(book.in - book.out, total, 'only the pot contribution is deducted');
 });
 
+test('a friends room sends its log, ledger and book with the table: its page shows them under 记录', async () => {
+  const r = new Room(fakeCtx(), {});
+  const a = await connect(r, 'LOGGD', 'alice05', true), b = await connect(r, 'LOGGD', 'bobby05');
+  for (let i = 0; i < 200 && !BETTING.includes(r.c.S.street); i++) runNextTimer();
+  for (const p of [a, b]) {
+    const S = p.ws.last('table').S;
+    assert.ok(S.log.length && S.ledger.length, 'log and ledger');
+    for (const k of ['log', 'ledger', 'book', 'stats']) assert.deepEqual(S[k], r.c.S[k], k);
+  }
+});
+
 test('a room restarted from storage carries on with the same hand', async () => {
   const ctx = fakeCtx();
   const r = new Room(ctx, {});
@@ -225,6 +236,11 @@ test('a regular table is dealt on the worker and the hand is recorded there', as
     if (!runNextTimer()) break;
   }
   assert.ok(r.c.S.stats && r.c.S.stats[uid] && r.c.S.stats[uid].h >= 1, 'the worker recorded the hand');
+  // the page of a regular table has no 记录: the log, ledger, book and stats are not sent with every update
+  const sent = ws.last('table').S;
+  assert.ok(r.c.S.log.length && r.c.S.ledger.length, 'the table keeps them');
+  for (const k of ['log', 'ledger', 'book', 'stats']) assert.ok(!(k in sent), `${k} is not sent`);
+  assert.ok(sent.seats.length === 7 && sent.mine, 'the rest is');
   const hand = r.c.S.hand;
   const again = await r.fetch({ url: `https://verve.test/solo?${q}` });
   assert.equal(again.status, 101);

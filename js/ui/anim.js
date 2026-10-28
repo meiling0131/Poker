@@ -108,45 +108,40 @@ export function flipCard(key,k){
 }
 
 // Called after the table (or your seat) is on screen: aim the dealt cards, fly the chips, remember
-// where everything is for next time.
+// where everything is for next time. Everything is measured before anything is changed: a measurement
+// that follows a change makes the browser lay the page out again.
 export function after(){
   if(!S)return;
-  const deck=document.querySelector('#table .board');
-  if(deck){
-    const d=deck.getBoundingClientRect(),cx=d.left+d.width/2,cy=d.top+d.height/2;
-    document.querySelectorAll('[data-deal]').forEach(el=>{
-      if(el.style.getPropertyValue('--dx'))return;
-      const r=el.getBoundingClientRect();   // the flight keyframe only scales and turns: the centre is right
-      el.style.setProperty('--dx',Math.round(cx-r.left-r.width/2)+'px');
-      el.style.setProperty('--dy',Math.round(cy-r.top-r.height/2)+'px');
-    });
-  }
-  const pot=document.querySelector('#table .pot');
+  const mid=r=>({x:r.left+r.width/2,y:r.top+r.height/2});
+  const deck=document.querySelector('#table .board'),d=deck&&mid(deck.getBoundingClientRect());
+  // the flight keyframe only scales and turns: the centre is right
+  const aim=d?[...document.querySelectorAll('[data-deal]')].filter(el=>!el.style.getPropertyValue('--dx')).map(el=>[el,mid(el.getBoundingClientRect())]):[];
+  const pot=document.querySelector('#table .pot'),flights=[];
   if(queue.length&&pot&&!reduced()){
-    const pr=pot.getBoundingClientRect(),to={x:pr.left+pr.width/2,y:pr.top+pr.height/2};
-    const plateAt=i=>{const plate=document.querySelector(`.seat[data-i="${i}"] .plate`)||document.querySelector(`#meSeat .me[data-i="${i}"] .plate`);if(!plate)return null;const r=plate.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};};
-    for(const q of queue.splice(0)){
-      if(q.kind==='bet')fly(q.html,q.from,(q.to!=null&&plateAt(q.to))||to,0,q.to!=null?TO_WINNER:COLLECT);
-      else if(q.kind==='muck')fly(q.html,q.from,to,0,MUCK,true);
-      else{
-        const at=plateAt(q.to);if(!at)continue;
-        fly(`<div class="bet win">${miniStack(q.amount)}${fmt(q.amount)}</div>`,to,at,q.delay,TO_WINNER);
-      }
+    const to=mid(pot.getBoundingClientRect());
+    const plateAt=i=>{const plate=document.querySelector(`.seat[data-i="${i}"] .plate`)||document.querySelector(`#meSeat .me[data-i="${i}"] .plate`);return plate?mid(plate.getBoundingClientRect()):null;};
+    for(const q of queue){
+      if(q.kind==='bet')flights.push([q.html,q.from,(q.to!=null&&plateAt(q.to))||to,0,q.to!=null?TO_WINNER:COLLECT]);
+      else if(q.kind==='muck')flights.push([q.html,q.from,to,0,MUCK,true]);
+      else{const at=plateAt(q.to);if(at)flights.push([`<div class="bet win">${miniStack(q.amount)}${fmt(q.amount)}</div>`,to,at,q.delay,TO_WINNER]);}
     }
   }
   queue=[];
-  for(const r of rolls.splice(0))roll(...r);
   // the table as drawn now
   const betAt={},betHTML={},cardAt={},cardHTML={};
   document.querySelectorAll('[data-bet-seat]').forEach(el=>{
     const r=el.getBoundingClientRect();if(!r.width)return;
-    betAt[el.dataset.betSeat]={x:r.left+r.width/2,y:r.top+r.height/2};betHTML[el.dataset.betSeat]=el.outerHTML;
+    betAt[el.dataset.betSeat]=mid(r);betHTML[el.dataset.betSeat]=el.outerHTML;
   });
   document.querySelectorAll('.seat[data-i] .mc').forEach(el=>{
     const r=el.getBoundingClientRect();if(!r.width||!el.children.length)return;
-    const i=el.closest('.seat').dataset.i;cardAt[i]={x:r.left+r.width/2,y:r.top+r.height/2};cardHTML[i]=el.outerHTML.replace(/ data-deal="1" style="[^"]*"/g,'');
+    const i=el.closest('.seat').dataset.i;cardAt[i]=mid(r);cardHTML[i]=el.outerHTML.replace(/ data-deal="1" style="[^"]*"/g,'');
   });
   prev={t:Date.now(),hand:S.hand,street:S.street,hist:S.seats.map(p=>(p.hist||[]).length),board:S.board.length,board2:S.board2?S.board2.length:null,pot:potTotal(),bets:S.seats.map(p=>p.bet||0),stacks:S.seats.map(p=>p.stack),folded:S.seats.map(p=>!!p.folded),betAt,betHTML,cardAt,cardHTML};
+  // now the changes
+  for(const [el,at] of aim){el.style.setProperty('--dx',Math.round(d.x-at.x)+'px');el.style.setProperty('--dy',Math.round(d.y-at.y)+'px');}
+  for(const f of flights)fly(...f);
+  for(const r of rolls.splice(0))roll(...r);
 }
 let layer=null;
 function fly(html,from,to,delay,dur,fade){

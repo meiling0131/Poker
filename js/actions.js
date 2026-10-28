@@ -200,14 +200,26 @@ export async function act(type,to,chips){
   to=to||0;chips=chips||null;
   if(M.host){setPUSH(Z());doAction(S.seats[mySeat()],type,to,chips);proceed();return;}
   if(SUBMITTED===S.turn)return;
-  setSUBMITTED(S.turn);setFLASH('');view.render();
-  try{await myRef.update({act:{hand:S.hand,turn:S.turn,type,to,chips}});setPUSH(Z());}
+  const turn=S.turn,hand=S.hand;
+  setSUBMITTED(turn);setFLASH('');
+  preview(type,to,chips);
+  // sent before anything is redrawn: the seat doc's own echo (net.js) redraws the page as soon as it has gone
+  try{await myRef.update({act:{hand,turn,type,to,chips}});setPUSH(Z());}
   catch(e){setSUBMITTED(-1);setFLASH('提交失败，请再点一次。');view.render();}
+}
+// The table is the server's, a network round trip away: your own action is shown at once on this page's copy,
+// and the server's copy replaces it a moment later (the same, plus whoever acts next). Buy-ins and cash-outs
+// waiting for the hand to end are left to the server, and this copy may come without the log.
+function preview(type,to,chips){
+  const p=S.seats[mySeat()],money={moneyWait:p.moneyWait,qBuy:p.qBuy,qCash:p.qCash},log=S.log;
+  Object.assign(p,{moneyWait:0,qBuy:0,qCash:0});if(!log)S.log=[];
+  try{doAction(p,type,to,chips);S.actor=-1;S.deadline=0;}catch(e){/* the server's answer shows it anyway */}
+  Object.assign(p,money);if(!log)delete S.log;
 }
 export async function vote(n){
   const m=mySeat(),R=S&&S.runout;if(m<0||!R||R.stage!=='vote'||!R.voters.includes(m)||R.votes[m])return;
   if(M.host){castVote(m,n);return;}
-  setVOTED({hand:S.hand,turn:R.turn,n});view.render();
+  setVOTED({hand:S.hand,turn:R.turn,n});
   try{await myRef.update({act:{type:'rit',n,hand:S.hand,turn:R.turn}});}catch(e){setVOTED(null);setFLASH('提交失败，请再点一次。');view.render();}
 }
 export async function money(kind){
