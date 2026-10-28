@@ -8,8 +8,9 @@
 // actions so far: an open-raiser is narrower than a limper, a 3-bettor narrower still, a player who
 // bets every street has something. The core returns a distribution over the legal actions; the
 // personality then bends those weights (奶龙 calls more, sc never raises without the nuts, Joe sizes
-// up, Kmetsch runs bluffs) but can only shift probability between options the core already allows at
-// a reasonable price, so a bot keeps its character without giving its chips away.
+// up, Kmetsch runs bluffs, ST traps and hero-calls, dwan barrels) but can only shift probability between
+// options the core already allows at a reasonable price, so a bot keeps its character without giving its
+// chips away: the bluffs ST and dwan add stay out of crowds and calling stations and never risk most of a stack.
 import {best7,rankOf,suitOf} from './cards.js';
 import {BOT_STYLE} from './config.js';
 import {BB} from './settings.js';
@@ -180,6 +181,12 @@ const bet=(m,w,frac,to)=>{if(w>0)m.raise.push({w,frac,to});};
 // facing a bet the weights are relative to the call (or fold) weight of 1: odds(P) is the weight
 // that makes the raise happen with probability P
 const odds=P=>{P=Math.min(.95,Math.max(0,P));return P/(1-P);};
+const chance=odds;   // the same, where `odds` is the price of a call
+// the ace or king of a suit with three or more on the board, without the flush: a bluff that blocks the nuts
+function blocker(hole,board){
+  const n=[0,0,0,0];board.forEach(c=>n[suitOf(c)]++);
+  return hole.some(c=>{const s=suitOf(c);return rankOf(c)>=13&&n[s]>=3&&n[s]+hole.filter(h=>suitOf(h)===s).length<5;});
+}
 function raiseTo(c,frac,to){
   const p=c.p;
   if(to==null)to=c.pre&&S.currentBet<=BB?BB*(2.5+(1-c.position)*.5)+c.limpers*BB:S.currentBet+Math.max(S.minRaise,(c.pot+c.toCall)*frac);
@@ -348,6 +355,62 @@ function personality(m,c){
       const to=S.currentBet*2;if(!m.raise.length)m.raise.push({w:1,to});else m.raise.forEach(r=>{r.w=Math.max(r.w,1);r.to=Math.max(r.to||0,to);});
     }
     m.raise.forEach(r=>{if(r.frac!=null&&r.frac<1&&eq>.6)r.frac=Math.min(1,r.frac*1.2);});
+  }else if(type==='dwan'){
+    // dwan (after Tom "durrrr" Dwan): plays many hands and 3-bets light, floats in position, keeps
+    // barrelling, overbets the nuts and bluffs the river with a blocker; calls down lighter against
+    // players who bet a lot
+    const bluffOK=!c.station&&c.opp<=2,small=to=>to<=p.bet+(p.stack+p.bet)*.35;
+    if(pre){
+      if(S.currentBet<=BB&&canR&&!m.raise.length&&strength>=topT(Math.min(.7,.18+c.position*.38))){bet(m,1,0);m.fold*=.1;m.call*=.1;}
+      if(raises===2&&canR){
+        const light=(c.suited&&(c.hi>=13||(c.hi-c.lo<=2&&c.lo>=4)))||(c.inPos&&c.lo>=10);
+        const to=S.currentBet*(c.inPos?3:3.6)+c.callers*S.currentBet;
+        if(light&&!m.raise.length&&S.currentBet<BB*8&&small(to))bet(m,chance(c.inPos?.38:.22),0,to);
+        // and calls more opens in position with hands that play well after the flop
+        if(m.fold>0&&c.inPos&&toCall<=BB*5&&strength>.3&&(c.suited||c.hi===c.lo||c.hi-c.lo<=1)){m.call+=m.fold*.7;m.fold*=.3;}
+      }
+      if(raises===3&&canR&&!m.raise.length&&c.suited&&c.hi===14&&c.lo<=5&&small(S.currentBet*2.3))bet(m,chance(.18),0,S.currentBet*2.3);   // a 4-bet bluff with the ace
+      return m;
+    }
+    if(!toCall){
+      m.raise.forEach(r=>{r.w*=1.4;});
+      if(canR&&bluffOK&&!m.raise.length&&!river)bet(m,.3,.6);                     // a stab when nothing else bets
+      if(river&&canR){
+        if(eq>.86)bet(m,.55,1.5);                                                  // the nuts: overbet
+        else if(eq<.3&&bluffOK&&(c.ledLast||blocker(c.hole,S.board))&&small(raiseTo(c,1.25)))bet(m,.35,1.25);   // the third barrel
+      }
+      return m;
+    }
+    if(canR&&c.dr.draw&&!river&&c.opp===1)m.raise.forEach(r=>{r.w*=2;});           // draws raise
+    if(m.fold>0&&c.street===3&&c.inPos&&c.opp===1&&toCall<=(pot-toCall)*.75&&eq>.18){m.call+=m.fold*.4;m.fold*=.6;}   // a float, to take it later
+    if(m.fold>0&&river&&c.opp===1&&c.bettorRead&&c.bettorRead.agg>.35&&eq>odds-.07){m.call+=m.fold*.6;m.fold*=.4;}  // picks off a bettor's bluffs
+  }else if(type==='st'){
+    // ST (after the high-stakes regular Zuo "ST" Wang): limps some hands, now and then a monster to
+    // limp-reraise, opens big and at any size with the rest; traps strong hands to check-raise (all in on
+    // the flop when the stacks are short to the pot) and calls big river bets down with a pair
+    if(pre){
+      const limped=(p.hist||[]).some(a=>a.s===0&&a.t==='call'&&a.r<=1),monster=strength>=topT(.035);
+      const speculative=(c.hi===c.lo&&c.hi<=9)||(c.suited&&c.hi-c.lo<=2&&c.hi<=11);
+      if(S.currentBet<=BB&&canR&&toCall>0){
+        if(monster&&c.position<.7&&Math.random()<.3){m.raise=[];m.call=1;m.fold=0;return m;}
+        if(m.raise.length&&speculative&&Math.random()<.5){m.raise=[];m.call=1;m.fold=0;return m;}
+        if(!m.raise.length&&speculative&&toCall<=BB){m.call+=m.fold*.6;m.fold*=.4;}
+      }
+      if(S.currentBet<=BB)m.raise.forEach(r=>{if(r.to==null)r.to=Math.round(BB*(monster?4+Math.random()*2:2.2+Math.random()*2.8)+c.limpers*BB);});
+      if(limped&&raises===2&&canR&&strength>=topT(.05)){m.raise=[{w:chance(.9),to:c.depth<=40?maxRaiseTo(p):S.currentBet*4}];m.fold=0;}
+      else if(raises>=2&&m.fold>0&&c.hi===c.lo&&toCall<=(p.stack+p.bet)*.08){m.call+=m.fold*.7;m.fold*=.3;}   // a pair calls a raise: a set wins a big pot
+      return m;
+    }
+    if(!toCall){
+      if(!c.inPos&&eq>.72&&!river&&c.opp>=1)m.raise.forEach(r=>{r.w*=.45;});      // check a strong hand, to check-raise
+      m.raise.forEach(r=>{if(r.frac!=null&&r.to==null)r.frac*=.6+Math.random()*.9;});   // sizes that are hard to read
+      if(river&&canR&&eq<.25&&c.opp===1&&!c.station&&raiseTo(c,1.4)<=p.bet+(p.stack+p.bet)*.5)bet(m,.12,1.4);   // now and then a big river bluff
+      return m;
+    }
+    if(c.checked&&canR&&!river&&(eq>.74||((c.dr.fd||c.dr.oesd)&&eq>.38))){
+      if(c.street===3&&c.spr<=4)m.raise=[{w:chance(.7),to:maxRaiseTo(p)}];else m.raise.forEach(r=>{r.w*=1.6;});
+    }
+    if(m.fold>0&&river&&c.opp===1&&toCall>=(pot-toCall)*.6&&eq>odds-.08&&c.made>=1){m.call+=m.fold*.7;m.fold*=.3;}   // the hero call
   }else if(type==='bluffer'){
     // Kmetsch: after a few real hands he runs a couple of bluffs — in spots where a bluff makes sense
     if(p.bluffing&&canR&&(c.opp||0)<=2&&!c.station&&!(pre&&S.currentBet>=BB*8)){

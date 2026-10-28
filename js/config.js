@@ -23,6 +23,12 @@ export const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 // type 'peeker' (sc): loves to see the flop, lets go the moment his hand isn't good; with a big hand
 //   he likes to check-call, or bet just a little (under 25BB) unless he has the nuts.
 // type 'bluffer' (Kmetsch): plays a few real hands straight, then starts bluffing; repeats.
+// type 'st' (ST, after the high-stakes regular Zuo "ST" Wang): aggressive and hard to read — limps some hands
+//   (small pairs, suited connectors, now and then a monster to limp-reraise), opens big with the rest,
+//   traps strong hands to check-raise (the flop check-raise all in), and hero-calls big river bets.
+// type 'dwan' (dwan, after Tom "durrrr" Dwan): hyper-loose-aggressive — plays many hands, 3-bets light,
+//   floats in position, barrels the turn and river, overbets the nuts and blocker bluffs, and calls down
+//   lighter against players who bet a lot.
 // A bot is known by its fixed player id everywhere: 16 characters, ubot, zeros, then the pinyin of its old table name.
 // `name` is what players.name is seeded with; the copy in the database is what gets shown (BOT_NAMES).
 // `table` is the old seat name, only used to read tables saved before bots had ids.
@@ -32,16 +38,17 @@ export const BOT_PLAYERS=[
     blurb:'翻前爱加倍：好牌开 25/50/75，被加注就翻倍；翻牌后守纪律，不乱诈唬。'},
   {id:'ubot0000000000sc',name:'🤖 sc',table:'sc',style:{loose:.75,aggr:.20,type:'peeker'},
     blurb:'爱看牌，没中就弃（「其实我能赢」）；大牌喜欢 check-call 或者小注。'},
-  {id:'ubot00000laozhou',name:'🤖 老周',table:'老周',style:{loose:.15,aggr:.25},
-    blurb:'很紧很稳，只打好牌，很少诈唬。'},
+  {id:'ubot00000laozhou',name:'🤖 ST',table:'老周',style:{loose:.70,aggr:.70,type:'st'},
+    blurb:'王佐（ST Wang）式豪客打法：翻前时而 limp、时而大加注，难以捉摸；好牌爱过牌加注设陷阱，河牌敢英雄跟注。'},
   {id:'ubot00000nailong',name:'🤖 奶龙',table:'奶龙',style:{loose:.95,aggr:.80,type:'whale'},
     blurb:'土豪：粘牌爱看牌，但大钱要有大牌；加注时说「我说白了」，输光一次买两手。'},
   {id:'ubot00000kmetsch',name:'🤖 Kmetsch',table:'Kmetsch',style:{loose:.40,aggr:.55,type:'bluffer'},
     blurb:'先打几手实牌，再开始诈唬；只骗一两个人，不骗跟注站。'},
-  {id:'ubot0000000afang',name:'🤖 阿芳',table:'阿芳',style:{loose:.80,aggr:.60},
-    blurb:'爱入池，也敢加注，手松但不傻。'},
+  {id:'ubot0000000afang',name:'🤖 dwan',table:'阿芳',style:{loose:.90,aggr:.90,type:'dwan'},
+    blurb:'Tom Dwan（durrrr）式超松凶：入池多、爱 3-bet，敢连开三枪、超池下注诈唬；看你弱就加压，也会抓诈唬。'},
 ];
-export const BOT={JOE:'ubot000000000joe',SC:'ubot0000000000sc',LAOZHOU:'ubot00000laozhou',NAILONG:'ubot00000nailong',KMETSCH:'ubot00000kmetsch',AFANG:'ubot0000000afang'};
+// ST and dwan were 老周 and 阿芳: a bot keeps its id (and so its history) when it is renamed
+export const BOT={JOE:'ubot000000000joe',SC:'ubot0000000000sc',ST:'ubot00000laozhou',NAILONG:'ubot00000nailong',KMETSCH:'ubot00000kmetsch',DWAN:'ubot0000000afang'};
 export const BOT_STYLE=Object.fromEntries(BOT_PLAYERS.map(b=>[b.id,b.style]));
 export const BOT_BLURB=Object.fromEntries(BOT_PLAYERS.map(b=>[b.id,b.blurb]));
 export const BOT_NAMES=Object.fromEntries(BOT_PLAYERS.map(b=>[b.id,b.name]));
