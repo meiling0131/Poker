@@ -52,7 +52,7 @@ export function stakesFor(code, S) {
   return t && validStake(t.sb, t.bb) ? { sb: t.sb, bb: t.bb } : { sb: PRESETS[0].sb, bb: PRESETS[0].bb };
 }
 
-const BOT_PLANS = ['bluffing', 'real', 'bl', 'bluffs'];
+const BOT_PLANS = ['bluffing', 'real', 'bl', 'bluffs', 'bh'];
 const publicSeat = p => { if (p.kind !== 'bot') return p; const q = { ...p }; for (const k of BOT_PLANS) delete q[k]; return q; };
 
 export class Room {

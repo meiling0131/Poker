@@ -243,10 +243,10 @@ test('a regular table is dealt on the worker and the hand is recorded there', as
   assert.ok(sent.seats.length === 7 && sent.mine, 'the rest is');
   // nor a bot's plans: Kmetsch's bluffing streak stays on the server
   const km = r.c.S.seats.find(p => p.id === 'ubot00000kmetsch');
-  km.bluffing = true; km.real = 3;
+  km.bluffing = true; km.real = 3; km.bh = r.c.S.hand;
   r.broadcast();
   const kmSent = ws.last('table').S.seats.find(p => p.id === 'ubot00000kmetsch');
-  assert.ok(!('bluffing' in kmSent) && !('real' in kmSent) && kmSent.stack === km.stack, 'a bot\'s plans are not sent');
+  assert.ok(!('bluffing' in kmSent) && !('real' in kmSent) && !('bh' in kmSent) && kmSent.stack === km.stack, 'a bot\'s plans are not sent');
   const hand = r.c.S.hand;
   const again = await r.fetch({ url: `https://verve.test/solo?${q}` });
   assert.equal(again.status, 101);
