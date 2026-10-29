@@ -74,3 +74,20 @@
   .rail.live .tower:not(:disabled):active{background:#ffffff14;transform:translateY(-3px)}
 }
 @media(prefers-reduced-motion:reduce){.bet.pop,.sheet,.sheet-bg,.resultcard{animation:none}.resultcard.fade{animation:rcout 1ms linear calc(3500ms + var(--age,0ms)) forwards}}
+
+/* ---- 添加到主屏幕（standalone）----
+   iOS 26 lays out a home-screen app one status bar short of the screen while the page is no taller than that
+   (WebKit bug 301108), and 100svh, 100dvh and 100% come out short with it, so the page sits that much too
+   high. --app-h is the whole screen: the short height plus the status bar, capped at 100lvh, which is the whole
+   screen under a translucent status bar and one bar too tall under an opaque one (WebKit bug 316008). The page
+   is made at least that tall, which gets it the whole screen, and the fixed layers take their height from the
+   top instead of inset:0, whose bottom edge can be the short one. In a browser tab none of this applies. */
+@media (display-mode:standalone){
+  :root{--app-h:min(100lvh,calc(100svh + env(safe-area-inset-top)))}
+  html{min-height:var(--app-h)}
+  body[data-view="table"]{height:var(--app-h)}
+  body[data-view="menu"] .wrap{min-height:calc(var(--app-h) - max(6px,env(safe-area-inset-top)) - max(6px,env(safe-area-inset-bottom)))}
+  .fx,.confetti,#usernamePopup,#seatPopup,#exitPopup,#overtimePopup{bottom:auto;height:var(--app-h)}
+  #usernamePopup .usernamePopup-card,#seatPopup .usernamePopup-card{max-height:calc(var(--app-h) - max(24px,env(safe-area-inset-top)) - max(24px,env(safe-area-inset-bottom)))}
+}
+@media (display-mode:standalone) and (max-width:700px){.sheet-wrap{bottom:auto;height:var(--app-h)}}
