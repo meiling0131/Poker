@@ -10,7 +10,7 @@ import {LOBBY,M,PROFILE,PUSH,S,SPEED,setFLASH,setPROFILE,setPUSH,setSPEED,setVIE
 import {bookKey,lockedIn,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
 import {confirmMoney,renderHero,toggleBuy} from './hero-view.js';
-import {nameNext,openFriends,renderMenu,renderRooms,setNameAsk,setNameNext,setNamePopup,setSettingsDraft,setStats,settingsDraft,shownBalance} from './menu-view.js';
+import {nameNext,openFriends,renderMenu,renderRooms,setAboutLang,setNameAsk,setNameNext,setNamePopup,setSettingsDraft,setStats,settingsDraft,shownBalance} from './menu-view.js';
 import {dismissOvertime,render} from './render.js';
 import {cleanPlayerName,displayName,fetchSeatStats,fetchStats,restrictNameInput,savePlayer} from '../player.js';
 import {$,store} from '../util.js';
@@ -113,6 +113,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.setSound){setSettingsDraft({sound:t.dataset.setSound==='1'});renderMenu();return;}
   if(t.dataset.setSpeed){setSettingsDraft({speed:+t.dataset.setSpeed});renderMenu();return;}
   if(t.dataset.setSkin){setSettingsDraft({skin:t.dataset.setSkin});renderMenu();return;}
+  // 关于, and its 中文 / English switch
+  if(t.dataset.about!=null){setNamePopup(true);setNameAsk('about');renderMenu();return;}
+  if(t.dataset.aboutLang){setAboutLang(t.dataset.aboutLang);renderMenu();return;}
   // the name pill: no name yet asks for one; with a name it opens the menu (查看数据, 修改名字, 清除账号, 返回)
   if(t.dataset.greet!=null){setNamePopup(true);if(M.player){openStats();return;}setNameAsk('');renderMenu();$('nameIn')&&$('nameIn').focus();return;}
   if(t.dataset.name){
@@ -134,7 +137,6 @@ document.addEventListener('click',e=>{
   if(t.dataset.pstat!=null){setProfileView(t.dataset.pstat);renderTable();return;}
   if(t.dataset.stake!=null){if(t.disabled||!M.player||PRESETS[+t.dataset.stake].buy>shownBalance())return;applyPreset(+t.dataset.stake);renderMenu();return;}
   if(t.dataset.mode){if(t.disabled||(t.dataset.mode!=='practice'&&!M.player))return;if(PRESETS[PRESET].buy>shownBalance())return;if(readStakeForm())enterBots(t.dataset.mode);return;}
-  if(t.dataset.soon)return;
   // 好友模式: you play under your own name, so a room needs only its code (and a password if it has one)
   if(t.dataset.friends!=null){if(t.disabled||!M.player)return;setFLASH('');openFriends();return;}
   if(t.dataset.room){

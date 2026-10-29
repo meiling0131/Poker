@@ -2,6 +2,10 @@
 /* Layout: a single portrait card-room table — six seats ringing a felt stadium with the pot's chip piles at centre, the player's rail docked beneath, then the cashier's ledger. One deliberate dark "felt, brass & clay chips" world. */
 *{box-sizing:border-box}
 html,body{background:var(--page);color:var(--text);height:100%;margin:0}
+/* Added to an iPhone's home screen (iOS 26), a page no taller than the screen gets a viewport cut short by the
+   status bar's height, so everything sits that much too high; a page at least a screen tall gets the whole
+   screen. min() keeps the page from growing wherever the viewport is already whole (WebKit bug 301108). */
+@media (display-mode:standalone){html{min-height:min(100lvh,calc(100% + env(safe-area-inset-top)))}}
 body{font-family:var(--body);font-size:14px;-webkit-tap-highlight-color:transparent}
 .wrap{margin:0 auto;display:flex;flex-direction:column;min-height:100%;max-width:1280px}
 header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}

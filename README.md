@@ -58,6 +58,7 @@ The original game had the engine, the six bots, the chip-true table, practice pl
   - **00:06:** the leaderboard is saved and the old day's data is deleted.
 
   Each new day, everyone starts again at 1,000.
+- **关于 (about).** What the game is and how a day goes, in Chinese by default, with a switch to English.
 - **设置 (settings).** 游戏音效 turns all sounds on or off. 机器人速度 (bot speed) offers 较慢, 中等 (the default) and 较快. 牌桌 picks the first or the second floor.
 - **Developer tools.** `/d1` is a page for browsing the local database. `/audit` checks every balance against the ledger. Both only work on your own machine.
 - **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard, the sounds and your betting buttons: 86 in all.
@@ -88,7 +89,6 @@ These were dropped in the fork and are back after the merge:
 
 - **Transfers between players** in a friends room aren't built.
 - **The 记录 (records) page** is only open in a friends room. Elsewhere, stats are shown through 查看数据.
-- **关于 (about).** The button is a placeholder.
 - **Known gaps:**
   - During a hand, 今日最佳 counts the stack a player had before that hand.
   - In a rare restart, a hand's chip rows could be written twice. The fix is planned.
