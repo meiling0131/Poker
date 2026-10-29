@@ -5,9 +5,10 @@ import {displayName} from '../player.js';
 import {fetchRooms} from '../net.js';
 import {eval5,handName} from '../cards.js';
 import {cardHTML} from './table-view.js';
-import {$,dayPhase,esc,fmt,msUntilEasternMidnight,resetInLabel} from '../util.js';
+import {$,dayPhase,esc,fmt,msUntilEasternMidnight,resetInLabel,store} from '../util.js';
 
 let NAME_POPUP=false,NAME_ASK='',NAME_NEXT='';
+let SHOWN_ASK=null;   // the popup on screen, so a redraw of the same one keeps where it was scrolled to
 // the board from /leaderboard; setBoard says whether it changed (the banner is only redrawn then)
 let BOARD=null;
 export function setBoard(b){const same=JSON.stringify(b)===JSON.stringify(BOARD);BOARD=b;return !same;}
@@ -124,6 +125,47 @@ function settingsHTML(named,back){
           ${named?'<button type="button" class="go danger" data-name="clear">清除账号</button>':''}
         </div>`;
 }
+// 关于: what the game is and how a day goes, in Chinese or English (the choice is kept on this device)
+let ABOUT_LANG=store.get('poker.aboutLang')==='en'?'en':'zh';
+export function setAboutLang(v){ABOUT_LANG=v==='en'?'en':'zh';store.set('poker.aboutLang',ABOUT_LANG);}
+const ABOUT={
+  zh:{title:'关于 Verve Poker',back:'返回',
+    intro:'Verve Poker 是为手机设计的无限注德州扑克，打开网页就能玩，不用下载安装。',
+    items:[
+      ['每天 1,000','每人每天有 1,000 余额，美东时间午夜重置；第二天重新留名，从 1,000 开始。'],
+      ['进入游戏','选一个盲注（1/2、2/5、5/10），和六个风格各异的机器人同桌。买入、下注和每一次输赢都记在服务器上，计入排行榜。'],
+      ['练习模式','用练习筹码随便打，不记录，也不计入排行。'],
+      ['好友模式','创建或加入房间（可以设密码），在「记录」里把邀请链接发给朋友，满 2 人开局。'],
+      ['排行榜','今日、昨日、本周、本月和历史最佳，比的是余额加上桌上的筹码。'],
+      ['查看数据','在大厅点自己的名字，看今天的数据；在牌桌上点任意座位，看那位玩家的数据。'],
+      ['每天收桌','美东时间 23:55 起不再开新牌局；到 00:05 还没打完的牌局会取消，下注全部退回。'],
+      ['添加到主屏幕','iPhone 在 Safari 里点「分享 → 添加到主屏幕」，安卓在 Chrome 菜单里选「添加到主屏幕」，之后就能像 App 一样全屏打开。'],
+    ]},
+  en:{title:'About Verve Poker',back:'Back',
+    intro:'Verve Poker is no-limit Texas Hold\'em made for phones. It runs in the browser, so there is nothing to install.',
+    items:[
+      ['1,000 a day','Everyone gets a balance of 1,000 each day. It resets at midnight US Eastern; the next day you leave a name again and start from 1,000.'],
+      ['Play (进入游戏)','Pick a stake (1/2, 2/5 or 5/10) and sit down with six bots, each with its own style. Buy-ins, bets and every win and loss are kept on the server and count for the leaderboard.'],
+      ['Practice (练习模式)','Play with practice chips. Nothing is recorded or ranked.'],
+      ['Friends (好友模式)','Create or join a room (with a password if you like) and send your friends the invite link from 记录. A hand starts once two players are seated.'],
+      ['Leaderboard','The best of today, yesterday, this week, this month and all time: your balance plus the chips in front of you.'],
+      ['Stats','Tap your name in the lobby for your stats today, or tap any seat at the table for that player\'s.'],
+      ['The day\'s close','From 23:55 US Eastern no new hands start. A hand still running at 00:05 is called off and every bet goes back.'],
+      ['Add to Home Screen','On iPhone, tap Share → Add to Home Screen in Safari; on Android, choose Add to Home screen in Chrome\'s menu. It then opens full-screen, like an app.'],
+    ]},
+};
+function aboutHTML(){
+  const a=ABOUT[ABOUT_LANG];
+  return `
+        <div class="about-h"><b id="usernamePopupTitle">${a.title}</b>
+          <div class="seg" role="group" aria-label="语言 / Language">${[['zh','中文'],['en','English']].map(([k,l])=>`<button type="button" data-about-lang="${k}" aria-pressed="${ABOUT_LANG===k}"${ABOUT_LANG===k?' class="on"':''}>${l}</button>`).join('')}</div>
+        </div>
+        <div class="about" lang="${ABOUT_LANG==='en'?'en':'zh-CN'}">
+          <p>${a.intro}</p>
+          <dl>${a.items.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
+        </div>
+        <div class="usernamePopup-actions"><button type="button" class="go plain" data-name="dismiss">${a.back}</button></div>`;
+}
 // 23:55 Eastern until the new day opens (DATABASE.md, "The day"): no new games and no names
 export const lobbyClosing=()=>dayPhase()==='closing'||M.closing;
 // MM:SS to midnight; 00:00 once it has passed and the server is still finishing the close
@@ -205,6 +247,7 @@ export function renderMenu(){
   // 查看数据 opens on the name; tapping the name there is how it changes
   const nameBtn=`<button type="button" class="greet tag" data-name="edit" title="修改名字">${esc(sessionName())}</button>`;
   if(NAME_ASK==='settings')ask=settingsHTML(named,back);
+  else if(NAME_ASK==='about')ask=aboutHTML();
   else if(NAME_ASK==='friends')ask=friendsHTML();
   else if(NAME_ASK==='stats')ask=statsView({tag:nameBtn,data:STATS,card:k=>`data-name="stat:${k}"`,foot:back('dismiss')});
   else if(NAME_ASK.startsWith('stat:'))ask=statView({k:NAME_ASK.slice(5),data:STATS,foot:back('stats')});
@@ -240,6 +283,8 @@ export function renderMenu(){
   // a redraw (the board refreshing every 30 s) keeps what was typed in the popup, and the cursor
   const typed={},focus=document.activeElement&&document.activeElement.id;
   for(const id of ['nameIn','roomIn','rjPw','cpPw']){const el=$(id);if(el)typed[id]=el.value;}
+  const card=document.querySelector('#usernamePopup .usernamePopup-card'),scrolled=card&&SHOWN_ASK===NAME_ASK?card.scrollTop:0;
+  SHOWN_ASK=NAME_POPUP?NAME_ASK:null;
   $('menu').innerHTML=`
     <div class="lb" role="marquee" aria-label="排行榜"><div class="lb-track"><div class="lb-run">${boards}${boards}</div><div class="lb-run" aria-hidden="true">${boards}${boards}</div></div></div>
     <div class="hub">
@@ -256,8 +301,9 @@ export function renderMenu(){
     </div>
     <div class="side-modes">
       <button type="button" class="go plain play" data-settings="1">设置</button>
-      <button type="button" class="go plain play" data-soon="1">关于</button>
+      <button type="button" class="go plain play" data-about="1">关于</button>
     </div>${namePopup}`;
   for(const id in typed){const el=$(id);if(el)el.value=typed[id];}
   if(focus&&$(focus)&&focus in typed)$(focus).focus();
+  if(scrolled){const c=document.querySelector('#usernamePopup .usernamePopup-card');if(c)c.scrollTop=scrolled;}
 }
