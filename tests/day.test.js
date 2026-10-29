@@ -63,6 +63,12 @@ async function solo(db, uid) {
 function deal(t) {
   for (let i = 0; i < 200 && !BETTING.includes(t.r.c.S.street); i++) { t.send({ t: 'cmd', name: 'next', args: [] }); runNextTimer(); }
 }
+// a player still thinking: play the table on to their turn, then stop their clock. The 45s clock runs on
+// the virtual timers every table shares, so a long hand at another table would otherwise run it out.
+function thinking(t, uid) {
+  for (let i = 0; i < 500 && BETTING.includes(t.r.c.S.street) && t.r.c.S.seats[t.r.c.S.actor]?.uid !== uid; i++) runNextTimer();
+  clearTimeout(t.r.c.TT);
+}
 // play on (the player folds when asked) until the hand is over
 async function finishHand(t, uid) {
   for (let guard = 0; guard < 5000 && t.r.c.S.street !== 'done'; guard++) {
@@ -110,7 +116,7 @@ test('a night: tables close at 23:55, an overtime hand that finishes counts, one
   // A plays a hand at 23:50 and is between hands at 23:55
   NOW = ET('2026-10-15T23:50:00'); deal(a); await finishHand(a, A);
   // B and C are mid-hand when 23:55 comes
-  NOW = ET('2026-10-15T23:54:00'); deal(b); deal(c);
+  NOW = ET('2026-10-15T23:54:00'); deal(b); deal(c); thinking(b, B); thinking(c, C);
   assert.ok(BETTING.includes(b.r.c.S.street) && BETTING.includes(c.r.c.S.street));
 
   NOW = ET('2026-10-15T23:55:00');
