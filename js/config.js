@@ -38,20 +38,20 @@ export const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 // A bot is known by its fixed player id everywhere: 16 characters, ubot, zeros, then the pinyin of its old table name.
 // `name` is what players.name is seeded with; the copy in the database is what gets shown (BOT_NAMES).
 // `table` is the old seat name, only used to read tables saved before bots had ids.
-// blurb is shown on a bot's profile card (tap the seat).
+// blurb is shown on a bot's profile card (tap the seat): a few words only, so a player learns a bot's game by playing it.
 export const BOT_PLAYERS=[
   {id:'ubot000000000joe',name:'🤖 Joe',table:'Joe',style:{loose:.55,aggr:.90,type:'xuan'},
-    blurb:'像谭轩：松凶，翻前开得大（1/2 开 25，好牌 50/75），被加注就翻倍，后位爱偷盲；翻牌后连续开枪，牌好想一次打光你的筹码。'},
+    blurb:'松凶，出手大。'},
   {id:'ubot0000000000sc',name:'🤖 sc',table:'sc',style:{loose:.35,aggr:.15,type:'hellmuth'},
-    blurb:'像 Phil Hellmuth：紧而被动，爱 limp、花小钱看翻牌，没中就弃（「其实我能赢」）；大牌也多 check-call 或下小注，敢弃大牌。'},
+    blurb:'偏紧，求稳。'},
   {id:'ubot00000laozhou',name:'🤖 ST',table:'老周',style:{loose:.70,aggr:.70,type:'st'},
-    blurb:'王佐（ST Wang）式豪客打法：翻前时而 limp、时而大加注，难以捉摸；好牌爱过牌加注设陷阱，河牌敢英雄跟注。'},
+    blurb:'凶，难以捉摸。'},
   {id:'ubot00000nailong',name:'🤖 奶龙',table:'奶龙',style:{loose:.95,aggr:.80,type:'keating',rebuy:2},
-    blurb:'像 Alan Keating：土豪，几乎每手都玩，粘牌也爱加注（「我说白了」）；河牌拿一对就敢英雄跟注，偶尔超池诈唬；输光一次买两手。'},
+    blurb:'土豪，爱玩。'},
   {id:'ubot00000kmetsch',name:'🤖 Kmetsch',table:'Kmetsch',style:{loose:.35,aggr:.60,type:'wangye'},
-    blurb:'像王烨：翻前稳；好牌爱慢打，翻牌转牌一路跟，到河牌再过牌加注，常常直接全下；打几手实牌后也会这样诈唬一两次，只在单挑时，不骗跟注站。'},
+    blurb:'稳健，深藏不露。'},
   {id:'ubot0000000afang',name:'🤖 dwan',table:'阿芳',style:{loose:.90,aggr:.90,type:'dwan'},
-    blurb:'Tom Dwan（durrrr）式超松凶：入池多、爱 3-bet，敢连开三枪、超池下注诈唬；看你弱就加压，也会抓诈唬。'},
+    blurb:'超松超凶。'},
 ];
 // ST and dwan were 老周 and 阿芳: a bot keeps its id (and so its history) when it is renamed
 export const BOT={JOE:'ubot000000000joe',SC:'ubot0000000000sc',ST:'ubot00000laozhou',NAILONG:'ubot00000nailong',KMETSCH:'ubot00000kmetsch',DWAN:'ubot0000000afang'};
