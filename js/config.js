@@ -1,10 +1,11 @@
 // Game constants and where the Verve server is.
+import {N_} from './i18n.js';
 
 // The Verve server (https URL of the Cloudflare Worker): regular tables, friends rooms and the database.
 // Pages served by the Worker itself connect to their own address instead (see net.js); this one is for
 // copies served elsewhere, like GitHub Pages. Empty: such a copy offers practice only.
 export const SERVER_URL='https://verve.vpoker.workers.dev';
-export const STREET_CN={idle:'等待',dealing:'发牌',preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',done:'结算'};
+export const STREET_CN={idle:N_('等待'),dealing:N_('发牌'),preflop:N_('翻牌前'),flop:N_('翻牌'),turn:N_('转牌'),river:N_('河牌'),done:N_('结算')};
 export const BETTING=['preflop','flop','turn','river'];
 export let BUY=200;
 export function setBUY(n){BUY=n;}
@@ -41,17 +42,17 @@ export const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 // blurb is shown on a bot's profile card (tap the seat): a few words only, so a player learns a bot's game by playing it.
 export const BOT_PLAYERS=[
   {id:'ubot000000000joe',name:'🤖 Joe',table:'Joe',style:{loose:.55,aggr:.90,type:'xuan'},
-    blurb:'松凶，出手大。'},
+    blurb:N_('松凶，出手大。')},
   {id:'ubot0000000000sc',name:'🤖 sc',table:'sc',style:{loose:.35,aggr:.15,type:'hellmuth'},
-    blurb:'偏紧，求稳。'},
+    blurb:N_('偏紧，求稳。')},
   {id:'ubot00000laozhou',name:'🤖 ST',table:'老周',style:{loose:.70,aggr:.70,type:'st'},
-    blurb:'凶，难以捉摸。'},
+    blurb:N_('凶，难以捉摸。')},
   {id:'ubot00000nailong',name:'🤖 奶龙',table:'奶龙',style:{loose:.95,aggr:.80,type:'keating',rebuy:2},
-    blurb:'土豪，爱玩。'},
+    blurb:N_('土豪，爱玩。')},
   {id:'ubot00000kmetsch',name:'🤖 Kmetsch',table:'Kmetsch',style:{loose:.35,aggr:.60,type:'wangye'},
-    blurb:'稳健，深藏不露。'},
+    blurb:N_('稳健，深藏不露。')},
   {id:'ubot0000000afang',name:'🤖 dwan',table:'阿芳',style:{loose:.90,aggr:.90,type:'dwan'},
-    blurb:'超松超凶。'},
+    blurb:N_('超松超凶。')},
 ];
 // ST and dwan were 老周 and 阿芳: a bot keeps its id (and so its history) when it is renamed
 export const BOT={JOE:'ubot000000000joe',SC:'ubot0000000000sc',ST:'ubot00000laozhou',NAILONG:'ubot00000nailong',KMETSCH:'ubot00000kmetsch',DWAN:'ubot0000000afang'};

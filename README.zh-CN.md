@@ -58,7 +58,8 @@
   - **00:06：** 保存排行榜，删除前一天的数据。
 
   每到新的一天，大家都从 1,000 重新开始。
-- **关于。** 介绍这个游戏和每天怎么过，默认中文，可以切换成英文。
+- **英文版。** 整个游戏都有中文和英文。第一次打开时会让你选（选择语言 · Choose your language），以后在「设置 → 语言」里换。每个人看到的牌桌都是自己的语言，好友房间里中英文玩家混坐也一样。
+- **关于。** 介绍这个游戏和每天怎么过。
 - **设置。** 「游戏音效」开关所有声音；「机器人速度」有较慢、中等（默认）、较快；「牌桌」选一楼或二楼。
 - **开发工具。** `/d1` 是浏览本地数据库的页面，`/audit` 用账本核对每个余额。两者只在你自己的电脑上可用。
 - **测试。** 覆盖服务器、钱、数据库写入、每天的结算、排行榜、音效和你的下注按钮，共 86 个。
@@ -129,6 +130,8 @@ js/
   bots.js           机器人策略
   stats.js          每位玩家的计数，以及一手牌写入的 games 行
   talk.js           头像、机器人台词、表情
+  i18n.js           玩家的语言：tr() 翻译页面上的字，tx() 翻译牌桌上的（结果、记录、机器人台词）
+  lang-en.js        每段中文对应的英文
   fx.js             音效、彩带、屏幕常亮
   online.js         座位文档、跟随牌桌
   net.js            服务器客户端：用 WebSocket 实现 doc/onSnapshot 接口；好友房间列表
@@ -171,6 +174,8 @@ npm run serve        # 只有网页（只能练习）：http://localhost:8000
 npm run stamp        # 更新 index.html 里的版本号（每次改 js 或 css 都要跑）
 npm run check        # eslint + 测试；import map 没更新也会报错
 ```
+
+玩家看到的字都用中文写，再套上 `tr()`（`tr('盲注 {sb}/{bb}',{sb,bb})`），英文加到 `js/lang-en.js`。发牌方写进牌桌状态的文字保持中文，显示时由 `tx()` 和 `lang-en.js` 里的规则翻译。`tests/i18n.test.js` 会在这些情况报错：某段文字没有英文、有中文没套 `tr()`、或者英文模式下牌桌上还冒出中文。
 
 推到 `main` 就会部署到 https://verve.vpoker.workers.dev：`.github/workflows/deploy.yml` 先跑检查，确认 D1 数据库 `verve` 存在（第一次会自动创建），执行新的数据库迁移，然后部署 Worker。需要仓库 Secret `CLOUDFLARE_API_TOKEN`：来自 `wrangler.jsonc` 里那个 Cloudflare 账号的令牌，权限要有 Workers Scripts: Edit 和 D1: Edit。这一点和其他部署方式见 [DEPLOY.md](DEPLOY.md)。别处的网页副本（比如 GitHub Pages）连的也是这个服务器（`js/config.js` 里的 `SERVER_URL`）。
 

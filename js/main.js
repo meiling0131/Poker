@@ -12,8 +12,11 @@ import {render} from './ui/render.js';
 import {setNamePopup} from './ui/menu-view.js';
 import {store} from './util.js';
 import {localIdentity,serverDb,serverUrl} from './net.js';
+import {LANG_CHOSEN,applyStatic} from './i18n.js';
 
-loadStake();applySkin();
+loadStake();applySkin();applyStatic();
+// the first time the page opens it asks for a language; the game shows behind, in the browser's
+if(!LANG_CHOSEN){const el=document.getElementById('langPopup');if(el)el.hidden=false;}
 // the bots' pace from 设置 (较慢 1100, 中等 650, 较快 250 ms)
 {const sp=Number(store.get('poker.speed'));if([1100,650,250].includes(sp))setSPEED(sp);}
 

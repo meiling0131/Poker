@@ -20,9 +20,9 @@
 <link rel="stylesheet" href="css/3-theme.css?v=7e6c7e20">
 <link rel="stylesheet" href="css/4-features.css?v=354bd61e">
 <link rel="stylesheet" href="css/5-skins.css?v=88a9054c">
-<link rel="stylesheet" href="css/6-lobby.css?v=c34c99c8">
+<link rel="stylesheet" href="css/6-lobby.css?v=cac35da9">
 <link rel="stylesheet" href="css/7-table.css?v=dfce51e8">
-<link rel="stylesheet" href="css/8-polish.css?v=8e2d9e8d">
+<link rel="stylesheet" href="css/8-polish.css?v=90922364">
 </head>
 <body>
 <div class="wrap">
@@ -30,36 +30,48 @@
     <div class="row">
       <h1>Verve Poker</h1>
       <div class="right">
-      <div class="nav" id="nav" hidden><button data-view="table" class="on">牌桌</button><button data-view="records" disabled title="暂未开放">记录</button></div>
+      <div class="nav" id="nav" hidden><button data-view="table" class="on" data-i18n="牌桌">牌桌</button><button data-view="records" disabled title="暂未开放" data-i18n="记录" data-i18n-title="暂未开放">记录</button></div>
       <div class="morewrap">
-        <button class="ghost icon" id="exitBtn" hidden>退出牌桌</button>
+        <button class="ghost icon" id="exitBtn" hidden data-i18n="退出牌桌">退出牌桌</button>
       </div>
       </div>
     </div>
     <div class="pills" id="pills"></div>
   </header>
   <div id="exitPopup" hidden>
-    <button type="button" class="usernamePopup-bg" data-exit="no" aria-label="关闭"></button>
+    <button type="button" class="usernamePopup-bg" data-exit="no" aria-label="关闭" data-i18n-aria="关闭"></button>
     <div class="usernamePopup-card" role="dialog" aria-modal="true" aria-labelledby="exitTitle">
-      <b id="exitTitle">退出牌桌</b>
-      <p class="name-note">您仍在游戏中。要退出牌桌，您将直接弃牌。</p>
+      <b id="exitTitle" data-i18n="退出牌桌">退出牌桌</b>
+      <p class="name-note" data-i18n="您仍在游戏中。要退出牌桌，您将直接弃牌。">您仍在游戏中。要退出牌桌，您将直接弃牌。</p>
       <div class="usernamePopup-actions">
-        <button type="button" class="go danger" data-exit="ok">确认</button>
-        <button type="button" class="go plain" data-exit="no">取消</button>
+        <button type="button" class="go danger" data-exit="ok" data-i18n="确认">确认</button>
+        <button type="button" class="go plain" data-exit="no" data-i18n="取消">取消</button>
       </div>
     </div>
   </div>
   <div id="overtimePopup" hidden>
     <div class="usernamePopup-bg" aria-hidden="true"></div>
     <div class="usernamePopup-card" role="alertdialog" aria-modal="true" aria-labelledby="overtimeTitle">
-      <b id="overtimeTitle">超时牌桌</b>
-      <p class="name-note">该牌桌将在 12:05AM 被强制结束。届时您将会被弃牌，但下注的筹码将被退回。</p>
+      <b id="overtimeTitle" data-i18n="超时牌桌">超时牌桌</b>
+      <p class="name-note" data-i18n="该牌桌将在 12:05AM 被强制结束。届时您将会被弃牌，但下注的筹码将被退回。">该牌桌将在 12:05AM 被强制结束。届时您将会被弃牌，但下注的筹码将被退回。</p>
       <div class="usernamePopup-actions">
-        <button type="button" class="go amber" data-overtime="ok">确认</button>
+        <button type="button" class="go amber" data-overtime="ok" data-i18n="确认">确认</button>
       </div>
     </div>
   </div>
   <div id="seatPopup" hidden></div>
+  <!-- the first time the page opens: 中文 or English (also in 设置) -->
+  <div id="langPopup" hidden>
+    <div class="usernamePopup-bg" aria-hidden="true"></div>
+    <div class="usernamePopup-card" role="dialog" aria-modal="true" aria-labelledby="langTitle">
+      <b id="langTitle">Verve Poker</b>
+      <p class="name-note">选择语言 · Choose your language</p>
+      <div class="usernamePopup-actions">
+        <button type="button" class="go amber" data-lang-pick="zh" lang="zh-CN">中文</button>
+        <button type="button" class="go teal" data-lang-pick="en" lang="en">English</button>
+      </div>
+    </div>
+  </div>
   <section id="menu"></section>
   <section id="game">
     <div class="stage" id="stage">
@@ -74,36 +86,38 @@
 <script type="importmap">
 {
   "imports": {
-    "./js/actions.js": "./js/actions.js?v=0f408b56",
+    "./js/actions.js": "./js/actions.js?v=3d023dde",
     "./js/bots.js": "./js/bots.js?v=4892ff5c",
     "./js/cards.js": "./js/cards.js?v=6a50951e",
     "./js/chips.js": "./js/chips.js?v=e4813bf0",
-    "./js/config.js": "./js/config.js?v=edaf7669",
+    "./js/config.js": "./js/config.js?v=369d14e7",
     "./js/engine.js": "./js/engine.js?v=979b41cd",
     "./js/fx.js": "./js/fx.js?v=935761a2",
-    "./js/main.js": "./js/main.js?v=0584aa1b",
-    "./js/modes.js": "./js/modes.js?v=82c448d9",
+    "./js/i18n.js": "./js/i18n.js?v=89eae6c8",
+    "./js/lang-en.js": "./js/lang-en.js?v=1dc0bf04",
+    "./js/main.js": "./js/main.js?v=97503b09",
+    "./js/modes.js": "./js/modes.js?v=9cb3842c",
     "./js/net.js": "./js/net.js?v=f258896d",
-    "./js/online.js": "./js/online.js?v=4eb0225f",
+    "./js/online.js": "./js/online.js?v=b536148d",
     "./js/player.js": "./js/player.js?v=4c41463f",
     "./js/pots.js": "./js/pots.js?v=8f05ccbd",
-    "./js/settings.js": "./js/settings.js?v=0c0c2539",
+    "./js/settings.js": "./js/settings.js?v=ac7bf011",
     "./js/state.js": "./js/state.js?v=80c9cc2c",
     "./js/stats.js": "./js/stats.js?v=e16b0de5",
-    "./js/table.js": "./js/table.js?v=90c49688",
-    "./js/talk.js": "./js/talk.js?v=eb400be7",
+    "./js/table.js": "./js/table.js?v=1b0a14a6",
+    "./js/talk.js": "./js/talk.js?v=864b1b79",
     "./js/ui/anim.js": "./js/ui/anim.js?v=dc5e00e4",
     "./js/ui/chips-view.js": "./js/ui/chips-view.js?v=06f96ca9",
-    "./js/ui/events.js": "./js/ui/events.js?v=fd1a16fd",
-    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=5cbc9d11",
-    "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=05262394",
-    "./js/ui/records-view.js": "./js/ui/records-view.js?v=d145bd43",
-    "./js/ui/render.js": "./js/ui/render.js?v=8d1fbe43",
-    "./js/ui/table-view.js": "./js/ui/table-view.js?v=ae2f6819",
+    "./js/ui/events.js": "./js/ui/events.js?v=fbfe6861",
+    "./js/ui/hero-view.js": "./js/ui/hero-view.js?v=a34eada9",
+    "./js/ui/menu-view.js": "./js/ui/menu-view.js?v=c0aa53b9",
+    "./js/ui/records-view.js": "./js/ui/records-view.js?v=fbaf20e5",
+    "./js/ui/render.js": "./js/ui/render.js?v=2a35bd8a",
+    "./js/ui/table-view.js": "./js/ui/table-view.js?v=a86f8220",
     "./js/util.js": "./js/util.js?v=3a30a08d"
   }
 }
 </script>
-<script type="module" src="js/main.js?v=0584aa1b"></script>
+<script type="module" src="js/main.js?v=97503b09"></script>
 </body>
 </html>

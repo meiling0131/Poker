@@ -8,6 +8,7 @@ import {avatarOf} from '../talk.js';
 import {$,cdSpan,esc,fmt} from '../util.js';
 import {GREW,after,dealCard,flipCard,sync} from './anim.js';
 import {statView,statsView} from './menu-view.js';
+import {tr,tx} from '../i18n.js';
 
 // Every action redraws the table; a bubble pops in only the first time it is drawn, then stays still.
 const SHOWN=new Set();
@@ -15,7 +16,7 @@ function bubbleHTML(p,i,cls){
   if(!p.say||p.say.until<=Date.now())return '';
   const k=p.say.until+'|'+p.say.t,fresh=!SHOWN.has(k);
   if(fresh){SHOWN.add(k);if(SHOWN.size>200)SHOWN.clear();}
-  return `<div class="bubble${cls?' '+cls:''}${fresh?'':' still'}" data-seat="${i}" data-bubble-until="${p.say.until}">${esc(p.say.t)}</div>`;
+  return `<div class="bubble${cls?' '+cls:''}${fresh?'':' still'}" data-seat="${i}" data-bubble-until="${p.say.until}">${esc(tx(p.say.t))}</div>`;
 }
 // A redraw costs a phone a full layout of the page. Drawing the same thing again is skipped (clocks and animation
 // phases moving on don't count: they run by themselves), and a full redraw measures the page once, after both
@@ -180,18 +181,18 @@ export function seatHTML(i,pos,compact){
   const liveSeat=p.inHand&&S.street!=='idle';
   const marks=[
     liveSeat&&i===S.dealer?'<i class="dbtn">D</i>':'',
-    liveSeat&&i===S.sbPos?'<i class="blind sb" title="小盲">S</i>':'',
-    liveSeat&&i===S.bbPos?'<i class="blind bb" title="大盲">B</i>':'',
+    liveSeat&&i===S.sbPos?`<i class="blind sb" title="${tr('小盲')}">S</i>`:'',
+    liveSeat&&i===S.bbPos?`<i class="blind bb" title="${tr('大盲')}">B</i>`:'',
   ].join('');
   let act;
-  if(S.runout&&S.runout.stage==='vote'&&S.runout.voters.includes(i))act=`<div class="act vote">${S.runout.votes[i]?(S.runout.votes[i]===2?'选：跑两次':'选：跑一次'):'选择中…'}</div>`;
-  else if(S.actor===i&&S.deadline&&p.kind==='human')act=`<div class="act">思考中 ${cdSpan(S.deadline)}</div>`;
+  if(S.runout&&S.runout.stage==='vote'&&S.runout.voters.includes(i))act=`<div class="act vote">${S.runout.votes[i]?(S.runout.votes[i]===2?tr('选：跑两次'):tr('选：跑一次')):tr('选择中…')}</div>`;
+  else if(S.actor===i&&S.deadline&&p.kind==='human')act=`<div class="act">${tr('思考中')} ${cdSpan(S.deadline)}</div>`;
   else if(p.bet>0&&!p.shown)act=betHTML(p.bet,p.betChips,i);
-  else act=`<div class="act">${esc((p.shown?p.handName:p.last)||(p.qBuy?'买入待生效':''))||'&nbsp;'}</div>`;
+  else act=`<div class="act">${esc(tx(p.shown?p.handName:p.last)||(p.qBuy?tr('买入待生效'):''))||'&nbsp;'}</div>`;
   const ring=S.actor===i?ringHTML():'';
   return `<div class="${cls.join(' ')}" data-i="${i}" style="--x:${pos.x.toFixed(2)}%;--y:${pos.y.toFixed(2)}%;--px:${pos.mx}%;--py:${pos.my}%;--ph:-${Date.now()%1600}ms">
     <div class="mc">${cards}</div>
-    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${esc(seatName(p))} 的资料">${ring}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}">${marks}<span>${esc(seatName(p))}</span></div><div class="stk">${topChip(p.stack)}<span class="num">${fmt(p.stack)}</span></div></div>
+    <div class="plate" data-seat="${i}" role="button" tabindex="0" aria-label="${tr('{name} 的资料',{name:esc(seatName(p))})}">${ring}<div class="nm${p.kind==='human'?' human':''}${[...seatName(p)].length>5?' long':''}">${marks}<span>${esc(seatName(p))}</span></div><div class="stk">${topChip(p.stack)}<span class="num">${fmt(p.stack)}</span></div></div>
     ${act}
   </div>`;
 }
@@ -214,7 +215,7 @@ export function resultCardHTML(){
   if(!S.msg.length)return '';
   if(RC_HAND!==S.hand){RC_HAND=S.hand;RC_AT=Date.now();}
   const age=Date.now()-RC_AT;
-  const lines=S.msg.slice(0,3).map(names);
+  const lines=S.msg.slice(0,3).map(t=>names(tx(t)));
   return `<div class="resultcard" style="--age:-${age}ms">${lines[0]}${lines.length>1?`<small>${lines.slice(1).join('<br>')}</small>`:''}</div>`;
 }
 export function renderTable(){
@@ -228,20 +229,20 @@ export function renderTable(){
   const R=S.runout,twice=R&&R.times===2&&R.stage!=='vote';
   const boardCards=(cards,key,size)=>{const out=[];for(let k=0;k<5;k++){const c=cards[k];out.push(cardHTML(c,size+(c!=null&&HOT.has(c)?' hot':''),c!=null?flipCard(key,k):''));}return out.join('');};
   let result='';
-  if(!M.ready)result='正在等待连接...';
+  if(!M.ready)result=tr('正在等待连接...');
   else if(S.street==='done')result=resultCardHTML();
-  else if(R&&R.stage==='vote')result='正在等待选择...';
+  else if(R&&R.stage==='vote')result=tr('正在等待选择...');
   else if(!M.host&&SUBMITTED>=0&&SUBMITTED<S.turn)result='';   // your action, shown before the server has answered
-  else if((R&&R.stage==='deal')||(S.actor<0&&S.street!=='idle'))result='正在等待发牌…';
-  else if(!M.host&&SUBMITTED===S.turn)result=M.server?'提交中…':'正在等待房主响应...';
-  else if(S.street==='idle')result=S.mode==='online'?'正在等待玩家...':'正在等待开局...';
-  else if(m>=0&&S.seats[m].inHand&&!S.seats[m].folded&&!myHoleCards())result='正在等待发牌…';
+  else if((R&&R.stage==='deal')||(S.actor<0&&S.street!=='idle'))result=tr('正在等待发牌…');
+  else if(!M.host&&SUBMITTED===S.turn)result=M.server?tr('提交中…'):tr('正在等待房主响应...');
+  else if(S.street==='idle')result=S.mode==='online'?tr('正在等待玩家...'):tr('正在等待开局...');
+  else if(m>=0&&S.seats[m].inHand&&!S.seats[m].folded&&!myHoleCards())result=tr('正在等待发牌…');
   let board2='';
   if(twice)board2=`<div class="board two"><span class="bl">2</span>${boardCards(S.board2||R.base,'b','bd sm')}</div>`;
   let seats='';
   for(let k=seated?1:0;k<n;k++){const i=seated?(m+k)%n:k;seats+=seatHTML(i,pos[k],compact);}
   const talk=S.seats.map((p,i)=>bubbleHTML(p,i,i===m?'hero-bubble':'')).join('');
-  draw(tb,`<div class="center${twice?' twice':''}"><div class="pot">${twice?'':pilesC(S.potChips,{size:13,max:5})+potStack(S.potChips)}<span>${R&&R.stage!=='vote'&&R.stage?'全下 · '+(R.times===2?'跑两次':'跑一次'):(STREET_CN[S.street]||'')}</span>底池 <b class="num">${fmt(potTotal())}</b></div><div class="board${twice?' one':''}${HOT.size?' showdown':''}">${twice?'<span class="bl">1</span>':''}${boardCards(S.board,'a',twice?'bd sm':'bd')}</div>${board2}
+  draw(tb,`<div class="center${twice?' twice':''}"><div class="pot">${twice?'':pilesC(S.potChips,{size:13,max:5})+potStack(S.potChips)}<span>${R&&R.stage!=='vote'&&R.stage?tr('全下')+' · '+(R.times===2?tr('跑两次'):tr('跑一次')):tr(STREET_CN[S.street]||'')}</span>${tr('底池')} <b class="num">${fmt(potTotal())}</b></div><div class="board${twice?' one':''}${HOT.size?' showdown':''}">${twice?'<span class="bl">1</span>':''}${boardCards(S.board,'a',twice?'bd sm':'bd')}</div>${board2}
       <div class="result${S.street==='done'?' done':''}">${result}</div></div>
     ${seats}<div class="talk">${talk}</div>`);
   renderProfile();
@@ -260,12 +261,12 @@ export function profileHTML(){
   const live=profileLive(),own=(S.stats||{})[PROFILE];
   const data=live?(PDATA.key===PROFILE?PDATA.data:undefined):(own&&own.hands?own:null);
   // a bot's card says how it plays, under its avatar
-  const about=p.kind==='bot'&&BOT_BLURB[p.id]?`<p class="name-note bot-blurb"><span class="bot-av" aria-hidden="true">${avatarOf(p)}</span>${esc(BOT_BLURB[p.id])}</p>`:'';
+  const about=p.kind==='bot'&&BOT_BLURB[p.id]?`<p class="name-note bot-blurb"><span class="bot-av" aria-hidden="true">${avatarOf(p)}</span>${esc(tr(BOT_BLURB[p.id]))}</p>`:'';
   const inner=PVIEW
-    ?statView({k:PVIEW,data,today:live,foot:'<button type="button" class="go plain" data-pstat="">返回</button>'})
+    ?statView({k:PVIEW,data,today:live,foot:`<button type="button" class="go plain" data-pstat="">${tr('返回')}</button>`})
     :statsView({tag:`<span class="greet tag">${esc(seatName(p))}</span>`,data,today:live,about,card:k=>`data-pstat="${k}"`,
-      foot:'<button type="button" class="go plain" data-profile-close="1">返回</button>'});
-  return `<button type="button" class="usernamePopup-bg" data-profile-close="1" aria-label="关闭"></button>
+      foot:`<button type="button" class="go plain" data-profile-close="1">${tr('返回')}</button>`});
+  return `<button type="button" class="usernamePopup-bg" data-profile-close="1" aria-label="${tr('关闭')}"></button>
     <div class="usernamePopup-card seatcard" role="dialog" aria-modal="true" aria-labelledby="usernamePopupTitle">${inner}</div>`;
 }
 export function renderProfile(){const el=$('seatPopup');if(!el)return;const h=M.mode?profileHTML():'';el.hidden=!h;if(el.innerHTML!==h)el.innerHTML=h;}

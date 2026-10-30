@@ -58,7 +58,8 @@ The original game had the engine, the six bots, the chip-true table, practice pl
   - **00:06:** the leaderboard is saved and the old day's data is deleted.
 
   Each new day, everyone starts again at 1,000.
-- **关于 (about).** What the game is and how a day goes, in Chinese by default, with a switch to English.
+- **English.** The whole game is in Chinese or English. The first time the page opens it asks which (选择语言 · Choose your language), and 设置 → 语言 (Settings → Language) changes it later. Each player sees the table in their own language, even in a friends room with players of both.
+- **关于 (about).** What the game is and how a day goes.
 - **设置 (settings).** 游戏音效 turns all sounds on or off. 机器人速度 (bot speed) offers 较慢, 中等 (the default) and 较快. 牌桌 picks the first or the second floor.
 - **Developer tools.** `/d1` is a page for browsing the local database. `/audit` checks every balance against the ledger. Both only work on your own machine.
 - **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard, the sounds and your betting buttons: 86 in all.
@@ -129,6 +130,8 @@ js/
   bots.js           bot strategy
   stats.js          per-player counts, and the games rows a hand writes
   talk.js           avatars, bot lines, emoji
+  i18n.js           the player's language: tr() for the page's text, tx() for the table's (results, log, bot lines)
+  lang-en.js        the English of every Chinese text
   fx.js             sounds, confetti, keeping the screen awake
   online.js         seat docs and following the table
   net.js            server client: a WebSocket behind a doc/onSnapshot interface; the friends room list
@@ -172,6 +175,8 @@ npm run serve        # the page alone (practice only): http://localhost:8000
 npm run stamp        # refresh the version numbers in index.html (after any js or css change)
 npm run check        # eslint + tests; also fails if the import map is stale
 ```
+
+Text a player sees is written in Chinese and put through `tr()` (`tr('盲注 {sb}/{bb}',{sb,bb})`), with its English added to `js/lang-en.js`. What the dealer writes into the table's state stays Chinese and is translated where it is shown, by `tx()` and the patterns in `lang-en.js`. `tests/i18n.test.js` fails on a text with no English, a Chinese text left outside `tr()`, or a line on the table that comes out with Chinese in English.
 
 A push to `main` deploys to https://verve.vpoker.workers.dev: `.github/workflows/deploy.yml` runs the checks, makes sure the D1 database `verve` exists (creating it the first time), applies new migrations and deploys the Worker. It needs the repository secret `CLOUDFLARE_API_TOKEN`, a token from the Cloudflare account in `wrangler.jsonc` with Workers Scripts: Edit and D1: Edit. See [DEPLOY.md](DEPLOY.md) for that and the other ways to deploy. A copy served anywhere else, like GitHub Pages, plays against the same server (`SERVER_URL` in `js/config.js`).
 

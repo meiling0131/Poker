@@ -3,6 +3,7 @@ import {commit} from './online.js';
 import {M,MYDOC,S,myRef,setFLASH,view} from './state.js';
 import {later,mySeat} from './table.js';
 import {BOT} from './config.js';
+import {tr} from './i18n.js';
 
 export const BOT_AV={[BOT.JOE]:'🐯',[BOT.SC]:'🐰',[BOT.ST]:'🐺',[BOT.NAILONG]:'🐲',[BOT.KMETSCH]:'🐻',[BOT.DWAN]:'🦈'};
 export const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
@@ -65,7 +66,7 @@ export async function sendEmoji(e){
   }
   EMO_N=Math.max(EMO_N,Number((MYDOC&&MYDOC.emo&&MYDOC.emo.n)||0))+1;
   say(p,e);view.render(); // shown at once here; the host relays it to everyone else
-  try{await myRef.update({emo:{e,n:EMO_N}});}catch(err){setFLASH('表情发送失败');view.render();}
+  try{await myRef.update({emo:{e,n:EMO_N}});}catch(err){setFLASH(tr('表情发送失败'));view.render();}
 }
 // host: pick up emoji a player sent through their own seat doc
 export function syncEmoji(p,d){

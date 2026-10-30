@@ -9,6 +9,7 @@ import {applySeatChanges,checkRemoteAct,checkVotes,maybeStart,releaseLeaver} fro
 import {M,MYDOC,MYHOLE,S,SEATDOCS,SESSION,SUBMITTED,UNSUBS,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setMYDOC,setMYHOLE,setS,setSEATDOCS,setSUBMITTED,setmyRef,settableRef,tableRef,view} from './state.js';
 import {applyMoney,handLive,isKicked,log,who} from './table.js';
 import {syncEmoji} from './talk.js';
+import {tr} from './i18n.js';
 
 export function syncDoc(p){ // pull cumulative buy/cash counters from the player's own seat doc
   const d=SEATDOCS[p.uid];if(!d)return false;
@@ -89,12 +90,12 @@ export function unkick(uid){
 export async function joinTable(){
   setFLASH('');setLOCAL_B(1);setLOCAL_C(0);
   try{await myRef.set({name:M.nick,join:true,t:Date.now(),act:null,buyN:1,cashN:0});if(M.server)serverMoney(BUY);}
-  catch(e){setFLASH('加入失败，请检查网络后再试一次。');}
+  catch(e){setFLASH(tr('加入失败，请检查网络后再试一次。'));}
   view.render();
 }
 export async function leaveTable(){
   if(!myRef)return;
-  try{await myRef.update({join:false});}catch(e){setFLASH('操作失败，请再试一次。');}
+  try{await myRef.update({join:false});}catch(e){setFLASH(tr('操作失败，请再试一次。'));}
   view.render();
 }
 

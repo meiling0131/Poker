@@ -10,18 +10,19 @@ import {LOBBY,M,PROFILE,PUSH,S,SPEED,setFLASH,setPROFILE,setPUSH,setSPEED,setVIE
 import {bookKey,lockedIn,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
 import {confirmMoney,renderHero,toggleBuy} from './hero-view.js';
-import {nameNext,openFriends,renderMenu,renderRooms,setAboutLang,setNameAsk,setNameNext,setNamePopup,setSettingsDraft,setStats,settingsDraft,shownBalance} from './menu-view.js';
+import {nameNext,openFriends,renderMenu,renderRooms,setNameAsk,setNameNext,setNamePopup,setSettingsDraft,setStats,settingsDraft,shownBalance} from './menu-view.js';
 import {dismissOvertime,render} from './render.js';
 import {cleanPlayerName,displayName,fetchSeatStats,fetchStats,restrictNameInput,savePlayer} from '../player.js';
 import {$,store} from '../util.js';
 import {profileLive,renderTable,setProfileData,setProfileView} from './table-view.js';
 import {serverCmd} from '../net.js';
+import {LANG,setLang,tr} from '../i18n.js';
 
 let NAME_SAVING=false;
 function nameError(msg){const el=$('nameErr');if(el)el.textContent=msg;}
 function nameFail(got){
   const err=got&&got.error;
-  nameError(err==='once'?'名字只能修改一次':err==='name'?'名字不能以 # 或🤖开头':err==='closing'?'正在清理牌桌，请于 12:00AM 后再留名。':'没能保存，请再试一次。');
+  nameError(err==='once'?tr('名字只能修改一次'):err==='name'?tr('名字不能以 # 或🤖开头'):err==='closing'?tr('正在清理牌桌，请于 12:00AM 后再留名。'):tr('没能保存，请再试一次。'));
 }
 async function writeName(name){
   if(NAME_SAVING)return {error:'save'};
@@ -41,8 +42,8 @@ async function submitName(){
   const input=$('nameIn');
   const name=cleanPlayerName(input&&input.value);
   if(input&&input.value!==name)input.value=name;
-  if(!name){nameError('请填写名字');return;}
-  if(name.startsWith('#')){nameError('名字不能以 # 或🤖开头');return;}
+  if(!name){nameError(tr('请填写名字'));return;}
+  if(name.startsWith('#')){nameError(tr('名字不能以 # 或🤖开头'));return;}
   if(M.player){setNameNext(name);setNameAsk('rename');renderMenu();return;}
   const got=await writeName(name);
   if(!got||got.error){nameFail(got);return;}
@@ -67,7 +68,8 @@ function applySettings(){
   if(d.sound!==SOUND){setSOUND(d.sound);store.set('poker.sfx',SOUND?'on':'off');if(SOUND)beep();}
   setSPEED(d.speed);store.set('poker.speed',String(d.speed));
   setSkin(d.skin);
-  setNamePopup(false);renderMenu();
+  const lang=d.lang!==LANG;if(lang)setLang(d.lang);
+  setNamePopup(false);if(lang)render();else renderMenu();
 }
 // 查看数据: fetched each time it opens, so it is today's numbers as of the last hand
 async function openStats(){
@@ -109,13 +111,13 @@ document.addEventListener('click',e=>{
   if(PROFILE&&!e.target.closest('.seatcard')){setPROFILE(null);if(S)renderTable();}
   const t=e.target.closest('button');if(!t)return;
   // 设置: a draft of the current settings; 确认 applies it, 取消 drops it
-  if(t.dataset.settings!=null){setSettingsDraft({sound:SOUND,speed:SPEED,skin:SKIN});setNamePopup(true);setNameAsk('settings');renderMenu();return;}
+  if(t.dataset.settings!=null){setSettingsDraft({sound:SOUND,speed:SPEED,skin:SKIN,lang:LANG});setNamePopup(true);setNameAsk('settings');renderMenu();return;}
+  if(t.dataset.setLang){setSettingsDraft({lang:t.dataset.setLang});renderMenu();return;}
   if(t.dataset.setSound){setSettingsDraft({sound:t.dataset.setSound==='1'});renderMenu();return;}
   if(t.dataset.setSpeed){setSettingsDraft({speed:+t.dataset.setSpeed});renderMenu();return;}
   if(t.dataset.setSkin){setSettingsDraft({skin:t.dataset.setSkin});renderMenu();return;}
-  // 关于, and its 中文 / English switch
   if(t.dataset.about!=null){setNamePopup(true);setNameAsk('about');renderMenu();return;}
-  if(t.dataset.aboutLang){setAboutLang(t.dataset.aboutLang);renderMenu();return;}
+  if(t.dataset.langPick){setLang(t.dataset.langPick);$('langPopup').hidden=true;render();return;}
   // the name pill: no name yet asks for one; with a name it opens the menu (查看数据, 修改名字, 清除账号, 返回)
   if(t.dataset.greet!=null){setNamePopup(true);if(M.player){openStats();return;}setNameAsk('');renderMenu();$('nameIn')&&$('nameIn').focus();return;}
   if(t.dataset.name){
@@ -144,13 +146,13 @@ document.addEventListener('click',e=>{
     setFLASH('');
     const typed=(($('roomIn')&&$('roomIn').value)||'').trim(),code=normRoom(typed);
     if(t.dataset.room==='create'){
-      if(PRESETS[PRESET].buy>shownBalance()){setFLASH(`余额不够盲注 ${PRESETS[PRESET].sb}/${PRESETS[PRESET].bb} 的最低买入，在大厅换一个小一点的盲注吧。`);renderMenu();return;}
+      if(PRESETS[PRESET].buy>shownBalance()){setFLASH(tr('余额不够盲注 {sb}/{bb} 的最低买入，在大厅换一个小一点的盲注吧。',{sb:PRESETS[PRESET].sb,bb:PRESETS[PRESET].bb}));renderMenu();return;}
       const room=typed?code:newRoomCode();
-      if(room.length<3){setFLASH('房间号要 3–8 位字母或数字。');renderMenu();return;}
+      if(room.length<3){setFLASH(tr('房间号要 3–8 位字母或数字。'));renderMenu();return;}
       LOBBY.open=null;LOBBY.confirm={code:room,typed:!!typed};renderMenu();$('cpPw')&&$('cpPw').focus();return;
     }
-    if(!code){setFLASH('填一下房间号，或者新开一个房间');renderMenu();return;}
-    if(code.length<3){setFLASH('房间号要 3–8 位字母或数字。');renderMenu();return;}
+    if(!code){setFLASH(tr('填一下房间号，或者新开一个房间'));renderMenu();return;}
+    if(code.length<3){setFLASH(tr('房间号要 3–8 位字母或数字。'));renderMenu();return;}
     enterOnline(code,false);return;
   }
   if(t.dataset.confirmCreate){
@@ -166,7 +168,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.enterRoom){enterOnline(t.dataset.enterRoom,false,($('rjPw')&&$('rjPw').value)||'');return;}
   if(t.dataset.copy){
     const txt=roomLink();
-    const done=()=>{t.textContent='已复制';setTimeout(()=>{t.textContent='复制链接';},1500);};
+    const done=()=>{t.textContent=tr('已复制');setTimeout(()=>{t.textContent=tr('复制链接');},1500);};
     try{navigator.clipboard.writeText(txt).then(done,()=>{const el=$('linktxt');if(el){const r=document.createRange();r.selectNodeContents(el);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);}});}catch(e){}
     return;
   }
@@ -184,14 +186,14 @@ document.addEventListener('click',e=>{
   if(t.dataset.tidy){tidy();return;}
   if(t.dataset.bank){toggleBuy();return;}
   if(t.dataset.pre){setPre(t.dataset.pre);return;}
-  if(t.dataset.statsReset){if(t.dataset.sure){if(M.solo)serverCmd('clearstats');else{store.set('poker.stats.bots','');if(S&&S.stats)delete S.stats.local;render();}}else{t.dataset.sure='1';t.textContent='确认清空？';}return;}
+  if(t.dataset.statsReset){if(t.dataset.sure){if(M.solo)serverCmd('clearstats');else{store.set('poker.stats.bots','');if(S&&S.stats)delete S.stats.local;render();}}else{t.dataset.sure='1';t.textContent=tr('确认清空？');}return;}
   if(t.dataset.emoOpen){setEMO_OPEN(!EMO_OPEN);renderHero();return;}
   if(t.dataset.emo){sendEmoji(t.dataset.emo);return;}
   if(t.dataset.approve){M.server?serverCmd('approve',t.dataset.approve,true):approveBuy(t.dataset.approve,true);return;}
   if(t.dataset.deny){M.server?serverCmd('approve',t.dataset.deny,false):approveBuy(t.dataset.deny,false);return;}
   if(t.dataset.kick){
     if(M.server){ // ask once more on this button, then the server removes them
-      if(t.dataset.sure){serverCmd('kick',t.dataset.kick);}else{t.dataset.sure='1';t.textContent='确认请出？';t.classList.add('warn');}
+      if(t.dataset.sure){serverCmd('kick',t.dataset.kick);}else{t.dataset.sure='1';t.textContent=tr('确认请出？');t.classList.add('warn');}
       return;
     }
     kick(t.dataset.kick);return;
