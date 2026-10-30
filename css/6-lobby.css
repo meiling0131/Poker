@@ -42,12 +42,8 @@ button.greet.tag:hover{filter:brightness(1.1)}
   background:var(--sk-deep,var(--panel2));color:var(--text);font:600 14px/1.3 var(--body)}
 .set-row .seg{flex:none}
 .set-row .seg button{min-width:44px;padding:7px 10px;font-size:13px}
-/* 关于: the title with the 中文 / English switch beside it, then the text, left-aligned to read */
+/* 关于: the text left-aligned to read */
 .usernamePopup-card:has(.about){width:min(440px,100%)}
-.about-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.usernamePopup-card .about-h b{text-align:left}
-.about-h .seg{flex:none}
-.about-h .seg button{padding:6px 10px;font-size:13px}
 .about{display:flex;flex-direction:column;gap:14px;text-align:left}
 .about p{margin:0;color:var(--text);font:600 14px/1.6 var(--body)}
 .about dl{margin:0;display:flex;flex-direction:column;gap:12px}
@@ -104,6 +100,14 @@ button.greet.tag:hover{filter:brightness(1.1)}
 #overtimePopup .usernamePopup-bg{cursor:default}
 #overtimePopup .go{display:block;width:100%;padding:14px 8px;border:0;border-radius:11px;text-align:center;font:700 16px var(--body);letter-spacing:.04em;cursor:pointer;background:var(--btn-raise,#c9b685);color:var(--btn-raise-ink,#231f15)}
 #overtimePopup .go:hover{filter:brightness(1.08)}
+/* 选择语言: the first time the page opens, over everything */
+#langPopup{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
+#langPopup[hidden]{display:none}
+#langPopup .usernamePopup-bg{cursor:default;background:#000000b3}
+#langPopup .go{display:block;width:100%;padding:14px 8px;border:0;border-radius:11px;text-align:center;font:700 17px var(--body);letter-spacing:.04em;cursor:pointer}
+#langPopup .go.amber{background:var(--btn-raise,#c9b685);color:var(--btn-raise-ink,#231f15)}
+#langPopup .go.teal{background:#d8ceb8;color:#2a1a0e}
+#langPopup .go:hover{filter:brightness(1.08)}
 #exitBtn{background:var(--quit-red);border-color:transparent;color:#fff4f2}
 #exitBtn:hover{filter:brightness(1.08)}
 .hub{display:flex;flex-direction:column;align-items:stretch;gap:14px;margin:8px 0 24px}

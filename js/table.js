@@ -4,6 +4,7 @@ import {BETTING,BOT_NAMES,BOT_PLAYERS,BUY,ONLINE_MIN,botIdOfTable,isBotId} from 
 import {endStreet} from './engine.js';
 import {GEN,M,S,view} from './state.js';
 import {esc,fmt} from './util.js';
+import {tr} from './i18n.js';
 
 export const N=()=>S.seats.length;
 export function later(fn,ms){
@@ -19,8 +20,8 @@ export const who=p=>p.kind==='bot'?p.name:`@@${p.uid}@@`;
 export const isKicked=u=>!!(S&&S.kicked&&S.kicked[u]);
 export const bookKey=p=>p.kind==='bot'?p.id:p.uid;
 // your own name as players holds it ('#' marks a used rename); 你 when there is no saved name
-export function myName(){return String(M.player&&M.player.name||'').trim().replace(/^#/,'')||'你';}
-export function nameOfUid(uid){if(uid===M.me)return myName();const n=S&&S.names&&S.names[uid];return n||(uid===S?.ownerUid?'房主':'玩家');}
+export function myName(){return String(M.player&&M.player.name||'').trim().replace(/^#/,'')||tr('你');}
+export function nameOfUid(uid){if(uid===M.me)return myName();const n=S&&S.names&&S.names[uid];return n||(uid===S?.ownerUid?tr('房主'):tr('玩家'));}
 export const nameOfKey=k=>isBotId(k)?BOT_NAMES[k]:nameOfUid(k);
 export const names=t=>esc(t).replace(/@@([^@]+)@@/g,(_,u)=>esc(nameOfUid(u)));
 export function log(t,cls){S.log.unshift({t,cls:cls||''});if(S.log.length>80)S.log.length=80;}

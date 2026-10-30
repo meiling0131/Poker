@@ -2,6 +2,7 @@
 import {setBUY} from './config.js';
 import {S} from './state.js';
 import {store} from './util.js';
+import {N_} from './i18n.js';
 
 export const PRESETS=[{sb:1,bb:2,buy:200},{sb:2,bb:5,buy:500},{sb:5,bb:10,buy:1000}];
 export let PRESET=0;
@@ -33,7 +34,7 @@ export function setPLAY_MODE(v){PLAY_MODE=v;}
 export function setSHOW_HAND(v){SHOW_HAND=v;}
 
 // 牌桌皮肤 (设置 → 牌桌): 'f1' Verve 一楼（会议室：胡桃木长桌、千鸟格扶手椅）| 'f2' Verve 二楼（休息区：石面方桌、皮沙发）
-export const SKINS=[['f1','一楼','会议室 · 胡桃木长桌'],['f2','二楼','休息区 · 皮沙发']];
+export const SKINS=[['f1',N_('一楼'),N_('会议室 · 胡桃木长桌')],['f2',N_('二楼'),N_('休息区 · 皮沙发')]];
 const validSkin=v=>SKINS.some(([k])=>k===v);
 export let SKIN=validSkin(store.get('poker.skin'))?store.get('poker.skin'):'f1';
 export function applySkin(){document.body.dataset.skin=SKIN;}

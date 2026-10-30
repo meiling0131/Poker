@@ -9,6 +9,7 @@ import {fetchBoard} from '../player.js';
 import {renderRecords} from './records-view.js';
 import {drawAll,renderProfile,renderTable} from './table-view.js';
 import {$,dayPhase,easternDay,esc,resetInLabel,secsLeft} from '../util.js';
+import {tr} from '../i18n.js';
 
 // 超时牌桌: shown once per overtime hand, to everyone at the table, until 确认
 let OVERTIME_SEEN='';
@@ -23,7 +24,7 @@ export function render(){
   renderHeader();
   if(!M.mode){renderProfile();renderMenu();return;}
   if(!S){
-    const msg=!M.ready?'正在等待连接...':M.mode==='online'?'正在等待玩家...':'正在等待开局...';
+    const msg=!M.ready?tr('正在等待连接...'):M.mode==='online'?tr('正在等待玩家...'):tr('正在等待开局...');
     $('table').innerHTML=`<div class="center"><div class="result">${msg}</div></div>`;
     $('meSeat').innerHTML='';
     $('hero').innerHTML=FLASH?`<div class="flash">${esc(FLASH)}</div>`:'';

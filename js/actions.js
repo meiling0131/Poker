@@ -8,6 +8,7 @@ import {tableCash} from './ui/menu-view.js';
 import {LOCAL_B,LOCAL_C,M,MYDOC,PUSH,S,SESSION,SUBMITTED,myRef,setFLASH,setLOCAL_B,setLOCAL_C,setPUSH,setSUBMITTED,setVOTED,view} from './state.js';
 import {applyMoney,canRaise,lockedIn,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal,settleAdjust} from './table.js';
 import {$,fmt,store} from './util.js';
+import {N_,sub,tr} from './i18n.js';
 
 export let PENDING_ACTION=null,BET_MENU=null,CUSTOM_VAL='',RAISE_AT=0;
 // 提前操作: chosen while someone else acts, played the moment the turn reaches you.
@@ -15,9 +16,9 @@ export let PENDING_ACTION=null,BET_MENU=null,CUSTOM_VAL='',RAISE_AT=0;
 export let PRE=null;
 export function preOptions(){
   return [
-    {k:'cf',en:'Check/Fold',zh:'过牌/弃牌',tone:'light'},
-    {k:'call',en:'Check',zh:'过牌',tone:'light'},
-    {k:'any',en:'Call Any',zh:'跟任何注',tone:'any'},
+    {k:'cf',en:'Check/Fold',zh:N_('过牌/弃牌'),tone:'light'},
+    {k:'call',en:'Check',zh:N_('过牌'),tone:'light'},
+    {k:'any',en:'Call Any',zh:N_('跟任何注'),tone:'any'},
   ];
 }
 export function setPre(kind){
@@ -41,16 +42,16 @@ export function cancelAction(){PENDING_ACTION=null;BET_MENU=null;}
 export const stillMyTurn=x=>x&&S&&x.session===SESSION&&x.hand===S.hand&&x.turn===S.turn&&myTurn()&&(M.host||SUBMITTED!==S.turn);
 export const pendingIsCurrent=()=>stillMyTurn(PENDING_ACTION);
 export function confirmationPlan(){
-  if(!pendingIsCurrent())return {error:'牌局已变化，请重新选择操作。'};
+  if(!pendingIsCurrent())return {error:tr('牌局已变化，请重新选择操作。')};
   const p=S.seats[mySeat()],a=PENDING_ACTION;
   const call=Math.min(p.stack,Math.max(0,S.currentBet-p.bet));
   let amount=0,to=0;
   if(a.type==='raise'){
     to=a.custom?Number(CUSTOM_VAL):a.to;
-    if(!Number.isSafeInteger(to)||to<=0)return {error:'请输入有效的整数金额。'};
-    if(!canRaise(p))return {error:'当前不能再加注。'};
-    if(to>maxRaiseTo(p))return {error:`最多到 ${fmt(maxRaiseTo(p))}（All in）。`};
-    if(to<minRaiseTo(p))return {error:`最少到 ${fmt(minRaiseTo(p))}。`};
+    if(!Number.isSafeInteger(to)||to<=0)return {error:tr('请输入有效的整数金额。')};
+    if(!canRaise(p))return {error:tr('当前不能再加注。')};
+    if(to>maxRaiseTo(p))return {error:tr('最多到 {n}（All in）。',{n:fmt(maxRaiseTo(p))})};
+    if(to<minRaiseTo(p))return {error:tr('最少到 {n}。',{n:fmt(minRaiseTo(p))})};
     amount=to-p.bet;
   }else if(a.type==='call')amount=call;
   const selected=a.chips;
@@ -60,14 +61,14 @@ export function confirmationPlan(){
   return {type:a.type,to,amount,chips,change,total:p.bet+amount,allIn:amount>0&&amount>=p.stack};
 }
 export function confirmLabel(p,plan){
-  if(plan.type==='fold')return '确认 Fold';
-  if(plan.allIn)return `确认 All in ${fmt(plan.amount)}`;
-  if(plan.type==='call')return `确认 Call ${fmt(plan.amount)}`;
-  return `确认 Raise ${fmt(plan.to)}`;
+  if(plan.type==='fold')return tr('确认 Fold');
+  if(plan.allIn)return tr('确认 All in {n}',{n:fmt(plan.amount)});
+  if(plan.type==='call')return tr('确认 Call {n}',{n:fmt(plan.amount)});
+  return tr('确认 Raise {n}',{n:fmt(plan.to)});
 }
 export function confirmDetail(plan){
-  if(plan.type==='fold')return '弃掉这一手牌';
-  return `本次投入 ${fmt(plan.amount)} · 本轮合计 ${fmt(plan.total)}${plan.change?` · 找零 ${fmt(plan.change)}`:''}`;
+  if(plan.type==='fold')return tr('弃掉这一手牌');
+  return tr('本次投入 {n} · 本轮合计 {t}',{n:fmt(plan.amount),t:fmt(plan.total)})+(plan.change?' · '+tr('找零 {c}',{c:fmt(plan.change)}):'');
 }
 export function requestAction(type,to=0,chips=null,custom=false){
   if(!myTurn()||(!M.host&&SUBMITTED===S.turn))return;
@@ -205,7 +206,7 @@ export async function act(type,to,chips){
   preview(type,to,chips);
   // sent before anything is redrawn: the seat doc's own echo (net.js) redraws the page as soon as it has gone
   try{await myRef.update({act:{hand,turn,type,to,chips}});setPUSH(Z());}
-  catch(e){setSUBMITTED(-1);setFLASH('提交失败，请再点一次。');view.render();}
+  catch(e){setSUBMITTED(-1);setFLASH(tr('提交失败，请再点一次。'));view.render();}
 }
 // The table is the server's, a network round trip away: your own action is shown at once on this page's copy,
 // and the server's copy replaces it a moment later (the same, plus whoever acts next). Buy-ins and cash-outs
@@ -220,20 +221,20 @@ export async function vote(n){
   const m=mySeat(),R=S&&S.runout;if(m<0||!R||R.stage!=='vote'||!R.voters.includes(m)||R.votes[m])return;
   if(M.host){castVote(m,n);return;}
   setVOTED({hand:S.hand,turn:R.turn,n});
-  try{await myRef.update({act:{type:'rit',n,hand:S.hand,turn:R.turn}});}catch(e){setVOTED(null);setFLASH('提交失败，请再点一次。');view.render();}
+  try{await myRef.update({act:{type:'rit',n,hand:S.hand,turn:R.turn}});}catch(e){setVOTED(null);setFLASH(tr('提交失败，请再点一次。'));view.render();}
 }
 export async function money(kind){
   const m=mySeat();if(m<0)return;
   const p=S.seats[m];
   if(kind==='buy'&&BUY>tableCash())return;
-  if(kind==='cash'&&p.stack-p.qCash*BUY+p.qBuy*BUY<BUY){setFLASH(`筹码不足 ${BUY}，不能退一手。`);view.render();return;}
+  if(kind==='cash'&&p.stack-p.qCash*BUY+p.qBuy*BUY<BUY){setFLASH(tr('筹码不足 {n}，不能退一手。',{n:BUY}));view.render();return;}
   setFLASH('');
   if(S.mode==='bots'&&!M.host){
     const d=MYDOC||{};
     try{
       if(kind==='buy'){setLOCAL_B(Math.max(LOCAL_B,Number(d.buyN)||0)+1);await myRef.update({name:M.nick,join:true,buyN:LOCAL_B});}
       else{setLOCAL_C(Math.max(LOCAL_C,Number(d.cashN)||0)+1);await myRef.update({name:M.nick,join:true,cashN:LOCAL_C});}
-    }catch(e){setFLASH('提交失败，请再试一次。');}
+    }catch(e){setFLASH(tr('提交失败，请再试一次。'));}
     view.render();return;
   }
   if(S.mode==='bots'){
@@ -246,7 +247,7 @@ export async function money(kind){
   try{
     if(kind==='buy'){setLOCAL_B(Math.max(LOCAL_B,Number(d.buyN)||0)+1);await myRef.update({buyN:LOCAL_B});}
     else{setLOCAL_C(Math.max(LOCAL_C,Number(d.cashN)||0)+1);await myRef.update({cashN:LOCAL_C});}
-  }catch(e){setFLASH('提交失败，请再试一次。');}
+  }catch(e){setFLASH(tr('提交失败，请再试一次。'));}
   view.render();
 }
 export async function buyAmount(amt){
@@ -260,7 +261,7 @@ export async function buyAmount(amt){
     const n=Math.max(LOCAL_B,Number((MYDOC||{}).buyN)||0)+units;
     setLOCAL_B(n);
     try{await myRef.update({name:M.nick,join:true,buyN:n});}
-    catch(e){setFLASH('提交失败，请再试一次。');}
+    catch(e){setFLASH(tr('提交失败，请再试一次。'));}
     view.render();return;
   }
   p.qBuy+=units;applyMoney(p);commit();maybeStart();
@@ -276,7 +277,7 @@ export async function cashAmount(amt){
     const n=Math.max(LOCAL_C,Number((MYDOC||{}).cashN)||0)+units;
     setLOCAL_C(n);
     try{await myRef.update({name:M.nick,join:true,cashN:n});}
-    catch(e){setFLASH('提交失败，请再试一次。');}
+    catch(e){setFLASH(tr('提交失败，请再试一次。'));}
     view.render();return;
   }
   p.qCash+=units;applyMoney(p);commit();
@@ -303,7 +304,7 @@ export async function tidy(){
   if(DV.every(d=>t[d]===p.chips[d])){view.renderHero();return;}
   if(M.host){p.chips=t;commit();return;}
   try{LOCAL_T=Math.max(LOCAL_T,Number((MYDOC||{}).tidyN)||0)+1;await myRef.update({tidyN:LOCAL_T});}
-  catch(e){setFLASH('整理失败，请再试一次。');}
+  catch(e){setFLASH(tr('整理失败，请再试一次。'));}
   view.render();
 }
 export let AUTO_TIDY=store.get('poker.autoTidy')==='1';
@@ -327,7 +328,7 @@ export function actionLabels(p){
   const word='Raise',to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
   const n=Math.min(toCall,p.stack);
   const r={toCall,pushed,canR,minTo,word,to,allIn};
-  r.callLbl=toCall===0?'Check<small>过牌</small>':`Call ${fmt(n)}<small>跟注 ${fmt(n)}</small>`;
+  r.callLbl=toCall===0?'Check'+sub('过牌'):`Call ${fmt(n)}${sub(`跟注 ${fmt(n)}`)}`;
   r.canAllIn=p.stack>0&&(p.stack<=toCall||canR);
   r.callChange=pushed>toCall&&toCall>0&&!(to>=minTo||allIn)?pushed-toCall:0;
   // Bet sends the selected chips. Anything short of a call, or a raise short of the minimum, stays disabled.

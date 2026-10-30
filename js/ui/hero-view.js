@@ -5,6 +5,7 @@ import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SESSION,SUBMITTED,VOTED,setPUSH,setPUSH_TURN,view} from '../state.js';
 import {canAct,handLive,isKicked,isOwner,lockedIn,myName,mySeat,myTurn} from '../table.js';
 import {EMOJIS,EMO_OPEN} from '../talk.js';
+import {sub,tr} from '../i18n.js';
 import {chipEl,miniStackC,pilesC} from './chips-view.js';
 import {HOT,betHTML,cardHTML,draw,myHoleCards,resultCardHTML,ringHTML,seatName,settle} from './table-view.js';
 import {dealCard} from './anim.js';
@@ -16,12 +17,12 @@ export function hostRequestsHTML(){
   if(!isOwner()||!S||S.mode!=='online')return '';
   const asks=S.seats.filter(p=>p.askB>0);
   if(!asks.length)return '';
-  return `<div class="requests">${asks.map(p=>`<div class="req"><span><b>${esc(seatName(p))}</b> 申请买一手 +${fmt(BUY)}${p.askB>1?` ×${p.askB}`:''}</span>
-    <button class="mini" data-deny="${esc(p.uid)}">拒绝</button><button class="mini ok" data-approve="${esc(p.uid)}">同意</button></div>`).join('')}</div>`;
+  return `<div class="requests">${asks.map(p=>`<div class="req"><span>${tr('{who} 申请买一手 +{n}',{who:`<b>${esc(seatName(p))}</b>`,n:fmt(BUY)})}${p.askB>1?` ×${p.askB}`:''}</span>
+    <button class="mini" data-deny="${esc(p.uid)}">${tr('拒绝')}</button><button class="mini ok" data-approve="${esc(p.uid)}">${tr('同意')}</button></div>`).join('')}</div>`;
 }
 export function towerHTML(d,count,enabled,pushed){
   const c=CCLS[d],shown=Math.min(count,12);
-  return `<button class="tower ${c}" data-push="${d}"${enabled&&count>0?'':' disabled'} aria-label="${d} 面值，剩 ${count} 枚">
+  return `<button class="tower ${c}" data-push="${d}"${enabled&&count>0?'':' disabled'} aria-label="${tr('{d} 面值，剩 {n} 枚',{d,n:count})}">
     <span class="tw">${'<i class="disc"></i>'.repeat(shown)}${count?'<span class="face"><i class="chip-d '+c+'"></i></span>':'<span class="emptyspot"></span>'}</span>
     <span class="cnt">×${count}</span></button>`;
 }
@@ -42,23 +43,24 @@ function moneyValue(p){
   let v=b.start+Math.round((Math.round(MONEY_AT)-b.start)/BUY)*BUY;
   if(v<b.min)v=b.min;if(v>b.max)v=b.max;return v;
 }
-const moneyWord=delta=>`${delta>0?'买入':'取出'} ${fmt(Math.abs(delta))} 筹码`;
+const goLabel=delta=>delta<0?tr('取出 {n}',{n:fmt(-delta)}):tr('买入 {n}',{n:fmt(delta)});
 function laterLine(delta){
   if(!delta)return '';
-  return `<span class="rack-later">${moneyWord(delta)}将于本局结束后执行。</span>`;
+  return `<span class="rack-later">${(delta>0?tr('买入 {n} 筹码将于本局结束后执行。',{n:fmt(delta)}):tr('取出 {n} 筹码将于本局结束后执行。',{n:fmt(-delta)}))}</span>`;
 }
 // A finished buy-in or cash-out says so for 5 seconds, counting down.
 const DONE_MS=5000;
 let DONE=null,DONE_TICK=null;
 const doneLeft=()=>Math.max(0,Math.ceil((DONE.until-Date.now())/1000));
-function doneLine(){return DONE?`<span class="rack-later rack-done">${moneyWord(DONE.delta)}已执行。(${doneLeft()}s)</span>`:'';}
+const doneText=()=>{const o={n:fmt(Math.abs(DONE.delta)),s:doneLeft()};return DONE.delta>0?tr('买入 {n} 筹码已执行。({s}s)',o):tr('取出 {n} 筹码已执行。({s}s)',o);};
+function doneLine(){return DONE?`<span class="rack-later rack-done">${doneText()}</span>`:'';}
 export function moneyDone(delta){
   sfx('notify-bank-complete');   // your own buy-in or cash-out has gone through (never a bot's rebuy)
   DONE={delta,until:Date.now()+DONE_MS};
   clearInterval(DONE_TICK);
   DONE_TICK=setInterval(()=>{
     if(!DONE||Date.now()>=DONE.until){DONE=null;clearInterval(DONE_TICK);renderHero();return;}
-    for(const el of document.querySelectorAll('.rack-done'))el.textContent=`${moneyWord(DONE.delta)}已执行。(${doneLeft()}s)`;
+    for(const el of document.querySelectorAll('.rack-done'))el.textContent=doneText();
   },1000);
   renderHero();
 }
@@ -94,8 +96,8 @@ export function railHTML(p,enabled){
   const avail=Z();for(const d of DV)avail[d]=Math.max(0,(p.chips[d]||0)-(enabled?PUSH[d]:0));
   const t=tidied(p.chips),tidy=DV.every(d=>t[d]===p.chips[d]);
   return `<div class="rail${enabled?' live':''}"><div class="towers">${[1,5,10,25].map(d=>towerHTML(d,avail[d],enabled)).join('')}</div>`+
-    `<button type="button" class="tidy" data-tidy="1"${tidy?' disabled':''} aria-label="整理筹码" title="先凑 白10 红6 蓝6，其余换成绿25">整理</button>`+
-    `<button type="button" class="bank${BUY_OPEN?' on':''}" data-bank="1" aria-label="买入或取出" title="买入或取出">${BANK_ICON}</button></div>`;
+    `<button type="button" class="tidy" data-tidy="1"${tidy?' disabled':''} aria-label="${tr('整理筹码')}" title="${tr('先凑 白10 红6 蓝6，其余换成绿25')}">${tr('整理')}</button>`+
+    `<button type="button" class="bank${BUY_OPEN?' on':''}" data-bank="1" aria-label="${tr('买入或取出')}" title="${tr('买入或取出')}">${BANK_ICON}</button></div>`;
 }
 function movePiles(delta){
   const n=Math.round(Math.abs(delta)/25);if(!n)return '';
@@ -103,7 +105,7 @@ function movePiles(delta){
   return `<div class="bz-chips"><div class="pile"><div class="col">${chipEl(CCLS[25],18).repeat(Math.min(n,8))}</div><span class="n ${tone}">${sign}${n}</span></div></div>`;
 }
 function moneyRack(delta,clock,home){
-  const hint=home?`<span class="rack-empty">拖动滑块以调整买入或取出金额。</span>`:'';
+  const hint=home?`<span class="rack-empty">${tr('拖动滑块以调整买入或取出金额。')}</span>`:'';
   // the hand just ended (you went bust, say): on a phone its result shows here too
   const res=S.street==='done'?resultCardHTML():'';
   return `<div class="betzone${delta||home?' has-move':''}${res?' has-result':''}" id="moneyRack">${res}${delta?movePiles(delta):''}${hint}${lockedIn(S.seats[mySeat()])?laterLine(delta):''}${clock||''}</div>`;
@@ -112,15 +114,15 @@ function moneyHTML(p){
   const b=moneyBounds(p),v=moneyValue(p),delta=v-p.stack,buy=delta>=0;
   const ticks=moneyTicks(b.min,b.max,p.stack);
   return `<div class="raisebox moneybox ${delta>0?'buy':delta<0?'cash':''}">
-    <div class="money-read"><b class="raise-num" id="moneyNum">${fmt(v)}</b><span class="money-avail" id="moneyAvail">可用余额 ${fmt(spendable())}</span></div>
+    <div class="money-read"><b class="raise-num" id="moneyNum">${fmt(v)}</b><span class="money-avail" id="moneyAvail">${tr('可用余额 {n}',{n:fmt(spendable())})}</span></div>
     <div class="raise-scale" id="moneyScale">
       <div class="raise-line"><b class="fill"></b></div>
       <div class="raise-ticks">${ticks.map(n=>`<i data-v="${n}"></i>`).join('')}</div>
-      <input id="moneyRange" type="range" min="${b.min}" max="${b.max}" step="${BUY}" value="${v}"${b.max<=b.min?' disabled':''} aria-label="买入或取出">
+      <input id="moneyRange" type="range" min="${b.min}" max="${b.max}" step="${BUY}" value="${v}"${b.max<=b.min?' disabled':''} aria-label="${tr('买入或取出')}">
     </div>
     <div class="confirmbar">
-      <button class="btn tidybtn${AUTO_TIDY?' on':''}" data-autotidy="1" aria-pressed="${AUTO_TIDY}">自动整理筹码</button>
-      <button class="btn ${buy?'go-buy':'go-cash'}" id="moneyGo" data-money-go="1"${delta&&delta<=spendable()?'':' disabled'}>${delta<0?'取出':'买入'} ${fmt(Math.abs(delta))}</button>
+      <button class="btn tidybtn${AUTO_TIDY?' on':''}" data-autotidy="1" aria-pressed="${AUTO_TIDY}">${tr('自动整理筹码')}</button>
+      <button class="btn ${buy?'go-buy':'go-cash'}" id="moneyGo" data-money-go="1"${delta&&delta<=spendable()?'':' disabled'}>${goLabel(delta)}</button>
     </div>
   </div>`;
 }
@@ -142,8 +144,8 @@ function paintMoney(){
   if(range&&String(range.value)!==String(v))range.value=String(v);
   const delta=v-p.stack,num=$('moneyNum'),avail=$('moneyAvail'),go=$('moneyGo'),box=document.querySelector('.moneybox');
   if(num)num.textContent=fmt(v);
-  if(avail)avail.textContent=`可用余额 ${fmt(spendable())}`;
-  if(go){go.disabled=!delta||delta>spendable();go.classList.toggle('go-buy',delta>=0);go.classList.toggle('go-cash',delta<0);go.textContent=`${delta<0?'取出':'买入'} ${fmt(Math.abs(delta))}`;}
+  if(avail)avail.textContent=tr('可用余额 {n}',{n:fmt(spendable())});
+  if(go){go.disabled=!delta||delta>spendable();go.classList.toggle('go-buy',delta>=0);go.classList.toggle('go-cash',delta<0);go.textContent=goLabel(delta);}
   if(box){box.classList.toggle('buy',delta>0);box.classList.toggle('cash',delta<0);}
   paintMoneyFill(p,v);
   const rack=$('moneyRack');
@@ -165,7 +167,7 @@ if(typeof window!=='undefined')window.addEventListener('resize',()=>{
   paintMoneyFill(S.seats[m],moneyValue(S.seats[m]));
 });
 function preactsHTML(){
-  return `<div class="preacts" role="group" aria-label="提前操作">${preOptions().map(o=>{const on=PRE&&PRE.hand===S.hand&&PRE.kind===o.k;return `<button data-pre="${o.k}" aria-pressed="${on}" class="${o.tone}${on?' on':''}">${o.en}<small>${o.zh}</small></button>`;}).join('')}</div>`;
+  return `<div class="preacts" role="group" aria-label="${tr('提前操作')}">${preOptions().map(o=>{const on=PRE&&PRE.hand===S.hand&&PRE.kind===o.k;return `<button data-pre="${o.k}" aria-pressed="${on}" class="${o.tone}${on?' on':''}">${o.en}${sub(o.zh)}</button>`;}).join('')}</div>`;
 }
 export function renderHero(){
   // a redraw while you type an amount keeps what you typed, and the cursor
@@ -180,10 +182,10 @@ export function renderHeroInner(){
     const queued=MYDOC&&MYDOC.join;
     let ctl;
     const full=S.seats.length>=ONLINE_MAX;
-    if(isKicked(M.me))ctl=`<div class="wait">你已被房主请出这个房间。</div>`;
-    else if(queued)ctl=`<div class="wait">正在等待座位...</div><div class="main"><button class="btn fold small" data-a="leave">取消（退回这一手）</button></div>`;
+    if(isKicked(M.me))ctl=`<div class="wait">${tr('你已被房主请出这个房间。')}</div>`;
+    else if(queued)ctl=`<div class="wait">${tr('正在等待座位...')}</div><div class="main"><button class="btn fold small" data-a="leave">${tr('取消（退回这一手）')}</button></div>`;
     else if(!M.ready)ctl='';
-    else ctl=`<div class="wait">${S.seats.length} 人在座${full?' · 已满 10 人，可以先排队':''}${handLive()?' · 牌局进行中，买入后这一手结束入座':''}</div><div class="main"><button class="btn next" data-a="join">${miniStackC(chipsOf25(BUY))} 买一手并入座 +${fmt(BUY)}</button></div>`;
+    else ctl=`<div class="wait">${[tr('{n} 人在座',{n:S.seats.length}),full?tr('已满 10 人，可以先排队'):'',handLive()?tr('牌局进行中，买入后这一手结束入座'):''].filter(Boolean).join(' · ')}</div><div class="main"><button class="btn next" data-a="join">${miniStackC(chipsOf25(BUY))} ${tr('买一手并入座 +{n}',{n:fmt(BUY)})}</button></div>`;
     if(FLASH)ctl+=`<div class="flash">${esc(FLASH)}</div>`;
     el.innerHTML=`<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
     return;
@@ -205,46 +207,46 @@ export function renderHeroInner(){
   // the hand's result: on a phone it is shown here, where it covers nothing (the felt has it on a bigger screen)
   const res=S.street==='done'?resultCardHTML():'',resCls=res?' has-result':'';
   const zone=BUY_OPEN?moneyRack(moneyValue(p)-p.stack,clock?`<span class="rack-clock">${clock}</span>`:'',dragHint(p,moneyValue(p)))
-    :needBuy?`<div class="betzone${noted}${resCls}"><span class="rack-empty">买入筹码以开始。</span>${res}${later}</div>`
+    :needBuy?`<div class="betzone${noted}${resCls}"><span class="rack-empty">${tr('买入筹码以开始。')}</span>${res}${later}</div>`
     :mine?`<div class="betzone${L.pushed?' has':''}${noted}">
-      ${L.pushed?`<div class="bz-chips">${[1,5,10,25].filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="撤回一枚 ${d}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join('')}</div>`:`<span class="rack-empty">点击筹码以下注，再次点击以撤回。</span>`}
+      ${L.pushed?`<div class="bz-chips">${[1,5,10,25].filter(d=>PUSH[d]>0).map(d=>`<button class="pull" data-pull="${d}" aria-label="${tr('撤回一枚 {d}',{d})}">${pilesC({1:0,5:0,10:0,25:0,[d]:PUSH[d]},{size:18,max:8})}</button>`).join('')}</div>`:`<span class="rack-empty">${tr('点击筹码以下注，再次点击以撤回。')}</span>`}
       ${later}${clock?`<span class="rack-clock">${clock}</span>`:''}
     </div>`
-    :`<div class="betzone${noted}${resCls}"><span class="rack-empty">未开始下注。</span>${res}${later}</div>`;
+    :`<div class="betzone${noted}${resCls}"><span class="rack-empty">${tr('未开始下注。')}</span>${res}${later}</div>`;
   let ctl='';
   if(BUY_OPEN)ctl=moneyHTML(p);
   else if(mine){
     if(pendingIsCurrent()){
       const plan=confirmationPlan(),red=plan.type==='fold'||plan.allIn;
       ctl+=`<div class="confirmbar">
-        <button class="btn cancel" data-a="cancel">取消</button>
-        <button class="btn go ${red?'red':'green'}" id="confirmGo" data-a="confirm"${plan.error?' disabled':''}>${plan.error?'确认':confirmLabel(p,plan)}</button>
+        <button class="btn cancel" data-a="cancel">${tr('取消')}</button>
+        <button class="btn go ${red?'red':'green'}" id="confirmGo" data-a="confirm"${plan.error?' disabled':''}>${plan.error?tr('确认'):confirmLabel(p,plan)}</button>
       </div><div class="confirmInfo${plan.error?' err':''}" id="confirmInfo">${esc(plan.error||confirmDetail(plan))}</div>`;
     }else if(stillMyTurn(BET_MENU)&&L.canR){
       const sc=raiseScale(p);
       ctl+=`<div class="raisebox" style="--min:${sc.minPct}%;--val:${sc.pct}%">
-        <input class="raise-num" id="raiseNum" type="number" inputmode="numeric" min="${sc.min}" max="${sc.max}" step="1" value="${sc.value}" aria-label="加注到（Custom 自定义金额）"${dis}>
+        <input class="raise-num" id="raiseNum" type="number" inputmode="numeric" min="${sc.min}" max="${sc.max}" step="1" value="${sc.value}" aria-label="${tr('加注到（Custom 自定义金额）')}"${dis}>
         <div class="raise-row">
           <button type="button" class="raise-end" data-raise-to="${sc.min}">Min.</button>
           <div class="raise-scale" id="raiseScale" style="--min:${sc.minPct}%;--val:${sc.pct}%">
             <div class="raise-line"><b class="fill"></b></div>
             <div class="raise-ticks">${sc.marks.map(m=>`<i data-v="${m.v}"></i>`).join('')}</div>
-            <input id="raiseRange" type="range" min="0" max="${sc.max}" step="1" value="${sc.value}"${sc.max<=sc.min?' disabled':''} aria-label="加注金额">
+            <input id="raiseRange" type="range" min="0" max="${sc.max}" step="1" value="${sc.value}"${sc.max<=sc.min?' disabled':''} aria-label="${tr('加注金额')}">
           </div>
           <button type="button" class="raise-end" data-raise-to="${sc.max}">All in</button>
         </div>
-        <div class="presets betmenu raise-presets">${betPresets(p).map(x=>`<button type="button" data-raise-to="${x.to||''}"${x.to?'':' disabled'}>${x.k}<small>${x.to?(x.to>=sc.max?'All in':fmt(x.to)):'—'}</small></button>`).join('')}<button type="button" data-raise-custom="1">Custom<small>自定义</small></button></div>
+        <div class="presets betmenu raise-presets">${betPresets(p).map(x=>`<button type="button" data-raise-to="${x.to||''}"${x.to?'':' disabled'}>${x.k}<small>${x.to?(x.to>=sc.max?'All in':fmt(x.to)):'—'}</small></button>`).join('')}<button type="button" data-raise-custom="1">Custom${sub('自定义')}</button></div>
         <div class="confirmbar">
-          <button class="btn cancel" data-a="cancel">取消</button>
+          <button class="btn cancel" data-a="cancel">${tr('取消')}</button>
           <button class="btn ${sc.allIn?'allin':'raise'}" id="raiseGo" data-a="raise-go"${dis}>${sc.allIn?'All in':`Raise<small>${fmt(sc.value)}</small>`}</button>
         </div>
       </div>`;
     }else{
       ctl+=`<div class="main actions">
       <button class="btn call" data-a="call"${dis}>${L.callLbl}</button>
-      <button class="btn raise" data-a="raise"${dis||!L.canR?' disabled':''}>Raise<small>加注</small></button>
-      <button class="btn fold" data-a="fold"${dis}>Fold<small>弃牌</small></button>
-      <button class="btn bet${L.betAllIn?' allin':''}" data-a="bet"${dis||!L.betOk?' disabled':''}>Bet<small>${L.change?`下注 ${fmt(L.betAmt)} · 找零 ${fmt(L.change)}`:'下注'}</small></button>
+      <button class="btn raise" data-a="raise"${dis||!L.canR?' disabled':''}>Raise${sub('加注')}</button>
+      <button class="btn fold" data-a="fold"${dis}>Fold${sub('弃牌')}</button>
+      <button class="btn bet${L.betAllIn?' allin':''}" data-a="bet"${dis||!L.betOk?' disabled':''}>Bet${L.change?`<small>${tr('下注 {n} · 找零 {c}',{n:fmt(L.betAmt),c:fmt(L.change)})}</small>`:sub('下注')}</button>
     </div>`;
     }
   }else{
@@ -253,30 +255,30 @@ export function renderHeroInner(){
       const nx=S.nextAt?` ${cdSpan(S.nextAt)}`:'';
       const broke=p.stack===0&&!p.qBuy; // busted: the next hand waits for a buy-in, so offer only that
       // a closing table (23:55 Eastern) deals no more: only 退出牌桌
-      if(S.mode==='bots')ctl=`<div class="main endbar"><button class="btn quit" data-exit-open="1">退出牌桌</button>${broke||S.closing?'':`<button class="btn next" data-a="next">继续游戏${nx}</button>`}</div>`;
+      if(S.mode==='bots')ctl=`<div class="main endbar"><button class="btn quit" data-exit-open="1">${tr('退出牌桌')}</button>${broke||S.closing?'':`<button class="btn next" data-a="next">${tr('继续游戏')}${nx}</button>`}</div>`;
     }else if(S.street!=='idle'){
-      if(!p.inHand)ctl=`<div class="wait">请等待下一轮。</div>`;
-      else if(p.folded)ctl=`<div class="wait">您已弃牌。</div>`;
-      else if(p.allIn)ctl=`<div class="wait">您已 All in。</div>`;
+      if(!p.inHand)ctl=`<div class="wait">${tr('请等待下一轮。')}</div>`;
+      else if(p.folded)ctl=`<div class="wait">${tr('您已弃牌。')}</div>`;
+      else if(p.allIn)ctl=`<div class="wait">${tr('您已 All in。')}</div>`;
       if(R&&R.stage==='vote'&&R.voters.includes(m)){
         const mv=R.votes[m]||(VOTED&&VOTED.hand===S.hand&&VOTED.turn===R.turn?VOTED.n:0);
-        if(!mv)ctl+=`<div class="main"><button class="btn call" data-vote="1">跑一次</button><button class="btn raise" data-vote="2">跑两次</button></div>`;
+        if(!mv)ctl+=`<div class="main"><button class="btn call" data-vote="1">${tr('跑一次')}</button><button class="btn raise" data-vote="2">${tr('跑两次')}</button></div>`;
       }else if(p.inHand&&!p.folded&&canAct(p)&&BETTING.includes(S.street)&&!(S.runout&&S.runout.stage))
         ctl+=preactsHTML();
     }
-    if(S.mode==='online')ctl+=`<div class="main"><button class="btn fold small" data-a="leave"${p.leaving?' disabled':''}>离座</button></div>`;
+    if(S.mode==='online')ctl+=`<div class="main"><button class="btn fold small" data-a="leave"${p.leaving?' disabled':''}>${tr('离座')}</button></div>`;
   }
   if(FLASH)ctl+=`<div class="flash">${esc(FLASH)}</div>`;
-  if(EMO_OPEN)ctl=`<div class="emopick" role="group" aria-label="表情">${EMOJIS.map(e=>`<button data-emo="${e}">${e}</button>`).join('')}</div>`+ctl;
+  if(EMO_OPEN)ctl=`<div class="emopick" role="group" aria-label="${tr('表情')}">${EMOJIS.map(e=>`<button data-emo="${e}">${e}</button>`).join('')}</div>`+ctl;
   // your seat sits on the table, below the board; the panel underneath is chips and buttons
   const pushed=mine?csum(PUSH):0;
   draw($('meSeat'),`<div class="me${p.folded?' folded':''}${p.win?' win':''}${mine?' turn':''}" data-i="${m}" style="--ph:-${Date.now()%1600}ms">
       ${p.bet>0?`<div class="herobet">${betHTML(p.bet,p.betChips,m)}</div>`:''}
       <div class="hc">${cards}</div>
       <div class="plate">${mine?ringHTML():''}
-        ${S.street!=='idle'&&p.inHand&&S.dealer===m?'<i class="dbtn">D</i>':''}${S.street!=='idle'&&p.inHand&&S.sbPos===m?'<i class="blind sb" title="小盲">S</i>':''}${S.street!=='idle'&&p.inHand&&S.bbPos===m?'<i class="blind bb" title="大盲">B</i>':''}<span class="who">${esc(myName())}</span>
+        ${S.street!=='idle'&&p.inHand&&S.dealer===m?'<i class="dbtn">D</i>':''}${S.street!=='idle'&&p.inHand&&S.sbPos===m?`<i class="blind sb" title="${tr('小盲')}">S</i>`:''}${S.street!=='idle'&&p.inHand&&S.bbPos===m?`<i class="blind bb" title="${tr('大盲')}">B</i>`:''}<span class="who">${esc(myName())}</span>
         <b class="stk"><span class="num">${fmt(p.stack-pushed)}</span></b>${pushed?`<span class="pushed">→ ${fmt(pushed)}</span>`:''}
-        <button class="emo-btn${EMO_OPEN?' on':''}" data-emo-open="1" aria-label="发表情" aria-expanded="${EMO_OPEN}">😀</button>
+        <button class="emo-btn${EMO_OPEN?' on':''}" data-emo-open="1" aria-label="${tr('发表情')}" aria-expanded="${EMO_OPEN}">😀</button>
       </div>
     </div>`);
   if(draw(el,`${zone}${railHTML(p,mine&&!BUY_OPEN)}<div class="controls">${hostRequestsHTML()}${ctl}</div>`)){layoutRaiseMarks();if(BUY_OPEN)paintMoneyFill(p,moneyValue(p));}
