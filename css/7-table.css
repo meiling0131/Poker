@@ -172,20 +172,23 @@ body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{grid-area:zone
 .hero:not(:has(.rail)):not(:has(.betzone)){grid-template-columns:1fr;grid-template-areas:"ctl"}
 
 /* ---- 动画 ---- */
-/* 发牌：从公共牌那里飞到座位上（--dx/--dy 是飞行起点） */
+/* 发牌：从公共牌那里抛到座位上，划一道弧线（--dx/--dy 是飞行起点） */
 .card[data-deal]{animation:deal 380ms cubic-bezier(.2,.75,.3,1) var(--d,0ms) both}
-@keyframes deal{from{transform:translate(var(--dx,0px),var(--dy,0px)) rotate(-30deg) scale(.5);opacity:0}15%{opacity:1}to{transform:none;opacity:1}}
-/* 你的牌：飞过来，再翻开 */
+@keyframes deal{from{transform:translate(var(--dx,0px),var(--dy,0px)) rotate(-30deg) scale(.5);opacity:0}15%{opacity:1}
+  55%{transform:translate(calc(var(--dx,0px)*.4),calc(var(--dy,0px)*.4 - 22px)) rotate(-10deg) scale(1.08)}to{transform:none;opacity:1}}
+/* 你的牌：抛过来，再真的翻过来（绕竖轴转，有透视） */
 .me .card[data-deal]{position:relative;animation:dealme 760ms cubic-bezier(.2,.75,.3,1) var(--d,0ms) both}
 .me .card[data-deal]::after,.card[data-flip]::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:3;
   background:#344e65;box-shadow:inset 0 0 0 2px #f0ebdf,inset 0 0 0 4px #344e65,inset 0 0 0 5px #ede8da60}
 .me .card[data-deal]::after{animation:hideback 760ms var(--d,0ms) both}
-@keyframes dealme{0%{transform:translate(var(--dx,0px),var(--dy,0px)) rotate(-30deg) scale(.5);opacity:0}8%{opacity:1}50%{transform:none}72%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes dealme{0%{transform:translate(var(--dx,0px),var(--dy,0px)) rotate(-30deg) scale(.5);opacity:0}8%{opacity:1}
+  30%{transform:translate(calc(var(--dx,0px)*.4),calc(var(--dy,0px)*.4 - 30px)) rotate(-10deg) scale(1.06)}
+  50%{transform:perspective(500px) rotateY(0deg)}72%{transform:perspective(500px) rotateY(-90deg)}100%{transform:perspective(500px) rotateY(0deg)}}
 @keyframes hideback{0%,71.9%{opacity:1}72%,100%{opacity:0}}
-/* 公共牌：一张接一张翻开 */
+/* 公共牌：一张接一张翻开，立起来转半圈 */
 .card[data-flip]{position:relative;animation:flip 440ms ease-in-out var(--d,0ms) both}
 .card[data-flip]::after{animation:hideback2 440ms var(--d,0ms) both}
-@keyframes flip{0%{transform:translateY(-6px) scaleX(1)}50%{transform:translateY(-6px) scaleX(0)}100%{transform:none}}
+@keyframes flip{0%{transform:translateY(-8px) perspective(500px) rotateY(0deg)}50%{transform:translateY(-10px) perspective(500px) rotateY(90deg)}100%{transform:translateY(0) perspective(500px) rotateY(0deg)}}
 @keyframes hideback2{0%,49.9%{opacity:1}50%,100%{opacity:0}}
 /* 筹码飞进底池、底池飞给赢家（js 里用 Web Animations 做，这里只是外观） */
 .fx{position:fixed;inset:0;pointer-events:none;z-index:45;overflow:hidden}
