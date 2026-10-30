@@ -149,8 +149,14 @@ function fly(html,from,to,delay,dur,fade){
   const el=document.createElement('div');el.className='fly';el.innerHTML=html;
   el.style.left=from.x+'px';el.style.top=from.y+'px';
   layer.appendChild(el);
-  const dx=to.x-from.x,dy=to.y-from.y;
-  const a=el.animate([{transform:'translate(-50%,-50%)',opacity:1},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(${fade?.5:.8}) rotate(${fade?'20deg':'0'})`,opacity:fade?0:.85}],
-    {duration:dur,delay,easing:fade?'cubic-bezier(.4,0,.8,.6)':'cubic-bezier(.45,0,.25,1)',fill:'both'});
+  // tossed, not slid: along an arc that rises with the distance, growing a little at the top as if nearer
+  const dx=to.x-from.x,dy=to.y-from.y,lift=Math.min(fade?30:70,Math.hypot(dx,dy)*(fade?.12:.22));
+  const end=fade?.5:.8,frames=[];
+  for(let k=0;k<=6;k++){
+    const t=k/6,up=4*t*(1-t),s=1+(end-1)*t+(fade?0:.1)*up;
+    frames.push({transform:`translate(calc(-50% + ${(dx*t).toFixed(1)}px),calc(-50% + ${(dy*t-lift*up).toFixed(1)}px)) scale(${s.toFixed(3)}) rotate(${fade?Math.round(20*t):0}deg)`,
+      opacity:fade?1-t*t:1-.15*t});
+  }
+  const a=el.animate(frames,{duration:dur,delay,easing:fade?'cubic-bezier(.4,0,.8,.6)':'cubic-bezier(.45,0,.25,1)',fill:'both'});
   a.onfinish=a.oncancel=()=>el.remove();
 }

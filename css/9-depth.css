@@ -1,0 +1,90 @@
+/* 2.5D：牌桌往后倾、看得见桌边的厚度、头顶一盏灯；椅子、座位牌、牌、筹码、操作台和按钮都有了立体感。
+   只改外观，排版不动：都写在这里，压在前面的文件之上。 */
+
+/* ---- 牌桌：往后倾，前沿看得见厚度，灯光落在桌面中间 ---- */
+.stage{--persp:900px;--tilt:13deg;--edge:9px}
+.stage::before,.stage::after{inset:0 0 var(--edge);transform-origin:50% 100%;transform:perspective(var(--persp)) rotateX(var(--tilt))}
+/* the light: a warm pool in the middle of the table, the corners falling off into shadow */
+body[data-skin] .stage::after{border:0;border-radius:inherit;
+  background:radial-gradient(ellipse 58% 42% at 50% 40%,#fff1d626,transparent 72%),
+    radial-gradient(ellipse 75% 70% at 50% 45%,transparent 55%,#00000059 100%)}
+body[data-skin="f1"] .stage::after{border-radius:28px}
+body[data-skin="f2"] .stage::after{border-radius:20px}
+/* the table's front edge is the one that shows its thickness; the shadow on the floor is wide and soft */
+body[data-skin="f1"] .stage::before{
+  box-shadow:0 0 0 1px #c48a5a,0 var(--edge) 0 #5a2f17,0 calc(var(--edge) + 1px) 0 #2e170a,0 28px 46px #000b,
+    inset 0 0 0 1px #ffffff1a,inset 0 2px 0 #ffe2bf2e,inset 0 0 50px #3b1d0c66}
+body[data-skin="f2"] .stage::before{
+  box-shadow:0 0 0 1px #6b707866,0 var(--edge) 0 #24272b,0 calc(var(--edge) + 1px) 0 #111315,0 28px 48px #000c,
+    inset 0 0 0 1px #ffffff14,inset 0 2px 0 #ffffff1f,inset 0 0 60px #0007}
+@media(min-width:701px){.stage{--persp:1500px;--tilt:16deg;--edge:12px}}
+
+/* ---- 椅子：一楼是千鸟格扶手椅（真的千鸟格，不再像没加载出来的棋盘格），二楼是皮沙发；都有靠背的明暗 ---- */
+body[data-skin="f1"] .table .seat::before{
+  background:linear-gradient(180deg,#ffffff4d 0%,#ffffff00 24%,#ffffff00 58%,#0000006b 100%),
+    radial-gradient(ellipse 70% 60% at 50% 32%,#ffffff26,transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M0 18h6l6-6v6h6l-6 6H0M24 18v6h-6M24 0l-6 6h-6l6-6M12 0v6L0 18v-6l6-6H0V0' fill='%2352525a' fill-opacity='.8' fill-rule='evenodd'/%3E%3C/svg%3E") 0 0/8px 8px,
+    #d3cfc7;
+  box-shadow:-9px 12px 0 -3px #8c8880,9px 12px 0 -3px #8c8880,0 9px 16px #000a,inset 0 0 0 1.5px #ffffff4d,inset 0 -8px 12px #0000004d}
+body[data-skin="f2"] .table .seat::before{
+  background:linear-gradient(90deg,transparent calc(50% - 1px),#4a2716 calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px)),
+    radial-gradient(ellipse 34% 60% at 26% 36%,#ffd9bb40,transparent 72%),radial-gradient(ellipse 34% 60% at 74% 36%,#ffd9bb40,transparent 72%),
+    linear-gradient(180deg,#b07655,#8a5638 62%,#6b3f27);
+  box-shadow:-14px 12px 0 -4px #6f4129,14px 12px 0 -4px #6f4129,0 9px 18px #000a,inset 0 2px 0 #d39c79,inset 0 -8px 12px #00000047}
+@media(min-width:701px){body[data-skin="f1"] .table .seat::before{background-size:auto,auto,10px 10px,auto}}
+@media(max-width:700px){
+  body[data-skin="f1"] .table .seat::before{box-shadow:-7px 10px 0 -3px #8c8880,7px 10px 0 -3px #8c8880,0 7px 12px #000a,inset 0 0 0 1.5px #ffffff4d,inset 0 -6px 10px #0000004d}
+  body[data-skin="f2"] .table .seat::before{box-shadow:-9px 10px 0 -3px #6f4129,9px 10px 0 -3px #6f4129,0 7px 14px #000a,inset 0 2px 0 #d39c79,inset 0 -6px 10px #00000047}
+}
+
+/* ---- 座位牌：一块有光泽的深色铭牌，浮在桌上 ---- */
+body[data-skin] .plate{background:linear-gradient(180deg,#ffffff17,#ffffff00 46%),var(--sk-plate);
+  box-shadow:0 6px 14px #0000008c,0 1px 2px #000000b3,inset 0 1px 0 #ffffff26}
+body[data-skin] .seat.win .plate{box-shadow:0 6px 14px #0000008c,0 0 16px #e2d4a838,inset 0 1px 0 #ffffff26}
+
+/* ---- 牌：纸感和真实的阴影；公共牌平躺在桌面上，跟着桌子往后倾 ---- */
+.card.faceup{background:linear-gradient(162deg,#fffdf8 0%,#f7f2e7 52%,#ece4d3 100%);border-color:#fffaf0;
+  box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #0000000f,0 1px 0 #cdc4b0,0 2px 3px #00000059,0 8px 14px #00000040}
+.card.back{background:radial-gradient(ellipse at 50% 30%,#ffffff1c,transparent 65%),
+    repeating-linear-gradient(45deg,#ffffff12 0 1.5px,transparent 1.5px 6px),repeating-linear-gradient(-45deg,#ffffff12 0 1.5px,transparent 1.5px 6px),
+    linear-gradient(160deg,#3d5c7c,#243a52);
+  box-shadow:0 1px 0 #142233,0 2px 3px #00000059,0 6px 12px #00000040}
+.table .board{perspective:520px}
+.table .board .card{rotate:x 9deg;transform-origin:50% 100%}
+body[data-skin] .table .board .card.empty{border:1px solid #ffe8c42e;background:#0000001a;box-shadow:inset 0 2px 6px #00000038}
+
+/* ---- 筹码：圆面有弧度和高光，边缘有厚度 ---- */
+.chip-d{background:radial-gradient(circle at 34% 28%,#ffffff59 0,#ffffff00 44%),radial-gradient(circle,transparent 58%,#00000040 100%),
+    repeating-conic-gradient(var(--c) 0 22.5deg,var(--e) 22.5deg 45deg);
+  box-shadow:0 1px 0 #000000a6,0 2px 3px #00000066,0 0 0 1px #00000059}
+.chip-d::after{background:radial-gradient(circle at 38% 32%,#ffffff40,#ffffff00 62%),var(--c)}
+
+/* ---- 你的操作台：皮面台子，下注区是凹进去的托盘，不再是黑底虚线框 ---- */
+body[data-skin] .hero,body[data-skin] .hero.win{box-shadow:0 16px 34px #000000a6,inset 0 1px 0 #ffffff1f,inset 0 -1px 0 #00000066}
+body[data-skin] .hero .betzone,body[data-skin] .hero .betzone.has{border:1px solid #ffe9c81f;
+  background:radial-gradient(ellipse 80% 70% at 50% 0%,#ffffff0f,transparent 70%),linear-gradient(180deg,#130b06,#1e130b);
+  box-shadow:inset 0 5px 14px #000000c4,inset 0 -1px 0 #ffffff12}
+body[data-skin="f2"] .hero .betzone,body[data-skin="f2"] .hero .betzone.has{background:radial-gradient(ellipse 80% 70% at 50% 0%,#ffffff0f,transparent 70%),linear-gradient(180deg,#0f1113,#1a1d20)}
+body[data-skin] .hero .betzone .rack-clock{background:#150d07;box-shadow:0 0 8px 4px #150d07}
+body[data-skin="f2"] .hero .betzone .rack-clock{background:#121416;box-shadow:0 0 8px 4px #121416}
+
+/* ---- 按钮：有高光、有厚度，按下去会沉一下 ---- */
+body[data-skin] .hero .btn:not(:disabled),body[data-skin] .sheet .btn:not(:disabled),body[data-skin] .preacts button,
+body[data-skin] .raise-presets button:not(:disabled),body[data-skin] .hero .rail .tidy:not(:disabled),body[data-skin] .hero .rail .bank{
+  background-image:linear-gradient(180deg,#ffffff38 0%,#ffffff00 52%,#00000017 100%);
+  box-shadow:inset 0 1px 0 #ffffff5c,0 3px 0 #00000066,0 6px 12px #0000004d}
+body[data-skin] .hero .btn:not(:disabled):active,body[data-skin] .sheet .btn:not(:disabled):active,body[data-skin] .preacts button:active,
+body[data-skin] .raise-presets button:not(:disabled):active,body[data-skin] .hero .rail .tidy:not(:disabled):active,body[data-skin] .hero .rail .bank:active{
+  transform:translateY(2px);box-shadow:inset 0 1px 0 #ffffff38,0 1px 0 #00000066,0 2px 5px #0000004d}
+body[data-skin] .hero .btn.fold:not(:disabled),body[data-skin] .hero .btn.cancel:not(:disabled),body[data-skin] .sheet .btn.cancel:not(:disabled){
+  background-image:linear-gradient(180deg,#ffffff1a 0%,#ffffff00 52%,#0000001f 100%);box-shadow:inset 0 1px 0 #ffffff26,0 3px 0 #00000080,0 6px 12px #0000004d}
+/* every action label the same size (Raise was smaller, for a longer label it no longer has) */
+@media(max-width:700px){.actions .btn.raise{font-size:13px;letter-spacing:0}}
+
+/* ---- 大厅：按钮和盲注牌也有厚度，按下去会沉一下 ---- */
+#menu .go:not(:disabled){background-image:linear-gradient(180deg,#ffffff38 0%,#ffffff00 52%,#00000017 100%);box-shadow:inset 0 1px 0 #ffffff59,0 3px 0 #00000059,0 8px 16px #0000004d}
+#menu .go.plain:not(:disabled){background-image:linear-gradient(180deg,#ffffff1a 0%,#ffffff00 52%,#0000001f 100%);box-shadow:inset 0 1px 0 #ffffff26,0 3px 0 #00000080,0 8px 16px #0000004d}
+#menu button.go:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 1px 0 #ffffff38,0 1px 0 #00000066,0 3px 6px #0000004d}
+.stake-tile:not(:disabled){background-image:linear-gradient(180deg,#ffffff14 0%,#ffffff00 40%,#0000001f 100%);box-shadow:inset 0 1px 0 #ffffff1f,0 3px 0 #0000004d,0 10px 20px #00000040}
+.stake-tile.on:not(:disabled){box-shadow:0 0 0 1px var(--brass),0 0 18px #c9b68540,inset 0 1px 0 #ffffff26,0 3px 0 #0000004d,0 10px 20px #00000040}
+.stake-tile:active:not(:disabled){transform:translateY(2px)}
