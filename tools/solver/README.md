@@ -21,6 +21,8 @@
 
 ## 在 A100 上训练
 
+用 H100（或交给机器上的 AI 编程助手去做）：把 [H100_PROMPT.md](H100_PROMPT.md) 里的提示词整段发给它，从训练、检查、对比测试到上线一步步做完。
+
 ```bash
 cd tools/solver
 python3 -m venv .venv && . .venv/bin/activate
