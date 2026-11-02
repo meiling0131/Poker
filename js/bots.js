@@ -449,8 +449,9 @@ function corePost(c){
 }
 
 // The table plays a balanced game. What the table stats show of this opponent bends it the way the bots' own
-// rules do: more bluffs against a player who folds to bets too often, lighter calls against a bettor who has shown
-// down bluffs, and believing a player who rarely bets (a calling station doesn't get the table at all)
+// rules do: more bluffs against a player who folds to bets too often, a wider defence against one who c-bets every
+// flop, lighter calls against a bettor who has shown down bluffs, and believing a player who rarely bets (a calling
+// station doesn't get the table at all)
 function lean(m,c){
   const rd=read(c.opponents[0]);
   if(!c.toCall){
@@ -458,6 +459,10 @@ function lean(m,c){
     return m;
   }
   const b=c.bettorRead||rd;
+  // a preflop raiser who c-bets almost every flop has nothing behind most of them: defend wider than the table
+  if(c.street===3&&c.bettor&&S.seats.indexOf(c.bettor)===S.pfAgg&&b.cbet>.7&&c.eq>c.odds*.7){
+    const k=Math.min(.6,(b.cbet-.7)*2.5);m.call+=m.fold*k;m.fold*=1-k;
+  }
   if(b.bluff>.35&&c.eq>c.odds*.8){const k=Math.min(.5,(b.bluff-.35)*2);m.call+=m.fold*k;m.fold*=1-k;}
   else if(b.agg<.2&&c.eq<.5){m.fold+=m.call*.3;m.call*=.7;}
   return m;
