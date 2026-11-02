@@ -104,9 +104,16 @@ export function gtoMix(c){
   if(!sc)return null;
   const street=S.board.length-3,player=dist(i)>dist(j)?1:0;
   const potStart=potTotal()-S.seats.reduce((a,q)=>a+q.bet,0),behind=Math.min(c.p.stack+c.p.bet,op.stack+op.bet);
-  const init=(street===0?S.pfAgg:S.prevAgg)===i?1:0;
-  const key=keyOf(street,player,texClass(S.board),sprClass(behind/Math.max(1,potStart)),faceClass(c.toCall,c.pot,c.toCall>0&&op.allIn),S.raises||0,init);
-  const off=sc.keys.get(key);
+  const init=(street===0?S.pfAgg:S.prevAgg)===i?1:0,tex=texClass(S.board),face=faceClass(c.toCall,c.pot,c.toCall>0&&op.allIn);
+  // the stack-to-pot class the solve never reached here: the nearest one it did
+  const spr=sprClass(behind/Math.max(1,potStart));
+  let key=-1,off;
+  for(const d of [0,-1,1,-2,2,-3,3]){
+    if(spr+d<0||spr+d>3)continue;
+    key=keyOf(street,player,tex,spr+d,face,S.raises||0,init);off=sc.keys.get(key);
+    if(off!=null)break;
+  }
+  if(globalThis.__gtoTrace)globalThis.__gtoTrace(name,key,off!=null);   // tools: how often the table plays
   if(off==null)return null;
   const b=bucketOf(c.hole,S.board,sc.edges),row=sc.data.subarray(off+b*6,off+b*6+6);
   let tot=0;for(const x of row)tot+=x;
