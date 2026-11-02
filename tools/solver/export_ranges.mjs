@@ -1,7 +1,7 @@
 // The starting ranges of each solve, from the bots' own preflop charts (js/preflop.js), as a weight for every one
-// of the 1326 hands in the solver's order. Run it again after changing the charts:
+// of the 1326 hands in the solver's order, and as text for the flop solver. Run it again after changing the charts:
 //   node tools/solver/export_ranges.mjs > tools/solver/ranges.json
-import { RFI, VS_OPEN, VS_3BET, VS_4BET, freqOf } from '../../js/preflop.js';
+import { RFI, VS_OPEN, VS_3BET, VS_4BET, freqOf, handClass } from '../../js/preflop.js';
 
 const hands = [];
 for (let a = 0; a < 52; a++) for (let b = a + 1; b < 52; b++) hands.push([a, b]);
@@ -24,4 +24,8 @@ const SCENARIOS = {
   '4bp': { pot: 42.5, stack: 79, init: 1, oop: union(VS_4BET.call, 'QQ:.5,JJ-99,AQs,AJs:.5,KQs:.5,AKo:.6'), ip: weights(VS_3BET.ip.raise),
     about: '4-bet pot: the opener 4-bets to 21BB in position, the 3-bettor calls' },
 };
+// the same ranges as PioSOLVER-style text for the exact flop solver (tools/flops): one weight per starting hand
+const text = w => { const seen = new Map(); hands.forEach((h, k) => { const c = handClass(h); if (!seen.has(c)) seen.set(c, w[k]); });
+  return [...seen].filter(([, x]) => x > 0).map(([c, x]) => x >= .9995 ? c : `${c}:${Number(x.toFixed(3))}`).join(','); };
+for (const s of Object.values(SCENARIOS)) { s.oopText = text(s.oop); s.ipText = text(s.ip); }
 console.log(JSON.stringify(SCENARIOS));
