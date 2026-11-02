@@ -33,6 +33,7 @@ python3 solve.py --scenario 4bp --pool 2000 --iters 50 --report 10
 python3 solve.py --all
 ```
 
+- 开始时先发 10 万副公共牌并算好每手牌的分组，要几分钟；之后每次迭代大约一两秒（最大的两棵树），五条路线全部练完大约几个小时，可以放一晚上。
 - 每 `--save`（默认 500）次迭代存一次表 `out/<路线>.json` 和断点 `out/<路线>.pt`；中断了加 `--resume` 接着练。
 - 日志里的 `OOP EV` 是没位置一方的期望（BB），`strategy moved` 是平均策略和上次报告比变了多少，越练越小、趋于稳定就差不多了。
 - 显存够的话可以把 `--batch` 加到 2048 或 4096，每次迭代更准；`--pool`（默认 10 万副公共牌）越大，对牌面的覆盖越全。
@@ -51,7 +52,7 @@ git add js/gto-table.js && git commit -m "Bots: solver table" && git push
 
 推到 `main` 就会自动部署。想退回机器人自己的规则：`python3 pack.py --clear`。
 
-模拟时可以设 `globalThis.__noGto = true` 关掉查表，对比有表和没表的结果。
+不想先上线也能试：`python3 pack.py --to /tmp/t.json`，然后 `GTO_TABLE=/tmp/t.json node tools/exploit.js barreler 3000 1` 和 `NO_GTO=1 node tools/exploit.js barreler 3000 1` 对比有表和没表。
 
 ## 文件
 
