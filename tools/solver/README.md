@@ -42,6 +42,7 @@ python3 solve.py --all
 ## 打包、测试、上线
 
 ```bash
+python3 show.py out/srp_ip.json # 先看看几个常见局面的策略合不合理
 python3 pack.py                 # out/*.json → js/gto-table.js
 cd ../..
 npm run stamp && npm run check  # 模块版本号、lint 和全部测试
@@ -62,6 +63,7 @@ git add js/gto-table.js && git commit -m "Bots: solver table" && git push
 | `tree.py` | 下注树和信息集的编号（`js/gto.js` 用同样的编号） |
 | `solve.py` | 发牌池、手牌分组、DCFR 训练、导出 |
 | `pack.py` | 把训练好的表压成 `js/gto-table.js` |
+| `show.py` | 把表里常见的局面打印出来看看（持续下注、面对持续下注、河牌面对大注），上线前检查策略合不合理 |
 | `export_ranges.mjs` | 从 `js/preflop.js` 导出每条路线的起始范围到 `ranges.json`（改了起手牌表后重跑） |
 
 ## 校验
