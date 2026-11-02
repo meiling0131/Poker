@@ -457,6 +457,7 @@ function lean(m,c){
     if(w!==1)m.raise.forEach(r=>{if(c.eq<.45)r.w*=w;});
     return m;
   }
+  if(c.station&&c.eq<.45)m.raise.forEach(r=>{r.w*=.25;});      // no bluff-raises into a calling station either
   const b=c.bettorRead||rd;
   if(b.bluff>.35&&c.eq>c.odds*.8){const k=Math.min(.5,(b.bluff-.35)*2);m.call+=m.fold*k;m.fold*=1-k;}
   else if(b.agg<.2&&c.eq<.5){m.fold+=m.call*.3;m.call*=.7;}
