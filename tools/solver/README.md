@@ -1,6 +1,6 @@
 # 机器人策略求解器（GPU）
 
-离线训练机器人**单挑翻牌后**的博弈论（近似纳什均衡）策略表。训练好的表打包进 `js/gto-table.js`，机器人在牌桌上直接查表（`js/gto.js`），浏览器和服务器都不用做任何计算量大的事。没有表时（`export default null`），机器人用它们自己的规则（`js/bots.js`）。
+离线训练机器人**单挑翻牌后**的博弈论（近似纳什均衡）策略表。现在上线的第一版是在 4 核 CPU 上练的（每次迭代 32 副公共牌，单加注底池 500 次、3-bet 底池 1000 次、4-bet 底池 2000 次），训练量大约是下面 A100 默认设置的百分之一；用 A100 按默认设置重练一遍，表会细得多。训练好的表打包进 `js/gto-table.js`，机器人在牌桌上直接查表（`js/gto.js`），浏览器和服务器都不用做任何计算量大的事。没有表时（`export default null`），机器人用它们自己的规则（`js/bots.js`）。
 
 ## 它算的是什么
 
@@ -33,6 +33,7 @@ python3 solve.py --scenario 4bp --pool 2000 --iters 50 --report 10
 python3 solve.py --all
 ```
 
+- 开始时先发 10 万副公共牌并算好每手牌的分组，要几分钟；之后每次迭代大约一两秒（最大的两棵树），五条路线全部练完大约几个小时，可以放一晚上。
 - 每 `--save`（默认 500）次迭代存一次表 `out/<路线>.json` 和断点 `out/<路线>.pt`；中断了加 `--resume` 接着练。
 - 日志里的 `OOP EV` 是没位置一方的期望（BB），`strategy moved` 是平均策略和上次报告比变了多少，越练越小、趋于稳定就差不多了。
 - 显存够的话可以把 `--batch` 加到 2048 或 4096，每次迭代更准；`--pool`（默认 10 万副公共牌）越大，对牌面的覆盖越全。
@@ -41,6 +42,7 @@ python3 solve.py --all
 ## 打包、测试、上线
 
 ```bash
+python3 show.py out/srp_ip.json # 先看看几个常见局面的策略合不合理
 python3 pack.py                 # out/*.json → js/gto-table.js
 cd ../..
 npm run stamp && npm run check  # 模块版本号、lint 和全部测试
@@ -51,7 +53,7 @@ git add js/gto-table.js && git commit -m "Bots: solver table" && git push
 
 推到 `main` 就会自动部署。想退回机器人自己的规则：`python3 pack.py --clear`。
 
-模拟时可以设 `globalThis.__noGto = true` 关掉查表，对比有表和没表的结果。
+不想先上线也能试：`python3 pack.py --to /tmp/t.json`，然后 `GTO_TABLE=/tmp/t.json node tools/exploit.js barreler 3000 1` 和 `NO_GTO=1 node tools/exploit.js barreler 3000 1` 对比有表和没表。
 
 ## 文件
 
@@ -61,6 +63,7 @@ git add js/gto-table.js && git commit -m "Bots: solver table" && git push
 | `tree.py` | 下注树和信息集的编号（`js/gto.js` 用同样的编号） |
 | `solve.py` | 发牌池、手牌分组、DCFR 训练、导出 |
 | `pack.py` | 把训练好的表压成 `js/gto-table.js` |
+| `show.py` | 把表里常见的局面打印出来看看（持续下注、面对持续下注、河牌面对大注），上线前检查策略合不合理 |
 | `export_ranges.mjs` | 从 `js/preflop.js` 导出每条路线的起始范围到 `ranges.json`（改了起手牌表后重跑） |
 
 ## 校验

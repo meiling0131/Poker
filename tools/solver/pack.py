@@ -3,6 +3,7 @@
   python3 pack.py                 # every out/*.json
   python3 pack.py out/srp_ip.json out/3bp_oop.json
   python3 pack.py --clear         # an empty table: the bots go back to their own rules
+  python3 pack.py --to t.json     # plain JSON instead, to try a table without shipping it (GTO_TABLE=t.json)
 
 Each scenario keeps its bucket edges, its key list (uint16) and, for every key, ten buckets of six action
 probabilities as bytes (0..255), all base64 so the module stays plain JavaScript.
@@ -43,11 +44,16 @@ def pack(paths):
 
 
 def main():
-    args = sys.argv[1:]
+    args, target = sys.argv[1:], TARGET
+    if '--to' in args:                     # --to table.json: plain JSON for tools/exploit.js (GTO_TABLE=table.json)
+        i = args.index('--to')
+        target = args[i + 1]
+        args = args[:i] + args[i + 2:]
     table = None if args == ['--clear'] else pack(args or sorted(glob.glob(os.path.join(HERE, 'out', '*.json'))))
-    with open(TARGET, 'w') as f:
-        f.write(HEAD + 'export default ' + json.dumps(table, separators=(',', ':')) + ';\n')
-    print('wrote', os.path.normpath(TARGET), f'({os.path.getsize(TARGET) // 1024} KB)')
+    text = json.dumps(table, separators=(',', ':'))
+    with open(target, 'w') as f:
+        f.write(text if target.endswith('.json') else HEAD + 'export default ' + text + ';\n')
+    print('wrote', os.path.normpath(target), f'({os.path.getsize(target) // 1024} KB)')
 
 
 if __name__ == '__main__':

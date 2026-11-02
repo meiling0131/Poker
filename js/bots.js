@@ -360,8 +360,9 @@ function corePre(c){
 }
 
 function corePost(c){
-  // heads up, the solver's table plays when it has the spot (gto.js); a committed stack still goes by the price
-  if(!c.committed&&!globalThis.__noGto){const g=gtoMix(c);if(g)return g;}
+  // heads up, the solver's table plays when it has the spot (gto.js); a committed stack still goes by the price, and a
+  // calling station gets the bots' own rules, which bet thinner and bigger for value against one
+  if(!c.committed&&!c.station&&!globalThis.__noGto){const g=gtoMix(c);if(g)return lean(g,c);}
   const m=mix(),{eq,opp,toCall,pot,canR,inPos,last,river,street,pfr,ledLast,checked,tex,dr,station,commit,spr,aggr,loose,bettorRead}=c;
   const draw=dr.draw;
   // bluffs are rarer into calling stations and into a crowd, and more common against players who fold to bets
@@ -444,6 +445,26 @@ function corePost(c){
   const vR=raised&&!maniac?.88:opp===1?(maniac?.62:.72):.62;
   if(canR&&(eq>vR||(checked&&!raised&&eq>.7)))bet(m,odds((.5+aggr*.35)*(checked?1.25:1)*(raised?.8:1)),eq>.82?.9:.75);
   if(canR&&opp===1&&draw&&(dr.fd||dr.oesd)&&eq>.35&&toCall<pot*.4&&!river)bet(m,odds(aggr*.2*bluffy*(checked?1.5:1)),.65);
+  return m;
+}
+
+// The table plays a balanced game. What the table stats show of this opponent bends it the way the bots' own
+// rules do: more bluffs against a player who folds to bets too often, a wider defence against one who c-bets every
+// flop, lighter calls against a bettor who has shown down bluffs, and believing a player who rarely bets (a calling
+// station doesn't get the table at all)
+function lean(m,c){
+  const rd=read(c.opponents[0]);
+  if(!c.toCall){
+    if(rd.foldBet>.55){const w=Math.min(1.5,1+(rd.foldBet-.55)*2);m.raise.forEach(r=>{if(c.eq<.45)r.w*=w;});}
+    return m;
+  }
+  const b=c.bettorRead||rd;
+  // a preflop raiser who c-bets almost every flop has nothing behind most of them: defend wider than the table
+  if(c.street===3&&c.bettor&&S.seats.indexOf(c.bettor)===S.pfAgg&&b.cbet>.7&&c.eq>c.odds*.7){
+    const k=Math.min(.6,(b.cbet-.7)*2.5);m.call+=m.fold*k;m.fold*=1-k;
+  }
+  if(b.bluff>.35&&c.eq>c.odds*.8){const k=Math.min(.5,(b.bluff-.35)*2);m.call+=m.fold*k;m.fold*=1-k;}
+  else if(b.agg<.2&&c.eq<.5){m.fold+=m.call*.3;m.call*=.7;}
   return m;
 }
 

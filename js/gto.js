@@ -8,14 +8,18 @@ import {S} from './state.js';
 import {N,maxRaiseTo,potTotal} from './table.js';
 
 const SIZES=[0,0,.33,.75,1.25,0];   // the bet behind action slots 2..4, a share of the pot (5 is all in)
-let DEC=null;
+let DEC=null,OVERRIDE;
+// tools and tests: play another table (an object as pack.py writes it), or none (null), instead of gto-table.js
+export function useTable(t){OVERRIDE=t;DEC=null;}
+const table=()=>OVERRIDE!==undefined?OVERRIDE:TABLE;
 function decoded(){
-  if(DEC||!TABLE)return DEC;
+  const T=table();
+  if(DEC||!T)return DEC;
   const bytes=s=>Uint8Array.from(atob(s),ch=>ch.charCodeAt(0));
   DEC={};
-  for(const [name,s] of Object.entries(TABLE.scen)){
+  for(const [name,s] of Object.entries(T.scen)){
     const kb=bytes(s.keys),keys=new Map();
-    for(let k=0;k<kb.length/2;k++)keys.set(kb[2*k]|kb[2*k+1]<<8,k*TABLE.nb*6);
+    for(let k=0;k<kb.length/2;k++)keys.set(kb[2*k]|kb[2*k+1]<<8,k*T.nb*6);
     DEC[name]={edges:s.edges,keys,data:bytes(s.data)};
   }
   return DEC;
@@ -42,8 +46,8 @@ export function texClass(board){
   let run=0;for(let lo=1;lo<=10;lo++){let k=0;for(let r=lo;r<lo+5;r++)if(u.has(r))k++;run=Math.max(run,k);}
   return run>=3?2:3;
 }
-const sprClass=x=>x<1.5?0:x<4?1:x<10?2:3;
-function faceClass(toCall,pot,allIn){
+export const sprClass=x=>x<1.5?0:x<4?1:x<10?2:3;
+export function faceClass(toCall,pot,allIn){
   if(toCall<=0)return 0;
   if(allIn)return 4;
   const f=toCall/Math.max(1e-9,pot-toCall);
@@ -90,7 +94,7 @@ function bucketOf(hole,board,edges){
   const e=edges[board.length-3],bin=x=>{let k=0;while(k<e.length&&x>e[k])k++;return k;};
   if(board.length===5)return bin(strengthNow(hole,board));
   const later=strengthLater(hole,board,400);
-  return bin(later)*2+(later-strengthNow(hole,board)>TABLE.potT?1:0);
+  return bin(later)*2+(later-strengthNow(hole,board)>table().potT?1:0);
 }
 
 export function gtoMix(c){
@@ -100,9 +104,16 @@ export function gtoMix(c){
   if(!sc)return null;
   const street=S.board.length-3,player=dist(i)>dist(j)?1:0;
   const potStart=potTotal()-S.seats.reduce((a,q)=>a+q.bet,0),behind=Math.min(c.p.stack+c.p.bet,op.stack+op.bet);
-  const init=(street===0?S.pfAgg:S.prevAgg)===i?1:0;
-  const key=keyOf(street,player,texClass(S.board),sprClass(behind/Math.max(1,potStart)),faceClass(c.toCall,c.pot,c.toCall>0&&op.allIn),S.raises||0,init);
-  const off=sc.keys.get(key);
+  const init=(street===0?S.pfAgg:S.prevAgg)===i?1:0,tex=texClass(S.board),face=faceClass(c.toCall,c.pot,c.toCall>0&&op.allIn);
+  // the stack-to-pot class the solve never reached here: the nearest one it did
+  const spr=sprClass(behind/Math.max(1,potStart));
+  let key=-1,off;
+  for(const d of [0,-1,1,-2,2,-3,3]){
+    if(spr+d<0||spr+d>3)continue;
+    key=keyOf(street,player,tex,spr+d,face,S.raises||0,init);off=sc.keys.get(key);
+    if(off!=null)break;
+  }
+  if(globalThis.__gtoTrace)globalThis.__gtoTrace(name,key,off!=null);   // tools: how often the table plays
   if(off==null)return null;
   const b=bucketOf(c.hole,S.board,sc.edges),row=sc.data.subarray(off+b*6,off+b*6+6);
   let tot=0;for(const x of row)tot+=x;
