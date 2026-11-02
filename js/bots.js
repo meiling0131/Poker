@@ -361,7 +361,7 @@ function corePre(c){
 
 function corePost(c){
   // heads up, the solver's table plays when it has the spot (gto.js); a committed stack still goes by the price
-  if(!c.committed&&!globalThis.__noGto){const g=gtoMix(c);if(g)return g;}
+  if(!c.committed&&!globalThis.__noGto){const g=gtoMix(c);if(g)return lean(g,c);}
   const m=mix(),{eq,opp,toCall,pot,canR,inPos,last,river,street,pfr,ledLast,checked,tex,dr,station,commit,spr,aggr,loose,bettorRead}=c;
   const draw=dr.draw;
   // bluffs are rarer into calling stations and into a crowd, and more common against players who fold to bets
@@ -444,6 +444,22 @@ function corePost(c){
   const vR=raised&&!maniac?.88:opp===1?(maniac?.62:.72):.62;
   if(canR&&(eq>vR||(checked&&!raised&&eq>.7)))bet(m,odds((.5+aggr*.35)*(checked?1.25:1)*(raised?.8:1)),eq>.82?.9:.75);
   if(canR&&opp===1&&draw&&(dr.fd||dr.oesd)&&eq>.35&&toCall<pot*.4&&!river)bet(m,odds(aggr*.2*bluffy*(checked?1.5:1)),.65);
+  return m;
+}
+
+// The table plays a balanced game. What the table stats show of this opponent bends it the way the bots' own
+// rules do: fewer bluffs into a calling station and more against a player who folds to bets too often, lighter
+// calls against a bettor who has shown down bluffs, and believing a player who rarely bets
+function lean(m,c){
+  const rd=read(c.opponents[0]);
+  if(!c.toCall){
+    const w=c.station?.25:rd.foldBet>.55?Math.min(1.5,1+(rd.foldBet-.55)*2):1;
+    if(w!==1)m.raise.forEach(r=>{if(c.eq<.45)r.w*=w;});
+    return m;
+  }
+  const b=c.bettorRead||rd;
+  if(b.bluff>.35&&c.eq>c.odds*.8){const k=Math.min(.5,(b.bluff-.35)*2);m.call+=m.fold*k;m.fold*=1-k;}
+  else if(b.agg<.2&&c.eq<.5){m.fold+=m.call*.3;m.call*=.7;}
   return m;
 }
 
