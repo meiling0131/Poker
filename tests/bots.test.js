@@ -1,6 +1,7 @@
 // Bot decisions in set spots, run headless (see tools/headless.js): a pair on the board is everyone's, a
 // four-flush board scares a lone pair, a stack that is all but in calls an all-in, and the bigger stack's All in
-// stops at what the other player can call. Also the preflop charts parse to sane ranges.
+// stops at what the other player can call. Also the preflop charts parse to sane ranges, and the solver's table is
+// looked up with the same keys the solver writes (tools/solver/tree.py).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import '../tools/headless.js';
@@ -138,5 +139,44 @@ test('preflop charts: every hand at most once, sane range sizes', () => {
   for (const pos of Object.keys(VS_OPEN)) for (const [g, ch] of Object.entries(VS_OPEN[pos])) {
     const r = range(ch.raise), c = range(ch.call);
     for (const [h, f] of r) assert.ok(f + (c.get(h) || 0) <= 1.0001, `${pos} vs ${g}: ${h}`);
+  }
+});
+
+test('the solver table: the bot finds its key, and the table\'s actions become its mix', async () => {
+  const { useTable, gtoMix, keyOf } = await import('../js/gto.js');
+  enterBots('practice');
+  const S = state.S, bot = bots()[0].i, b64 = bytes => Buffer.from(bytes).toString('base64');
+  const table = (key, row) => ({ v: 1, nb: 10, ehsBins: 5, potT: .05, scen: { srp_ip: { pot: 5.5, stack: 97.5, init: 1, iters: 1,
+    edges: [[.3, .43, .55, .7], [.26, .41, .56, .75], [.1, .19, .3, .4, .49, .6, .71, .81, .91]],
+    keys: b64(new Uint8Array(new Uint16Array([key]).buffer)), data: b64(Array(10).fill(row).flat()) } } });
+  // the bot opened to 5 on the button and you called from the big blind; on Kd 7c 2s you bet 5 into 10
+  const setup = youBet => {
+    spot({ bot, hole: 'Ah Qd', board: 'Kd 7c 2s', you: { bet: youBet, stack: 195 - youBet, total: 5 + youBet }, me: { bet: 0, stack: 195, total: 5 },
+      raises: youBet ? 1 : 0, youHist: [{ s: 0, t: 'call', r: 2, b: 5 }, { s: 3, t: youBet ? 'raise' : 'check', r: 0, b: youBet }],
+      botHist: [{ s: 0, t: 'raise', r: 1, b: 5 }] });
+    Object.assign(S, { dealer: bot, pfAgg: bot, prevAgg: -1 });
+    return { i: bot, p: S.seats[bot], opp: 1, opponents: [S.seats[0]], pre: false, toCall: youBet, pot: 10 + youBet, canR: true, hole: cards('Ah Qd') };
+  };
+  try {
+    // flop, in position, a dry board, SPR 19.5, a half-pot bet, one bet so far, the preflop raiser
+    const facing = keyOf(0, 1, 3, 3, 2, 1, 1);
+    useTable(table(facing, [51, 128, 77, 0, 0, 0]));
+    let m = gtoMix(setup(5));
+    assert.ok(m, 'the table has this spot');
+    assert.ok(Math.abs(m.fold - .2) < .01 && Math.abs(m.call - .5) < .01, JSON.stringify(m));
+    assert.deepEqual(m.raise.map(r => [Math.round(r.w * 100), r.frac]), [[30, .8]], 'a raise is 80% of the pot after the call');
+    useTable(table(facing + 1, [51, 128, 77, 0, 0, 0]));
+    assert.equal(gtoMix(setup(5)), null, 'no row for the key: the bot\'s own rules play');
+    // checked to the bot: bet a third or three quarters of the pot, a quarter of the time each
+    useTable(table(keyOf(0, 1, 3, 3, 0, 0, 1), [0, 128, 64, 64, 0, 0]));
+    m = gtoMix(setup(0));
+    assert.deepEqual(m.raise.map(r => [Math.round(r.w * 100), r.frac]), [[25, .33], [25, .75]]);
+    assert.equal(gtoMix({ ...setup(0), opp: 2 }), null, 'more than one opponent: not the table\'s spot');
+    const limped = setup(0);
+    S.seats[bot].hist = [{ s: 0, t: 'call', r: 1, b: 2 }];
+    S.seats[0].hist = [{ s: 0, t: 'check', r: 1, b: 2 }, { s: 3, t: 'check', r: 0, b: 0 }];
+    assert.equal(gtoMix(limped), null, 'a limped pot: not one of the solver\'s lines');
+  } finally {
+    useTable(undefined);
   }
 });

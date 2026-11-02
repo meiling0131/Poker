@@ -8,14 +8,18 @@ import {S} from './state.js';
 import {N,maxRaiseTo,potTotal} from './table.js';
 
 const SIZES=[0,0,.33,.75,1.25,0];   // the bet behind action slots 2..4, a share of the pot (5 is all in)
-let DEC=null;
+let DEC=null,OVERRIDE;
+// tools and tests: play another table (an object as pack.py writes it), or none (null), instead of gto-table.js
+export function useTable(t){OVERRIDE=t;DEC=null;}
+const table=()=>OVERRIDE!==undefined?OVERRIDE:TABLE;
 function decoded(){
-  if(DEC||!TABLE)return DEC;
+  const T=table();
+  if(DEC||!T)return DEC;
   const bytes=s=>Uint8Array.from(atob(s),ch=>ch.charCodeAt(0));
   DEC={};
-  for(const [name,s] of Object.entries(TABLE.scen)){
+  for(const [name,s] of Object.entries(T.scen)){
     const kb=bytes(s.keys),keys=new Map();
-    for(let k=0;k<kb.length/2;k++)keys.set(kb[2*k]|kb[2*k+1]<<8,k*TABLE.nb*6);
+    for(let k=0;k<kb.length/2;k++)keys.set(kb[2*k]|kb[2*k+1]<<8,k*T.nb*6);
     DEC[name]={edges:s.edges,keys,data:bytes(s.data)};
   }
   return DEC;
@@ -42,8 +46,8 @@ export function texClass(board){
   let run=0;for(let lo=1;lo<=10;lo++){let k=0;for(let r=lo;r<lo+5;r++)if(u.has(r))k++;run=Math.max(run,k);}
   return run>=3?2:3;
 }
-const sprClass=x=>x<1.5?0:x<4?1:x<10?2:3;
-function faceClass(toCall,pot,allIn){
+export const sprClass=x=>x<1.5?0:x<4?1:x<10?2:3;
+export function faceClass(toCall,pot,allIn){
   if(toCall<=0)return 0;
   if(allIn)return 4;
   const f=toCall/Math.max(1e-9,pot-toCall);
@@ -90,7 +94,7 @@ function bucketOf(hole,board,edges){
   const e=edges[board.length-3],bin=x=>{let k=0;while(k<e.length&&x>e[k])k++;return k;};
   if(board.length===5)return bin(strengthNow(hole,board));
   const later=strengthLater(hole,board,400);
-  return bin(later)*2+(later-strengthNow(hole,board)>TABLE.potT?1:0);
+  return bin(later)*2+(later-strengthNow(hole,board)>table().potT?1:0);
 }
 
 export function gtoMix(c){

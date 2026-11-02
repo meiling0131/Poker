@@ -30,6 +30,11 @@ const state = await import('../js/state.js');
 const { setSPEED } = state;
 const { BETTING } = await import('../js/config.js');
 const { minRaiseTo, maxRaiseTo, canRaise, potTotal } = await import('../js/table.js');
+// GTO_TABLE=t.json plays that solver table (tools/solver/pack.py --to t.json); NO_GTO=1 plays without one
+if (process.env.GTO_TABLE || process.env.NO_GTO) {
+  const { useTable } = await import('../js/gto.js');
+  useTable(process.env.NO_GTO ? null : JSON.parse((await import('node:fs')).readFileSync(process.env.GTO_TABLE, 'utf8')));
+}
 
 // ---- sparring strategies for seat 0 ----
 const HEROES = {

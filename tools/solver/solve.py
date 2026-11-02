@@ -72,7 +72,8 @@ class Pool:
         ehs = torch.zeros(n, 2, NH, device=dev)          # flop, turn: expected strength at the river
         pot = torch.zeros(n, 2, NH, dtype=torch.bool, device=dev)
         hs = torch.zeros(n, NH, device=dev)              # river strength
-        arrays = None
+        i16 = dict(dtype=torch.int16, device=dev)
+        arrays = [torch.zeros(n, NH, **i16) for _ in range(3)] + [torch.zeros(n, 52, 51, **i16) for _ in range(3)]
         t0 = time.time()
         for a in range(0, n, chunk):
             b = self.boards[a:a + chunk]
@@ -82,8 +83,8 @@ class Pool:
                 pot[a:a + chunk, s] = e - strength_now(deck, b[:, :k]) > POT_T
             sd = Showdown(deck, hand_values(deck, b))
             hs[a:a + chunk] = sd.strength(deck.valid(b))
-            part = sd.arrays()
-            arrays = part if arrays is None else [torch.cat([x, y]) for x, y in zip(arrays, part)]
+            for x, y in zip(arrays, sd.arrays()):
+                x[a:a + chunk] = y
             if a == 0 or (a // chunk) % 20 == 0:
                 log(f'  pool {min(n, a + chunk)}/{n} boards ({time.time() - t0:.0f}s)')
         self.sd_arrays = arrays
@@ -260,8 +261,9 @@ def main():
         torch.backends.cuda.matmul.allow_tf32 = True
         log(f'device: {torch.cuda.get_device_name(dev)}')
     scens = json.load(open(os.path.join(HERE, 'ranges.json')))
-    for name in (scens if args.all else [args.scenario]):
-        run(name, scens[name], args, dev)
+    with torch.inference_mode():
+        for name in (scens if args.all else [args.scenario]):
+            run(name, scens[name], args, dev)
 
 
 if __name__ == '__main__':
