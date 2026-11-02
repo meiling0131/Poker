@@ -14,7 +14,7 @@ import { approveBuy, commit, kick, reapplySeatDocs, unkick } from '../js/online.
 import { PRESETS, adoptStake, buyOf, stakeOf, useStake, validStake } from '../js/settings.js';
 import { setSPEED } from '../js/state.js';
 import { cashOutStack, ledger, setOnCashOut, setOnChips, upgradeBots } from '../js/table.js';
-import { cadd, chipsOf25, payChips } from '../js/chips.js';
+import { addBought, payChips } from '../js/chips.js';
 import { BETTING, BOT_NAMES } from '../js/config.js';
 import { getPlayer } from './player.js';
 import { BANK, balanceOf, cancelMove, completeBuy, completeCash, gameId, openMove, setTableChips, settleLeave, txId, writeChips } from './bank.js';
@@ -247,7 +247,7 @@ export class Room {
     if (!ok) {
       this.run(() => {
         const p = st.S.seats.find(q => q.uid === uid);
-        if (p) { p.stack += amt; cadd(p.chips, chipsOf25(amt)); const b = st.S.book[uid]; if (b) b.out -= amt; commit(); }
+        if (p) { addBought(p, amt); const b = st.S.book[uid]; if (b) b.out -= amt; commit(); }
       });
       try { await cancelMove(db, move, 'Could not write the cash-out.'); } catch (e) { /* the periodic check finds it */ }
       return this.tell(uid, { ok: false, code: 'server' });

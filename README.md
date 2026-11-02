@@ -29,10 +29,11 @@ The original game had the engine, the six bots, the chip-true table, practice pl
 - **Money.** The daily allowance of 1,000 used to be kept in the browser. Now each player has a real balance in the database: 1,000 at the start of each day (US Eastern), checked by the server on every buy-in and cash-out.
 - **Stakes.** The blind fields are replaced by three tables: 1/2 with a 200 minimum buy-in, 2/5 with 500, and 5/10 with 1,000. A stake you can't afford is greyed out.
 - **Buying in and cashing out.** The fixed 买一手 +200 / 退一手 −200 buttons are replaced by one bank panel with a slider in steps of the minimum buy-in. A request runs at once if you aren't in a hand, and otherwise as soon as you fold or the hand ends.
-- **Betting.** A 2×2 grid: Call and Raise pick the chips, Bet sends them, Fold folds. Raise opens a slider with Min. and All in at its ends and the 1/3 Pot, 1/2 Pot, 2/3 Pot and Pot presets under it, plus Custom: tap the amount and type it. When the chips picked come to more than the amount (a buy-in is all 25s), Bet pays the amount and the rest comes back as change. Pre-actions (Check/Fold, Check, Call Any) are buttons.
-- **Chips.** Buy-ins arrive as 25s, and stacks are only rearranged when 自动整理筹码 (auto-tidy) is on.
+- **Betting.** A 2×2 grid: Call and Raise pick the chips, Bet sends them, Fold folds. Raise opens a slider with Min. and All in at its ends and the 1/3 Pot, 1/2 Pot, 2/3 Pot and Pot presets under it, plus Custom: tap the amount and type it. When the chips picked come to more than the amount (a stack of 25s), Bet pays the amount and the rest comes back as change. All in from the bigger stack puts in only what the biggest other stack can call; the rest stays in front of you. Pre-actions (Check/Fold, Check, Call Any) are buttons.
+- **Chips.** You sit down with the usual mix (10 white, 6 red, 6 blue, the rest in green 25s); a top-up arrives as 25s. Stacks are only rearranged when 自动整理筹码 (auto-tidy) is on.
 - **End of a hand.** A regular or practice table waits for 继续游戏 (next hand) or 退出牌桌 (leave). The result stays in the middle of the table until the next hand. Leaving folds you if you're still in the hand and cashes your stack out to your balance.
 - **Bots.** Each bot has a fixed id, and its displayed name comes from the database. Every table has its own copy of each bot, which buys its chips from the bank.
+- **Stronger bots.** Before the flop they play standard 7-handed charts (`js/preflop.js`), with mixed frequencies so the borderline hands don't give the range away. They remember how each player plays (steals, folds to 3-bets, folds to bets, c-bets, bluffs shown down) and push back against the ones who take too much. After the flop they defend at least the minimum against bets, use the same river sizes with value and bluffs, know that a pair or trips on the board is everyone's and that four to a flush or a straight threatens a lone pair, and call an all-in whenever the price is right (twenty chips into a pot of two thousand). Heads up after the flop they can play from a strategy table learned offline by a GPU solver ([tools/solver](tools/solver/README.md)); until one is trained they use their own rules.
 - **The table.** The dealer, small blind and big blind are marked with D, S and B chips beside the names. A 45-second ring counts down each turn, and your hand type is shown as you play. Cards are dealt one at a time, and the bots wait until every card has landed.
 - **The look (2.5D).** The table tilts away from you, with its front edge showing and a light over the middle; the board cards lie on it. The chairs (houndstooth on the first floor, leather on the second), the seat plates, cards, chips, the bet tray and the buttons all have depth. Cards and chips are tossed along an arc, and cards turn over in 3D. All of it is CSS (`css/9-depth.css`), so it stays light on a phone.
 - **The player card.** Tapping a seat opens the same stats popup as the lobby's 查看数据 (view stats).
@@ -63,7 +64,7 @@ The original game had the engine, the six bots, the chip-true table, practice pl
 - **关于 (about).** What the game is and how a day goes.
 - **设置 (settings).** 游戏音效 turns all sounds on or off. 机器人速度 (bot speed) offers 较慢, 中等 (the default) and 较快. 牌桌 picks the first or the second floor.
 - **Developer tools.** `/d1` is a page for browsing the local database. `/audit` checks every balance against the ledger. Both only work on your own machine.
-- **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard, the sounds and your betting buttons: 86 in all.
+- **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard, the sounds and your betting buttons, and the bots' decisions in set spots: 101 in all.
 
 ### Kept from before
 
@@ -129,6 +130,8 @@ js/
   table.js          queries and small operations on the table state
   engine.js         the dealer: dealing, betting rounds, all-in runouts, showdown, calling off a hand
   bots.js           bot strategy
+  preflop.js        the bots' preflop charts
+  gto.js            the solver's strategy table at the table (gto-table.js, written by tools/solver/pack.py)
   stats.js          per-player counts, and the games rows a hand writes
   talk.js           avatars, bot lines, emoji
   i18n.js           the player's language: tr() for the page's text, tx() for the table's (results, log, bot lines)
@@ -155,7 +158,8 @@ server/             the Verve server (Cloudflare Worker + Durable Objects)
 migrations/         the database schema, applied in order
 sounds/             sound effects (copied into the build)
 tests/              node:test tests; clock.js runs the server tests at noon Eastern
-tools/              stamp.js (module versions), simulate.js and benchmark.js (bots), headless.js
+tools/              stamp.js (module versions), simulate.js, exploit.js and benchmark.js (bots), headless.js
+  solver/           the GPU solver that trains the bots' postflop table (Python, PyTorch)
 DATABASE.md         every table and rule of the database
 DEPLOY.md           deploying to Cloudflare
 ```

@@ -1,5 +1,5 @@
 // Read-mostly helpers over the table state S: seats, names, betting limits, the cashier.
-import {Z,cadd,chipsOf25,payChips} from './chips.js';
+import {Z,addBought,cadd,payChips} from './chips.js';
 import {BETTING,BOT_NAMES,BOT_PLAYERS,BUY,ONLINE_MIN,botIdOfTable,isBotId} from './config.js';
 import {endStreet} from './engine.js';
 import {GEN,M,S,view} from './state.js';
@@ -32,14 +32,20 @@ export function freshHuman(uid,seenB,seenC,seenT){return Object.assign({kind:'hu
 export function put(p,amt,picked){amt=Math.max(0,Math.min(amt,p.stack));if(amt>0)cadd(p.betChips,payChips(p,amt,picked));p.stack-=amt;p.bet+=amt;p.total+=amt;if(p.stack===0)p.allIn=true;return amt;}
 export function raiseWord(){return 'Raise';}
 export const nextRaiseWord=()=>raiseWord((S.raises||0)+1,S.street==='preflop');
+// A raise needs someone who can still put in more than the current bet.
 export function canRaise(p){
   if(!canAct(p))return false;
   if(p.stack<=S.currentBet-p.bet)return false;
   if(p.actedStreet&&p.seenRaise===S.fullRaiseId)return false;
-  return S.seats.some(q=>q!==p&&canAct(q));
+  return S.seats.some(q=>q!==p&&canAct(q)&&q.bet+q.stack>S.currentBet);
 }
-export const minRaiseTo=p=>Math.min(S.currentBet+S.minRaise,p.bet+p.stack);
-export const maxRaiseTo=p=>p.bet+p.stack;
+// The most anyone else still in the hand can put in this round: chips beyond it could never be called, so a bet
+// stops there. All in from the bigger stack is the other player's whole stack, not your own.
+export const coverTo=p=>S.seats.reduce((m,q)=>q!==p&&q.inHand&&!q.folded?Math.max(m,q.bet+q.stack):m,0);
+export const maxRaiseTo=p=>Math.min(p.bet+p.stack,Math.max(S.currentBet,coverTo(p)));
+export const minRaiseTo=p=>Math.min(S.currentBet+S.minRaise,maxRaiseTo(p));
+// the bet is everything that can be bet: the whole stack, or every chip the biggest other stack can call
+export const allInBet=p=>p.allIn||(p.bet>0&&p.bet>=coverTo(p));
 export function nextSeat(i,pred){const n=N();for(let k=1;k<=n;k++){const j=((i+k)%n+n)%n;if(pred(S.seats[j]))return j;}return -1;}
 export const handLive=()=>BETTING.includes(S.street)||S.street==='dealing';
 // still playing this hand: buy-ins, cash-outs and transfers wait; folded or sitting out, they run at once
@@ -74,10 +80,10 @@ export function cashOutStack(p){
 let ON_CHIPS=null;
 export function setOnChips(f){ON_CHIPS=f;}
 export function chipMove(kind,p,amt){if(ON_CHIPS&&(amt>0||kind==='done'||kind==='cancelled'))ON_CHIPS(kind,p,amt);}
-// Add or remove an exact amount. Added chips are 25s; chips already in the stack stay as they are.
+// Add or remove an exact amount. An empty stack buys in as the usual mix, a top-up in 25s (chips.js addBought).
 export function settleAdjust(p,delta){
   delta=Math.round(delta);if(!delta||delta%BUY)return false;
-  if(delta>0){p.stack+=delta;cadd(p.chips,chipsOf25(delta));ledger(p,'buy',delta);return true;}
+  if(delta>0){addBought(p,delta);ledger(p,'buy',delta);return true;}
   if(p.stack+delta<BUY)return false;
   const amt=-delta;payChips(p,amt);p.stack-=amt;ledger(p,'cash',amt);return true;
 }
@@ -85,7 +91,7 @@ export function applyMoney(p){
   if(lockedIn(p))return false;
   let ch=false;
   if(p.moneyWait){const d=p.moneyWait;p.moneyWait=0;if(settleAdjust(p,d)){ch=true;if(view.moneyDone)view.moneyDone(p,d);}}
-  while(p.qBuy>0){p.qBuy--;p.stack+=BUY;cadd(p.chips,chipsOf25(BUY));ledger(p,'buy',BUY);ch=true;}
+  while(p.qBuy>0){p.qBuy--;addBought(p,BUY);ledger(p,'buy',BUY);ch=true;}
   while(p.qCash>0){p.qCash--;if(p.stack>=BUY){payChips(p,BUY);p.stack-=BUY;ledger(p,'cash',BUY);}ch=true;}
   if(ch&&p.stack>0&&p.last==='未买入')p.last='';
   return ch;
