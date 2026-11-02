@@ -145,7 +145,7 @@ test('preflop charts: every hand at most once, sane range sizes', () => {
 test('the solver table: the bot finds its key, and the table\'s actions become its mix', async () => {
   const { useTable, gtoMix, keyOf } = await import('../js/gto.js');
   enterBots('practice');
-  const S = state.S, bot = bots()[0].i, b64 = bytes => Buffer.from(bytes).toString('base64');
+  const S = state.S, bot = bots()[0].i, b64 = bytes => btoa(String.fromCharCode(...bytes));
   const table = (key, row) => ({ v: 1, nb: 10, ehsBins: 5, potT: .05, scen: { srp_ip: { pot: 5.5, stack: 97.5, init: 1, iters: 1,
     edges: [[.3, .43, .55, .7], [.26, .41, .56, .75], [.1, .19, .3, .4, .49, .6, .71, .81, .91]],
     keys: b64(new Uint8Array(new Uint16Array([key]).buffer)), data: b64(Array(10).fill(row).flat()) } } });
