@@ -1,6 +1,6 @@
 // Your station: cards, chip rail, bet zone, and action buttons.
 import {AUTO_TIDY,BET_MENU,PRE,actionLabels,adjustMoney,autoTidy,betPresets,cancelAction,confirmDetail,confirmLabel,confirmationPlan,layoutRaiseMarks,layoutScaleTicks,pendingIsCurrent,preOptions,raiseScale,scalePoint,stillMyTurn} from '../actions.js';
-import {CCLS,DV,Z,chipsOf25,csum,tidied} from '../chips.js';
+import {CCLS,DV,Z,csum,tidied,tidyTarget} from '../chips.js';
 import {BETTING,BUY,ONLINE_MAX} from '../config.js';
 import {FLASH,M,MYDOC,PUSH,PUSH_TURN,S,SESSION,SUBMITTED,VOTED,setPUSH,setPUSH_TURN,view} from '../state.js';
 import {canAct,handLive,isKicked,isOwner,lockedIn,myName,mySeat,myTurn} from '../table.js';
@@ -185,7 +185,7 @@ export function renderHeroInner(){
     if(isKicked(M.me))ctl=`<div class="wait">${tr('你已被房主请出这个房间。')}</div>`;
     else if(queued)ctl=`<div class="wait">${tr('正在等待座位...')}</div><div class="main"><button class="btn fold small" data-a="leave">${tr('取消（退回这一手）')}</button></div>`;
     else if(!M.ready)ctl='';
-    else ctl=`<div class="wait">${[tr('{n} 人在座',{n:S.seats.length}),full?tr('已满 10 人，可以先排队'):'',handLive()?tr('牌局进行中，买入后这一手结束入座'):''].filter(Boolean).join(' · ')}</div><div class="main"><button class="btn next" data-a="join">${miniStackC(chipsOf25(BUY))} ${tr('买一手并入座 +{n}',{n:fmt(BUY)})}</button></div>`;
+    else ctl=`<div class="wait">${[tr('{n} 人在座',{n:S.seats.length}),full?tr('已满 10 人，可以先排队'):'',handLive()?tr('牌局进行中，买入后这一手结束入座'):''].filter(Boolean).join(' · ')}</div><div class="main"><button class="btn next" data-a="join">${miniStackC(tidyTarget(BUY))} ${tr('买一手并入座 +{n}',{n:fmt(BUY)})}</button></div>`;
     if(FLASH)ctl+=`<div class="flash">${esc(FLASH)}</div>`;
     el.innerHTML=`<div class="controls">${hostRequestsHTML()}${ctl}</div>`;
     return;

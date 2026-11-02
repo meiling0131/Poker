@@ -324,8 +324,9 @@ export function autoTidy(){
   myRef.update({tidyN:LOCAL_T}).catch(()=>{TIDY_KEY='';});
 }
 export function actionLabels(p){
-  const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p);
-  const word='Raise',to=p.bet+pushed,allIn=pushed>0&&pushed>=p.stack;
+  const toCall=Math.max(0,S.currentBet-p.bet),pushed=csum(PUSH),canR=canRaise(p),minTo=minRaiseTo(p),maxTo=maxRaiseTo(p);
+  // All in: the whole stack, or as much as the biggest other stack can call (table.js maxRaiseTo)
+  const word='Raise',to=p.bet+pushed,allIn=pushed>0&&(pushed>=p.stack||(canR&&to>=maxTo));
   const n=Math.min(toCall,p.stack);
   const r={toCall,pushed,canR,minTo,word,to,allIn};
   r.callLbl=toCall===0?'Check'+sub('过牌'):`Call ${fmt(n)}${sub(`跟注 ${fmt(n)}`)}`;
@@ -337,17 +338,20 @@ export function actionLabels(p){
   else if(canR&&pushed>toCall&&(to>=minTo||allIn)){betOk=true;betType='raise';}
   else if(canR&&toCall===0&&pushed>0&&(to>=minTo||allIn)){betOk=true;betType='raise';}
   r.betOk=betOk;r.betType=betType;r.betAllIn=betOk&&allIn;r.betAmt=pushed;r.change=0;
+  // chips past what anyone can call come back as change
+  if(betOk&&betType==='raise'&&to>maxTo)Object.assign(r,{to:maxTo,betAmt:maxTo-p.bet,change:to-maxTo});
   // Call or the slider picked more chips than it meant: Bet pays what was meant (betAmt), the rest is change
-  const it=intentNow(),amt=it?(it.type==='call'?Math.min(toCall,p.stack):Math.min(it.to,p.bet+p.stack)-p.bet):0;
+  const it=intentNow(),amt=it?(it.type==='call'?Math.min(toCall,p.stack):Math.min(it.to,maxTo)-p.bet):0;
   if(it&&amt>0&&pushed>=amt&&(it.type==='call'?toCall>0:canR))
-    Object.assign(r,{betOk:true,betType:it.type,to:p.bet+amt,betAmt:amt,change:pushed-amt,betAllIn:amt>=p.stack});
+    Object.assign(r,{betOk:true,betType:it.type,to:p.bet+amt,betAmt:amt,change:pushed-amt,betAllIn:amt>=p.stack||(it.type==='raise'&&p.bet+amt>=maxTo)});
   return r;
 }
 export function commitAllIn(p){
   const L=actionLabels(p);
   if(!L.canAllIn)return;
-  const chips=Object.assign(Z(),p.chips);
-  if(p.stack<=L.toCall)requestAction('call',0,chips);
-  else requestAction('raise',p.bet+p.stack,chips);
+  if(p.stack<=L.toCall){requestAction('call',0,Object.assign(Z(),p.chips));return;}
+  // the bigger stack puts in only what the biggest other stack can call
+  const to=maxRaiseTo(p);
+  requestAction('raise',to,pickChips(p.chips,to-p.bet));
 }
 export function setPRE(v){PRE=v;}

@@ -345,16 +345,16 @@ test('real money: the balance comes from D1, and the browser cannot add chips wi
   ledgerMatches(t.db, uid);
 });
 
-test('real money: buy-ins and cash-outs move cash and chips together, in 25s', async () => {
+test('real money: buy-ins and cash-outs move cash and chips together; a first buy-in is the usual mix, a top-up 25s', async () => {
   const uid = 'ureal00000000002';
   const t = await realSolo(uid);
   const got = await t.money(400);
   assert.equal(got.ok, true); assert.equal(got.balance, 600); assert.equal(got.done, 400);
   assert.equal(t.me().stack, 400);
-  assert.deepEqual({ ...t.me().chips }, { 1: 0, 5: 0, 10: 0, 25: 16 }, 'chips are never rearranged unless the player asks');
+  assert.deepEqual({ ...t.me().chips }, { 1: 10, 5: 6, 10: 6, 25: 12 }, 'an empty seat buys in as 白10 红6 蓝6 and the rest in 25s');
   assert.equal(balance(t.db, uid), 600);
   await t.money(200);
-  assert.deepEqual({ ...t.me().chips }, { 1: 0, 5: 0, 10: 0, 25: 24 }, 'a later buy-in adds 25s only');
+  assert.deepEqual({ ...t.me().chips }, { 1: 10, 5: 6, 10: 6, 25: 20 }, 'a later buy-in adds 25s and leaves the chips there as they are');
   await t.money(-200);
   const out = await t.money(-200);
   assert.equal(out.ok, true); assert.equal(out.balance, 800);

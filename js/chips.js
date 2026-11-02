@@ -18,7 +18,7 @@ export const csum=c=>c?(c[1]||0)+5*(c[5]||0)+10*(c[10]||0)+25*(c[25]||0):0;
 export function cadd(a,b){for(const d of DV)a[d]=(a[d]||0)+((b&&b[d])||0);return a;}
 export function greedyC(x){const c=Z();for(const d of DV){c[d]=Math.floor(x/d);x-=c[d]*d;}return c;}
 export const BUY_CHIPS=()=>chipBreakdown(BUY);
-// A buy-in or cash-out is paid in 25s only.
+// A top-up or a cash-out is paid in 25s (a first buy-in is the usual mix: addBought).
 export function chipsOf25(amt){const out=Z();out[25]=Math.floor(Math.abs(Math.round(amt))/25);return out;}
 // Chips are the money: every payment moves real chips, and change is only made when no exact set exists.
 // exactPick: chips from `pool` worth exactly `amt`, preferring the largest denominations; null if impossible.
@@ -71,6 +71,13 @@ export function tidyTarget(total){
   return cadd(out,greedyC(r));
 }
 export const tidied=chips=>tidyTarget(csum(chips));
+// Chips bought in: an empty seat sits down with the usual mix (白10 红6 蓝6, the rest 绿25), ready to bet in
+// small steps; a top-up comes in 25s and leaves the chips already there as they are
+export function addBought(p,amt){
+  const empty=p.stack<=0;
+  p.stack+=amt;
+  if(empty)p.chips=tidyTarget(amt);else cadd(p.chips,chipsOf25(amt));
+}
 export function tidyChips(p){const t=tidied(p.chips);const same=DV.every(d=>t[d]===p.chips[d]);if(!same)p.chips=t;return !same;}
 // choose chips from what a seat owns that add up to at least `amt`, as close as possible
 export function pickChips(owned,amt){

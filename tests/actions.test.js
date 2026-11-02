@@ -1,5 +1,5 @@
 // Your buttons at a practice table, run headless (see tools/headless.js): what Call, the raise slider and Bet
-// put in when the stack is a fresh buy-in of 25s, the confirmations before Fold and All in, 整理, and how your own
+// put in when the stack holds only 25s, the confirmations before Fold and All in, 整理, and how your own
 // action shows at once at a table the server deals.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,7 +28,7 @@ async function myDecision(ok) {
   }
   throw new Error('never got the decision');
 }
-// a fresh buy-in: 200 in 25s, nothing small to make change with
+// a stack of 25s only (pots won in 25s), nothing small to make change with
 const allTwentyFives = me => { me.stack = 200; me.chips = { 1: 0, 5: 0, 10: 0, 25: 8 }; };
 
 test('Call with only 25s calls and takes change back; it does not raise to 25', async () => {

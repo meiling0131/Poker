@@ -2,13 +2,13 @@
 // A regular game and an online room both run here on the Verve server (M.host).
 import {botDecide} from './bots.js';
 import {best5,best7,cardCode,cardTxt,handName,randInt,shuffledDeck} from './cards.js';
-import {BUY_CHIPS,Z,cadd,giveFromPot} from './chips.js';
+import {Z,addBought,cadd,giveFromPot} from './chips.js';
 import {ACT_MS,BETTING,BOT_STYLE,BUY,CARD_MS,FLOP_MS,NEXT_MS,ONLINE_MAX,STREET_CN,dealTime} from './config.js';
 import {commit,syncDoc} from './online.js';
 import {BB,SB} from './settings.js';
 import {DECK,GEN,H,M,S,SEATDOCS,SPEED,TT,setDECK,setGEN,setH,setS,setTT} from './state.js';
 import {loadMyStats,recordStats} from './stats.js';
-import {N,applyMoney,bookKey,canAct,canRaise,cashOutStack,chipMove,eligibleCount,endLater,freshBot,freshHuman,handFields,handLive,heroReady,isKicked,isRemote,later,ledger,live,log,maxRaiseTo,minRaiseTo,needToStart,nextRaiseWord,nextSeat,potTotal,put,who} from './table.js';
+import {N,allInBet,applyMoney,bookKey,canAct,canRaise,cashOutStack,chipMove,eligibleCount,endLater,freshBot,freshHuman,handFields,handLive,heroReady,isKicked,isRemote,later,ledger,live,log,maxRaiseTo,minRaiseTo,needToStart,nextRaiseWord,nextSeat,potTotal,put,who} from './table.js';
 import {botSay} from './talk.js';
 import {buildPots} from './pots.js';
 import {fmt} from './util.js';
@@ -75,7 +75,7 @@ export async function startHandInner(){
   const P=S.seats;
   P.forEach(p=>{Object.assign(p,handFields());applyMoney(p);
     if(p.kind==='bot'&&p.stack===0){ // bots rebuy at once; 奶龙 buys two hands at a time
-      const n=BOT_STYLE[p.id]?.rebuy||1;p.stack+=BUY*n;p.chips=Z();for(let k=0;k<n;k++)cadd(p.chips,BUY_CHIPS());
+      const n=BOT_STYLE[p.id]?.rebuy||1;addBought(p,BUY*n);
       ledger(p,'buy',BUY*n);chipMove('rebuy',p,BUY*n);if(n>1)botSay(p,'rebuy',1);}});
   const elig=P.map((p,i)=>i).filter(i=>P[i].stack>0);
   S.board=[];S.board2=null;S.runout=null;S.pfOpen=true;S.pfAgg=-1;S.curAgg=-1;S.prevAgg=-1;S.potChips=Z();S.msg=[];
@@ -240,7 +240,7 @@ export function doAction(p,type,to,picked){
     S.currentBet=Math.max(prev,p.bet);
     S.seats.forEach(q=>{if(q!==p&&canAct(q)&&q.bet<S.currentBet)q.acted=false;});
     const w=p.bet>prev?`${word} 到 ${fmt(p.bet)}`:`跟注 ${fmt(p.bet)}`;
-    p.last=p.allIn?`全下 ${fmt(p.bet)}${p.bet>prev?`（${word}）`:''}`:w;
+    p.last=allInBet(p)?`全下 ${fmt(p.bet)}${p.bet>prev?`（${word}）`:''}`:w;   // all in, or every chip the others can call
   }
   p.acted=true;p.actedStreet=true;p.seenRaise=S.fullRaiseId;S.turn++;
   log(`${who(p)} ${p.last}`);
