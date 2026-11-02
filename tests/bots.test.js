@@ -180,3 +180,50 @@ test('the solver table: the bot finds its key, and the table\'s actions become i
     useTable(undefined);
   }
 });
+
+test('exact flop table: hand categories, board classes and decision points the batch writes (tools/flops)', async () => {
+  const { handCategory, boardClass, flopNode } = await import('../js/flops.js');
+  const cat = (h, b) => handCategory(cards(h), cards(b));
+  assert.equal(cat('Ah Ac', 'As Kd 7c'), 9, 'a set');
+  assert.equal(cat('Qh Jh', 'As Kd 7c'), 2, 'AKQJ: only a ten makes it, a gutshot');
+  assert.equal(cat('Qs Js', 'Ts 9d 2s'), 4, 'flush draw and open-ended: a combo draw');
+  assert.equal(cat('Ad Qc', 'As Kd 7c'), 7, 'top pair, queen kicker');
+  assert.equal(cat('Ad 5c', 'As Kd 7c'), 6, 'top pair, weak kicker');
+  assert.equal(cat('Kh 8h', 'As Kd 7c'), 5, 'second pair');
+  assert.equal(cat('Jh Jd', 'Ts 7d 2c'), 7, 'an overpair');
+  assert.equal(cat('8h 3h', '8s 8d 3c'), 11, 'a full house');
+  assert.equal(cat('9h 2d', '8s 8d 8c'), 0, 'trips on the board are everyone\'s');
+  assert.equal(boardClass(cards('As Kd 7c')), 6, 'ace high, a second broadway card, rainbow, not connected');
+  assert.equal(boardClass(cards('8s 8d 3c')), 64, 'paired, nine or lower');
+  assert.deepEqual([flopNode(0, 0, 0, 10), flopNode(1, 0, 0, 10), flopNode(1, 1, 3, 10), flopNode(0, 1, 8, 10),
+    flopNode(0, 2, 3, 10), flopNode(1, 2, 8, 10), flopNode(1, 1, 15, 10), flopNode(0, 3, 3, 10)],
+  ['', 'x', 'b33', 'xb75', 'b33r', 'xb75r', 'ba', null]);
+});
+
+test('exact flop table: a cell becomes the bot\'s flop mix, ahead of the GPU table', async () => {
+  const { useFlops, boardClass } = await import('../js/flops.js');
+  const { gtoMix } = await import('../js/gto.js');
+  enterBots('practice');
+  const S = state.S, bot = bots()[0].i, b64 = bytes => btoa(String.fromCharCode(...bytes));
+  const cell = row => b64(Array.from({ length: 12 }, () => row).flat());
+  const cls = boardClass(cards('Kd 7c 2s'));
+  useFlops({ v: 1, cats: 12, lines: { srp_ip: { [`${cls}:b33`]: cell([51, 102, 102, 0]), [`${cls}:x`]: cell([128, 0, 128, 0]) } } });
+  const setup = youBet => {
+    spot({ bot, hole: 'Ah Qd', board: 'Kd 7c 2s', you: { bet: youBet, stack: 195 - youBet, total: 5 + youBet }, me: { bet: 0, stack: 195, total: 5 },
+      raises: youBet ? 1 : 0, youHist: [{ s: 0, t: 'call', r: 2, b: 5 }, { s: 3, t: youBet ? 'raise' : 'check', r: 0, b: youBet }],
+      botHist: [{ s: 0, t: 'raise', r: 1, b: 5 }] });
+    Object.assign(S, { dealer: bot, pfAgg: bot, prevAgg: -1 });
+    return { i: bot, p: S.seats[bot], opp: 1, opponents: [S.seats[0]], pre: false, toCall: youBet, pot: 10 + youBet, canR: true, hole: cards('Ah Qd') };
+  };
+  try {
+    // you bet 3 into 10 (a third): fold a fifth, call two fifths, raise to three times the bet two fifths
+    let m = gtoMix(setup(3));
+    assert.ok(Math.abs(m.fold - .2) < .01 && Math.abs(m.call - .4) < .01, JSON.stringify(m));
+    assert.deepEqual(m.raise.map(r => [Math.round(r.w * 100), r.to]), [[40, 9]]);
+    // checked to: check half, bet three quarters of the pot half
+    m = gtoMix(setup(0));
+    assert.deepEqual(m.raise.map(r => [Math.round(r.w * 100), r.frac]), [[50, .75]]);
+  } finally {
+    useFlops(undefined);
+  }
+});

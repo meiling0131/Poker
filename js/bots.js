@@ -170,7 +170,7 @@ export function draws(hole,board){
   for(let low=1;low<=10;low++){
     const miss=[];for(let r=low;r<low+5;r++)if(!ranks.has(r))miss.push(r);
     if(miss.length!==1)continue;
-    if((miss[0]===low&&low>1)||(miss[0]===low+4&&low<10))oesd=true;else gut=true;
+    if((miss[0]===low&&low<=9)||(miss[0]===low+4&&low>=2))oesd=true;else gut=true;   // open at both ends (AKQJ and A234 are not)
   }
   const bmax=Math.max(...board.map(rankOf)),overs=hole.filter(c=>rankOf(c)>bmax).length;
   return {fd,oesd,gut,overs,draw:fd||oesd||gut};

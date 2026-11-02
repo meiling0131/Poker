@@ -6,6 +6,7 @@ import TABLE from './gto-table.js';
 import {best7,rankOf,suitOf} from './cards.js';
 import {S} from './state.js';
 import {N,maxRaiseTo,potTotal} from './table.js';
+import {flopMix} from './flops.js';
 
 const SIZES=[0,0,.33,.75,1.25,0];   // the bet behind action slots 2..4, a share of the pot (5 is all in)
 let DEC=null,OVERRIDE;
@@ -98,12 +99,18 @@ function bucketOf(hole,board,edges){
 }
 
 export function gtoMix(c){
-  const dec=decoded();
-  if(!dec||c.opp!==1||c.pre||S.board.length<3)return null;
-  const i=c.i,op=c.opponents[0],j=S.seats.indexOf(op),name=scenarioOf(i,j),sc=name&&dec[name];
-  if(!sc)return null;
+  if(c.opp!==1||c.pre||S.board.length<3)return null;
+  const i=c.i,op=c.opponents[0],j=S.seats.indexOf(op),name=scenarioOf(i,j);
+  if(!name)return null;
   const street=S.board.length-3,player=dist(i)>dist(j)?1:0;
   const potStart=potTotal()-S.seats.reduce((a,q)=>a+q.bet,0),behind=Math.min(c.p.stack+c.p.bet,op.stack+op.bet);
+  // the flop: the exact solves first (flops.js), then this table
+  if(street===0){
+    const f=flopMix(c,name,player,potStart);
+    if(f){if(globalThis.__gtoTrace)globalThis.__gtoTrace(name+' flop',-1,true);return f;}
+  }
+  const dec=decoded(),sc=dec&&dec[name];
+  if(!sc)return null;
   const init=(street===0?S.pfAgg:S.prevAgg)===i?1:0,tex=texClass(S.board),face=faceClass(c.toCall,c.pot,c.toCall>0&&op.allIn);
   // the stack-to-pot class the solve never reached here: the nearest one it did
   const spr=sprClass(behind/Math.max(1,potStart));
