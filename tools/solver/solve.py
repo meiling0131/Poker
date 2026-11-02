@@ -214,6 +214,8 @@ def run(name, scen, args, dev):
     log(f'{name}: {scen.get("about", "")} · pot {scen["pot"]}BB, {scen["stack"]}BB behind')
     log(f'  dealing {args.pool} boards ({args.runouts} runouts each for the flop strength)')
     pool = Pool(deck, args.pool, args.runouts, gen, args.chunk)
+    if dev.type == 'cuda':
+        torch.cuda.empty_cache()                                   # hand the dealing's scratch memory back
     solver = Solver(scen, deck, pool, dev)
     acts = sum(1 for n in solver.nodes if n.kind == 'act')
     log(f'  tree: {len(solver.nodes)} nodes, {acts} decisions · bucket edges {pool.edges}')
@@ -230,7 +232,8 @@ def run(name, scen, args, dev):
             moved = float((avg - prev).abs().sum(-1).mean()) if prev is not None else float('nan')
             prev = avg
             per = (time.time() - t0) / max(1, solver.t)
-            log(f'  it {solver.t}/{args.iters} · OOP EV {ev_avg:+.3f}BB · strategy moved {moved:.4f} · {per:.2f}s/it')
+            mem = f' · GPU {torch.cuda.max_memory_allocated(dev) / 2 ** 30:.1f}GB' if dev.type == 'cuda' else ''
+            log(f'  it {solver.t}/{args.iters} · OOP EV {ev_avg:+.3f}BB · strategy moved {moved:.4f} · {per:.2f}s/it{mem}')
         if solver.t % args.save == 0 or solver.t == args.iters:
             torch.save({'R': solver.R, 'S': solver.S, 't': solver.t}, ck)
             n = solver.export(name, scen, os.path.join(args.out, f'{name}.json'), pool.edges)

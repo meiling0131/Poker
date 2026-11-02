@@ -49,7 +49,10 @@ def main():
         i = args.index('--to')
         target = args[i + 1]
         args = args[:i] + args[i + 2:]
-    table = None if args == ['--clear'] else pack(args or sorted(glob.glob(os.path.join(HERE, 'out', '*.json'))))
+    paths = args or sorted(glob.glob(os.path.join(HERE, 'out', '*.json')))
+    if args != ['--clear'] and not paths:
+        sys.exit('no tables in tools/solver/out: train first (solve.py), or pass --clear to switch the table off')
+    table = None if args == ['--clear'] else pack(paths)
     text = json.dumps(table, separators=(',', ':'))
     with open(target, 'w') as f:
         f.write(text if target.endswith('.json') else HEAD + 'export default ' + text + ';\n')
