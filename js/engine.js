@@ -67,10 +67,30 @@ export async function startHand(){
   if(STARTING||!S||S.closing)return;STARTING=true;
   try{await startHandInner();}finally{STARTING=false;}
 }
+// 重置 at a practice table: every bot back to one buy-in. What it had over or under goes into the ledger (a 重置
+// row), so the books still balance and each bot's 盈亏 stays true. Your own stack and everyone's stats stay.
+// Between hands at once, otherwise when the hand is over.
+export function requestBotReset(){
+  if(!S||S.mode!=='bots'||!M.host||M.solo)return;
+  if(handLive())S.resetBots=true;else resetBots();
+  commit();
+}
+function resetBots(){
+  for(const p of S.seats){
+    if(p.kind!=='bot')continue;
+    const k=bookKey(p),over=p.stack-BUY,b=S.book[k]||(S.book[k]={in:0,out:0});
+    if(over){b.out+=over;S.ledger.unshift({t:Date.now(),k,kind:'reset',amt:over});}   // taken off (or put back on)
+    p.stack=0;p.chips=Z();addBought(p,BUY);
+  }
+  if(S.ledger.length>300)S.ledger.length=300;
+  S.resetBots=false;
+  log(`机器人回到 ${fmt(BUY)}`,'h');
+}
 export async function startHandInner(){
   setGEN(GEN+1);clearTimeout(TT);
   const prevDealerIdx=S.dealer;
   S.street='idle';S.actor=-1;S.deadline=0;S.nextAt=0;
+  if(S.resetBots)resetBots();
   applySeatChanges();
   const P=S.seats;
   P.forEach(p=>{Object.assign(p,handFields());applyMoney(p);

@@ -53,6 +53,10 @@ export function stakesFor(code, S) {
 }
 
 const BOT_PLANS = ['bluffing', 'real', 'bl', 'bluffs', 'bh'];
+// whether this page has 记录 open (sendTable); a socket without attachments (tests) keeps the flag on itself
+function wantsRecords(ws) {
+  try { const a = ws.deserializeAttachment ? ws.deserializeAttachment() : null; return !!((a && a.records) || ws.records); } catch (e) { return !!ws.records; }
+}
 const publicSeat = p => { if (p.kind !== 'bot') return p; const q = { ...p }; for (const k of BOT_PLANS) delete q[k]; return q; };
 
 export class Room {
@@ -78,6 +82,14 @@ export class Room {
     });
   }
 
+  // start this table over (a new owner, or a regular table on a new day): the table goes, money still owed stays
+  async restart() {
+    const owed = this.owed.concat(Object.entries(this.held).map(([uid, amt]) => ({ uid, amt }))), chipQ = this.chipQ;
+    this.fresh();
+    this.owed = owed;
+    this.chipQ = chipQ;
+    await this.ctx.storage.deleteAll();
+  }
   fresh() {
     this.c = { S: null, H: [], DECK: [], SEATDOCS: {}, TT: null, GEN: 0, SESSION: 1, RT: null, SPEED: 650 };
     this.tokens = {};
@@ -346,7 +358,8 @@ export class Room {
   // ---- the day's close (DATABASE.md, "The day") ----
   // the room's own table, read directly (handLive() in js/table.js, without a run())
   liveHand() { const S = this.c.S; return !!S && (BETTING.includes(S.street) || S.street === 'dealing'); }
-  // every table wakes at 23:55, 00:00 and 00:05 Eastern, connected or not; a regular table, once closed, is done
+  // every table wakes at 23:55, 00:00 and 00:05 Eastern, connected or not; a regular table, once closed, waits for
+  // its owner's next visit on a new day (fetch starts them at a fresh one)
   armAlarm(now) {
     const S = this.c.S;
     if (!S || (S.mode === 'bots' && S.closed)) return;
@@ -410,7 +423,8 @@ export class Room {
     });
     for (const ws of this.open()) { try { ws.send(JSON.stringify({ t: 'closed' })); } catch (e) { /* closed */ } }
   }
-  // the new day: a friend room is open again; a regular table belonged to an old id and stays closed
+  // the new day: a friend room is open again; a regular table stays closed until its owner comes back (fetch
+  // then starts them at a fresh one)
   reopen() {
     const S = this.c.S;
     if (!S || S.mode === 'bots' || !S.closing) return;
@@ -421,14 +435,16 @@ export class Room {
   broadcast() {
     for (const ws of this.ctx.getWebSockets()) this.sendTable(ws, this.ctx.getTags(ws)[0]);
   }
-  // A regular table's page has no 记录, so its log, ledger, book and stats stay here: half of every update.
+  // A regular table's log, ledger, book and stats are half of every update, so they only go to a page that has
+  // 记录 open (it asks with {t:'records', on}; the wish rides on the socket, so it outlasts hibernation).
   // A bot's plans (Kmetsch counting his way to a bluff) are its own: its seat goes out without them.
   sendTable(ws, uid) {
     const { S, H } = this.c;
     let mine = null;
     if (S) { const i = S.seats.findIndex(p => p.uid === uid); if (i >= 0 && H[i] && H[i].length) mine = { h: S.hand, c: H[i] }; }
     const seats = S && S.seats.map(publicSeat);
-    const pub = S && (S.mode === 'bots' ? { ...S, seats, log: undefined, ledger: undefined, book: undefined, stats: undefined, mine } : { ...S, seats, mine });
+    const lean = S && S.mode === 'bots' && !wantsRecords(ws);
+    const pub = S && (lean ? { ...S, seats, log: undefined, ledger: undefined, book: undefined, stats: undefined, mine } : { ...S, seats, mine });
     try { ws.send(JSON.stringify({ t: 'table', S: pub || null })); } catch (e) { /* closed */ }
   }
 
@@ -452,11 +468,7 @@ export class Room {
     if (create && this.c.S && this.c.S.ownerUid !== uid) {
       // the code is someone else's room; it only frees up once that room has sat empty for a long time
       if (this.open().length || Date.now() - this.seen < EXPIRE) return this.reject('taken');
-      const owed = this.owed.concat(Object.entries(this.held).map(([uid, amt]) => ({ uid, amt }))), chipQ = this.chipQ;
-      this.fresh();
-      this.owed = owed;
-      this.chipQ = chipQ;
-      await this.ctx.storage.deleteAll();
+      await this.restart();
     }
     if (!this.c.S && !create) return this.reject('noroom');
     if (this.real) {
@@ -464,6 +476,9 @@ export class Room {
       // at a table still in its last hand can come back to it
       const now = Date.now();
       if (this.c.S) this.tick(now);
+      // a regular table closed on an earlier day: its owner starts the new day at a fresh one. Its stacks went
+      // home when it closed; money still being written is kept
+      if (solo && this.c.S && this.c.S.closed && dayPhase(now) !== 'closing' && await isDayOpen(this.env.DB, now)) await this.restart();
       const S = this.c.S, member = S && this.tokens[uid] && !S.closed;
       if (!member && (dayPhase(now) === 'closing' || (S && S.closing) || !await isDayOpen(this.env.DB, now))) return this.reject('closing');
     }
@@ -539,6 +554,11 @@ export class Room {
         docs[uid] = Object.assign(m.op === 'set' ? data : Object.assign(old, data), kept);
         reapplySeatDocs();
       });
+      return;
+    }
+    if (m.t === 'records') {
+      try { ws.serializeAttachment({ records: !!m.on }); } catch (e) { ws.records = !!m.on; }
+      this.sendTable(ws, uid);
       return;
     }
     if (m.t === 'money') { this.requestMoney(uid, Number(m.delta)); return; }

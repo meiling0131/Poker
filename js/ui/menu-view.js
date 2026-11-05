@@ -28,9 +28,9 @@ export function renderHeader(){
   $('pills').innerHTML=!M.mode?'':`<span class="pill">${online?tr('房间 {code}',{code:esc(M.room||'')}):(PLAY_MODE==='normal'?tr('正常 · 7 人'):tr('练习 · 7 人'))}</span><span class="pill">${tr('盲注 {sb}/{bb}',{sb:SB,bb:BB})}</span>${S&&S.hand?`<span class="pill">${tr('第 {n} 手',{n:S.hand})}</span>`:''}`;
   $('nav').hidden=!M.mode;
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.view===VIEW));
-  // 记录 is open in a friends room: the invite link, the players (the owner can remove them) and the ledger
+  // 记录 at every table: stats, the ledger and the hand log; a friends room adds the invite link and the players
   const rec=document.querySelector('#nav [data-view="records"]');
-  if(rec){rec.disabled=!online;rec.title=online?'':tr('暂未开放');}
+  if(rec){rec.disabled=!M.mode;rec.title='';}
   $('exitBtn').hidden=!M.mode;
   if(!M.mode)$('exitPopup').hidden=true;
 }

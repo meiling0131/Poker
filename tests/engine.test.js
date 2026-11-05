@@ -59,3 +59,41 @@ test('chips are conserved hand after hand', async () => {
   assert.equal(S.seats.reduce((a, p) => a + p.stack + p.total, 0), bought);
   assert.ok(onTable > 0);
 });
+
+test('重置: every bot back to one buy-in, your stack untouched; mid-hand it waits for the hand to end', async () => {
+  const { requestBotReset } = await import('../js/engine.js');
+  const { BUY } = await import('../js/config.js');
+  const { csum } = await import('../js/chips.js');
+  state.setSPEED(0);
+  enterBots('practice');
+  state.S.seats[0].qBuy = 1;
+  await startHand();
+  const playOut = async () => {
+    for (let guard = 0; guard < 2e5 && state.S.street !== 'done'; guard++) {
+      await null;
+      const S = state.S;
+      if (S.runout && S.runout.stage === 'vote' && S.runout.voters.includes(0) && !S.runout.votes[0]) { castVote(0, 1); continue; }
+      if (myTurn()) { doAction(S.seats[0], S.currentBet > S.seats[0].bet ? 'fold' : 'check'); proceed(); continue; }
+      if (!runNextTimer()) break;
+    }
+    for (let i = 0; i < 1000 && runNextTimer(); i++);   // the payout lands a moment after the hand is over
+  };
+  const S = () => state.S, bots = () => S().seats.filter(p => p.kind === 'bot');
+  // mid-hand: it waits
+  requestBotReset();
+  assert.equal(S().resetBots, true, 'a hand is on: the reset waits');
+  await playOut();
+  const mine = S().seats[0].stack;
+  await startHand();
+  assert.ok(bots().every(p => p.stack + p.total === BUY), 'each bot starts the next hand with one buy-in');
+  assert.equal(S().seats.reduce((a, p) => a + p.stack + p.total, 0), Object.values(S().book).reduce((a, b) => a + b.in - b.out, 0), 'the books balance: what each bot had over or under is a 重置 row');
+  assert.ok(S().ledger.some(r => r.kind === 'reset'), 'there are 重置 rows');
+  assert.equal(S().seats[0].stack + S().seats[0].total, mine, 'your stack is untouched');
+  // between hands: at once
+  await playOut();
+  bots()[0].stack += 300; bots()[0].chips[25] += 12; S().book[bots()[0].id].in += 300;   // a bot that has been winning
+  requestBotReset();
+  assert.ok(bots().every(p => p.stack === BUY && csum(p.chips) === BUY), 'between hands: every bot is back to one buy-in at once');
+  assert.equal(S().seats.reduce((a, p) => a + p.stack, 0), Object.values(S().book).reduce((a, b) => a + b.in - b.out, 0), 'chips still add up (between hands, all of them are in the stacks)');
+  assert.match(S().log.map(l => l.t).join('\n'), new RegExp(`机器人回到 ${BUY}`));
+});

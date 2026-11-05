@@ -188,6 +188,49 @@ test('a night: tables close at 23:55, an overtime hand that finishes counts, one
   assert.deepEqual((await dayTick(db)).map(d => d[0]), ['close'], 'the next night closes the 16th');
 });
 
+test('the next day, a browser that kept its id comes back to its regular table: a fresh one, not "closing"', async () => {
+  NOW = ET('2026-10-20T22:00:00');
+  const db = fakeD1();
+  await seedBots(db);
+  await dayTick(db);
+  const U = 'udayr00000000001';
+  const t = await solo(db, U);
+  assert.equal((await t.money(400)).done, 400);
+  deal(t); await finishHand(t, U);
+  NOW = ET('2026-10-20T23:55:00');
+  await dayTick(db); t.r.tick(NOW); await settle(t.r);
+  assert.ok(t.r.c.S.closed, 'the table closed for the night');
+  // the next afternoon: the browser missed 00:00-00:06, so it still has yesterday's id, whose row is gone
+  NOW = ET('2026-10-21T13:00:00');
+  await dayTick(db);
+  assert.equal(rows(db, `SELECT COUNT(*) AS n FROM players WHERE id = '${U}'`)[0].n, 0, "yesterday's row is gone");
+  assert.ok((await setPlayer(db, U, tokenOf(U), 'back')).player, "a new day's row");
+  await t.r.fetch({ url: `https://verve.test/solo?uid=${U}&token=${tokenOf(U)}&create=1&bots=1&sb=1&bb=2` });
+  assert.equal(lastPair[1].last('error'), null, 'not turned away with "closing"');
+  assert.ok(t.r.c.S && !t.r.c.S.closed && !t.r.c.S.closing, 'a fresh table');
+  assert.equal(t.r.c.S.seats.find(p => p.uid === U).stack, 0, "nothing carried over: buy in from today's balance");
+  assert.ok(t.r.c.S.seats.filter(p => p.kind === 'bot').every(p => p.stack === 0 && p.total === 0), "the bots start over too");
+});
+
+test('a regular table sends its log, ledger and stats only while 记录 is open', async () => {
+  NOW = ET('2026-10-22T15:00:00');
+  const db = fakeD1();
+  await seedBots(db);
+  await dayTick(db);
+  const U = 'udayl00000000001';
+  const t = await solo(db, U);
+  assert.equal((await t.money(400)).done, 400);
+  deal(t); await finishHand(t, U);
+  const last = () => t.ws.last('table').S;
+  t.send({ t: 'cmd', name: 'next', args: [] });
+  assert.equal(last().log, undefined, 'the table view: no log in the update');
+  t.send({ t: 'records', on: true });
+  assert.ok(Array.isArray(last().log) && last().log.length > 0, '记录 open: the log comes');
+  assert.ok(Array.isArray(last().ledger) && last().ledger.length > 0 && last().book && last().stats, 'and the ledger, book and stats');
+  t.send({ t: 'records', on: false });
+  assert.equal(last().log, undefined, 'back to the table: lean updates again');
+});
+
 test('a close the Worker missed runs before anything of the new day can start', async () => {
   NOW = ET('2026-10-15T20:00:00');
   const db = fakeD1();

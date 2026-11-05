@@ -103,3 +103,5 @@ export function serverMoney(delta){SERVER.send({t:'money',delta});}
 export function serverLeave(){SERVER.send({t:'leave'});}
 // owner commands, run by the server after it checks the sender owns the room
 export function serverCmd(name,...args){SERVER.send({t:'cmd',name,args});}
+// 记录 opened or closed at a regular table: the server sends its log, ledger and stats only while it is open
+export function serverRecords(on){SERVER.send({t:'records',on:!!on});}
