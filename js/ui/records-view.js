@@ -1,5 +1,6 @@
 // 记录 page: stats, ledger, logs, players.
 import {CONFIRM_KICK,roomLink} from '../online.js';
+import {serverRecords} from '../net.js';
 import {BUY,isBotId} from '../config.js';
 import {M,S} from '../state.js';
 import {ZS,pct} from '../stats.js';
@@ -30,8 +31,15 @@ export function statsHTML(){
   return mine+all;
 }
 export const kickBtn=u=>`<button class="kick${CONFIRM_KICK===u?' warn':''}" data-kick="${esc(u)}">${CONFIRM_KICK===u?tr('确认请出？'):tr('请出')}</button>`;
+// a regular table sends its log, ledger and stats only while 记录 is open: ask (again after a reconnect), and say
+// so until they arrive
+let ASKED=0;
 export function renderRecords(){
   const el=$('records');
+  if(M.solo&&!Array.isArray(S.log)){
+    if(Date.now()-ASKED>2000){ASKED=Date.now();serverRecords(true);}
+    el.innerHTML=`<p class="note">${tr('正在读取记录…')}</p>`;return;
+  }
   const tm=t=>{const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
   const seatedKeys=S.seats.map(bookKey);
   const keys=[...new Set(seatedKeys.concat(Object.keys(S.book)))];
@@ -50,8 +58,11 @@ export function renderRecords(){
     <section class="panel"><h2>${tr('账本')} <span>${tr('一手 {n}',{n:fmt(BUY)})}</span></h2>
       <div class="scroll"><table class="book"><thead><tr><th>${tr('玩家')}</th><th>${tr('买入')}</th><th>${tr('退出')}</th><th>${tr('桌上')}</th><th>${tr('盈亏')}</th></tr></thead><tbody>${rows||`<tr><td colspan="5">${tr('还没有人买入。')}</td></tr>`}</tbody>
       <tfoot><tr><td>${tr('合计')}</td><td>${fmt(tin)}</td><td>${fmt(tout)}</td><td>${fmt(ton)}</td><td>${sgn(ton+tout-tin)}</td></tr></tfoot></table></div></section>
+    ${S.mode==='bots'&&!M.solo?`<section class="panel"><h2>${tr('重置机器人')} <span>${tr('每个机器人回到 {n}',{n:fmt(BUY)})}</span></h2>
+      <p>${tr('每个机器人的筹码回到一手，多出或少的记进账本；你的筹码和统计不变。')}</p>
+      ${S.resetBots?`<p>${tr('这一手结束后重置。')}</p>`:`<button class="mini" data-bots-reset="1">${tr('重置机器人')}</button>`}</section>`:''}
     <section class="panel"><h2>${tr('买入 / 退出记录')} <span>${tr('{n} 笔',{n:S.ledger.length})}</span></h2>
-      ${S.ledger.length?`<ol class="rec">${S.ledger.map(r=>`<li><time>${tm(r.t)}</time><span class="k">${esc(nameOfKey(r.k))}</span><span class="${r.kind==='buy'?'buy':'cash'}">${r.kind==='buy'?tr('买一手'):r.kind==='cash'?tr('退一手'):tr('离桌带走')} ${fmt(r.amt)}</span></li>`).join('')}</ol>`:`<p>${tr('还没有买入或退出记录。')}</p>`}</section>
+      ${S.ledger.length?`<ol class="rec">${S.ledger.map(r=>`<li><time>${tm(r.t)}</time><span class="k">${esc(nameOfKey(r.k))}</span><span class="${r.kind==='buy'||(r.kind==='reset'&&r.amt<0)?'buy':'cash'}">${r.kind==='reset'?`${tr('重置')} ${sgn(-r.amt)}`:`${r.kind==='buy'?tr('买一手'):r.kind==='cash'?tr('退一手'):tr('离桌带走')} ${fmt(r.amt)}`}</span></li>`).join('')}</ol>`:`<p>${tr('还没有买入或退出记录。')}</p>`}</section>
     <section class="panel"><h2>${tr('牌局记录')} <span>${tr('最近 {n} 条',{n:S.log.length})}</span></h2>
       <ol class="lg">${S.log.map(l=>`<li class="${l.cls}">${names(tx(l.t))}</li>`).join('')}</ol></section>
     <p class="note">${tr('洗牌用 crypto.getRandomValues 做无偏 Fisher–Yates，每手重洗一副 52 张。练习模式在你的浏览器里洗牌发牌；正常模式和好友房间由 Verve 服务器（Cloudflare）洗牌发牌，每位玩家的底牌经加密连接只发给本人，其他人（包括房主）的浏览器里都没有，摊牌时才亮出来。轮到真人时限 45 秒，超时自动过牌或弃牌。')}</p>`;

@@ -1,12 +1,12 @@
 // Delegated DOM event handlers.
 import {BET_MENU,cancelAction,commitAllIn,commitRaise,confirmAction,money,openBetMenu,pendingIsCurrent,placeBet,requestAction,selectCall,setPre,setRaiseAt,stillMyTurn,tidy,toggleAutoTidy,vote} from '../actions.js';
 import {Z,pickChips} from '../chips.js';
-import {startHand} from '../engine.js';
+import {requestBotReset,startHand} from '../engine.js';
 import {SOUND,beep,setSOUND} from '../fx.js';
 import {enterBots,enterOnline,exitTable} from '../modes.js';
 import {approveBuy,joinTable,kick,leaveTable,newRoomCode,normRoom,roomLink,unkick} from '../online.js';
 import {SHOW_HAND,SKIN,PRESET,PRESETS,applyPreset,readStakeForm,setSHOW_HAND,setSkin} from '../settings.js';
-import {LOBBY,M,PROFILE,PUSH,S,SPEED,setFLASH,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
+import {LOBBY,M,PROFILE,PUSH,S,SPEED,VIEW,setFLASH,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
 import {bookKey,lockedIn,maxRaiseTo,minRaiseTo,mySeat,myTurn,potTotal} from '../table.js';
 import {EMO_OPEN,sendEmoji,setEMO_OPEN} from '../talk.js';
 import {confirmMoney,renderHero,toggleBuy} from './hero-view.js';
@@ -15,7 +15,7 @@ import {dismissOvertime,render} from './render.js';
 import {cleanPlayerName,displayName,fetchSeatStats,fetchStats,restrictNameInput,savePlayer} from '../player.js';
 import {$,store} from '../util.js';
 import {profileLive,renderTable,setProfileData,setProfileView} from './table-view.js';
-import {serverCmd} from '../net.js';
+import {serverCmd,serverRecords} from '../net.js';
 import {LANG,setLang,tr} from '../i18n.js';
 
 let NAME_SAVING=false;
@@ -179,13 +179,14 @@ document.addEventListener('click',e=>{
   }
   if(t.dataset.overtime){dismissOvertime();return;}
   if(t.dataset.exit){$('exitPopup').hidden=true;if(t.dataset.exit==='ok')exitTable();return;}
-  if(t.dataset.view){setVIEW(t.dataset.view);render();window.scrollTo&&window.scrollTo(0,0);return;}
+  if(t.dataset.view){setVIEW(t.dataset.view);if(M.solo)serverRecords(VIEW==='records');render();window.scrollTo&&window.scrollTo(0,0);return;}
   if(t.dataset.moneyGo){confirmMoney();return;}
   if(t.dataset.m){money(t.dataset.m);return;}
   if(t.dataset.autotidy){toggleAutoTidy();return;}
   if(t.dataset.tidy){tidy();return;}
   if(t.dataset.bank){toggleBuy();return;}
   if(t.dataset.pre){setPre(t.dataset.pre);return;}
+  if(t.dataset.botsReset){if(t.dataset.sure){requestBotReset();render();}else{t.dataset.sure='1';t.textContent=tr('确认重置？');}return;}
   if(t.dataset.statsReset){if(t.dataset.sure){if(M.solo)serverCmd('clearstats');else{store.set('poker.stats.bots','');if(S&&S.stats)delete S.stats.local;render();}}else{t.dataset.sure='1';t.textContent=tr('确认清空？');}return;}
   if(t.dataset.emoOpen){setEMO_OPEN(!EMO_OPEN);renderHero();return;}
   if(t.dataset.emo){sendEmoji(t.dataset.emo);return;}

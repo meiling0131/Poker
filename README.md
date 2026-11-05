@@ -64,13 +64,13 @@ The original game had the engine, the six bots, the chip-true table, practice pl
 - **关于 (about).** What the game is and how a day goes.
 - **设置 (settings).** 游戏音效 turns all sounds on or off. 机器人速度 (bot speed) offers 较慢, 中等 (the default) and 较快. 牌桌 picks the first or the second floor.
 - **Developer tools.** `/d1` is a page for browsing the local database. `/audit` checks every balance against the ledger. Both only work on your own machine.
-- **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard, the sounds and your betting buttons, and the bots' decisions in set spots: 104 in all.
+- **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard, the sounds and your betting buttons, and the bots' decisions in set spots: 107 in all.
 
 ### Kept from before
 
 These were dropped in the fork and are back after the merge:
 
-- **好友模式 (friends).** The lobby button opens the rooms people are in right now: tap one to join, with its password if it has one. Or type a room code to join it, or create a room (an empty code picks one at random) with an optional password; a new room plays at the stake picked in the lobby. You play under your own name. An invite link opened before leaving a name asks for one, then goes into the room. In a room, **记录** (records) has the invite link, the players (the owner can remove them) and the ledger.
+- **好友模式 (friends).** The lobby button opens the rooms people are in right now: tap one to join, with its password if it has one. Or type a room code to join it, or create a room (an empty code picks one at random) with an optional password; a new room plays at the stake picked in the lobby. You play under your own name. An invite link opened before leaving a name asks for one, then goes into the room. **记录** (records) at every table has your stats, the ledger and the hand log; in a room also the invite link and the players (the owner can remove them). At a practice table it also has **重置机器人** (reset the bots): every bot goes back to one buy-in, what it had over or under goes in the ledger, and your own stack stays.
 - **Confirmations for Fold and All in.** Fold, and a Bet that puts your whole stack in, turn the buttons into 取消 + 确认 Fold / 确认 All in. Everything else goes straight through.
 - **The bet presets.** 1/3 Pot, 1/2 Pot, 2/3 Pot, Pot and Custom, now on the raise slider.
 - **The second floor and the blue walls.** 设置 → 牌桌 picks the first-floor meeting room (walnut table, houndstooth armchairs, blue walls under a pendant light) or the second-floor lounge (dark stone table, leather sofas, teal walls under a slatted ceiling with light strips). The fork had painted both casino green.
@@ -91,7 +91,6 @@ These were dropped in the fork and are back after the merge:
 ### Still in progress
 
 - **Transfers between players** in a friends room aren't built.
-- **The 记录 (records) page** is only open in a friends room. Elsewhere, stats are shown through 查看数据.
 - **Known gaps:**
   - During a hand, 今日最佳 counts the stack a player had before that hand.
   - In a rare restart, a hand's chip rows could be written twice. The fix is planned.
