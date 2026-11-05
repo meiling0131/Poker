@@ -18,7 +18,7 @@ import {BB} from './settings.js';
 import {H,S} from './state.js';
 import {N,bookKey,canAct,canRaise,live,maxRaiseTo,minRaiseTo,potTotal} from './table.js';
 import {botSay} from './talk.js';
-import {RFI,VS_3BET,VS_4BET,VS_OPEN,handClass,openerGroup,range} from './preflop.js';
+import {RFI,VS_3BET,VS_4BET,VS_OPEN,handClass,openerGroup,range,shareOf} from './preflop.js';
 import {gtoMix} from './gto.js';
 
 // ---- reads: the table stats everyone can see, shrunk toward typical values until there is history ----
@@ -241,6 +241,14 @@ function seatPos(i){
   return ['BTN','CO','HJ','LJ'][dist]||'UTG';
 }
 const EARLIER={UTG:'UTG',LJ:'UTG',HJ:'UTG',CO:'LJ',BTN:'HJ',SB:'HJ'};
+// how wide this bot opens from here: the chart, or wider for the loose personalities (their own first-in rules)
+const RFI_SHARE={};
+function openShare(c,pos){
+  if(!(pos in RFI_SHARE))RFI_SHARE[pos]=RFI[pos]?shareOf(RFI[pos]):.2;
+  const t=c.type,x=c.position;
+  const own=t==='xuan'&&x>=.6?.15+x*.35:t==='dwan'?Math.min(.7,.18+x*.38):t==='keating'?.45:0;
+  return Math.max(RFI_SHARE[pos],own);
+}
 const BB_ISO='TT+,AJs+,KQs,AQo+,99:.5,ATs:.5,KJs:.5,QJs:.3';     // the big blind raising limpers
 function chartPlan(c){
   const {p,i,hole,raises,toCall,canR,callers,limpers,eq}=c;
@@ -280,9 +288,12 @@ function chartPlan(c){
     return plan(r,k,S.currentBet*(ip?3:3.6)+callers*S.currentBet);
   }
   if(raises===3){
-    const opened=(p.hist||[]).some(a=>a.s===0&&a.t==='raise'&&a.r===1);
-    const chart=VS_3BET[opened&&(oPos==='SB'||oPos==='BB')?'ip':'oop'];
+    const opened=(p.hist||[]).some(a=>a.s===0&&a.t==='raise'&&a.r===1),ip=opened&&(oPos==='SB'||oPos==='BB');
+    const chart=VS_3BET[ip?'ip':'oop'];
     let r=f(chart.raise),k=f(chart.call)*(opened?1:.6);
+    // a wide opener (the button, a loose player) defends the top of its own range, not just a fixed list:
+    // about half of it in position, a bit less out of it, so 3-betting its steals isn't free
+    if(opened&&r+k<1&&c.strength>=topT(openShare(c,pos)*(ip?.5:.42)))k=1-r;
     if(rd&&rd.af>.25&&r+k>0)k=Math.min(1-r,k+(rd.af-.25)*.6);   // a 3-bettor who raises a lot is called wider
     if(S.currentBet>BB*12&&!(eq*.8>c.odds+.04))k=0;
     return plan(r,k,c.depth<=40?maxRaiseTo(p):S.currentBet*2.3);
@@ -468,6 +479,12 @@ function lean(m,c){
   return m;
 }
 
+// a light 3-bet: at least this weight (relative to call and fold), whether or not the chart already mixes one in
+function lightRaise(m,w,to){
+  if(!m.raise.length){m.raise.push({w,frac:0,to});return;}
+  m.raise.forEach(r=>{r.w=Math.max(r.w,w);});
+}
+
 // ---- personalities: bend the core's weights, never past a sound price ----
 function personality(m,c){
   const {type,eq,toCall,pot,pre,strength,odds,raises,p,river,canR}=c;   // odds: the pot odds of the call
@@ -527,9 +544,9 @@ function personality(m,c){
     const close=pre?strength>.3:eq>odds-.08&&!(river&&c.made<1&&eq<.5)&&!(river&&c.made===1&&c.tex.scary>=2&&eq<.5);
     if(m.fold>0&&cheap&&close){m.call+=m.fold*.6;m.fold*=.4;}
     if(m.fold>0&&pre&&toCall<=BB&&strength>.15){m.call+=m.fold*.85;m.fold*=.15;}
-    if(pre&&canR&&!m.raise.length){
-      if(S.currentBet<=BB&&strength>=topT(.45))bet(m,.6,0);                                    // raises a wide range first in
-      else if(raises===2&&strength>=topT(.25)&&S.currentBet<BB*8)bet(m,chance(.2),0,S.currentBet*3);   // and 3-bets light
+    if(pre&&canR){
+      if(S.currentBet<=BB&&strength>=topT(.45)&&!m.raise.length)bet(m,.6,0);                 // raises a wide range first in
+      else if(raises===2&&strength>=topT(.25)&&S.currentBet<BB*8)lightRaise(m,chance(.25),S.currentBet*3);   // and 3-bets light
     }
     if(m.fold>0&&river&&c.opp===1&&catcher(c)&&eq>odds-.1&&toCall>=(pot-toCall)*.5){m.call+=m.fold*.4;m.fold*=.6;}   // the hero call
     if(!pre&&!toCall&&river&&canR&&eq<.25&&c.opp===1&&!c.station&&raiseTo(c,1.2)<=p.bet+(p.stack+p.bet)*.45)bet(m,.12,1.2);   // an overbet bluff
@@ -543,7 +560,7 @@ function personality(m,c){
       if(raises===2&&canR){
         const light=(c.suited&&(c.hi>=13||(c.hi-c.lo<=2&&c.lo>=4)))||(c.inPos&&c.lo>=10);
         const to=S.currentBet*(c.inPos?3:3.6)+c.callers*S.currentBet;
-        if(light&&!m.raise.length&&S.currentBet<BB*8&&small(to))bet(m,chance(c.inPos?.38:.22),0,to);
+        if(light&&S.currentBet<BB*8&&small(to))lightRaise(m,chance(c.inPos?.4:.25),to);
         // and calls more opens in position with hands that play well after the flop
         if(m.fold>0&&c.inPos&&toCall<=BB*5&&strength>.3&&(c.suited||c.hi===c.lo||c.hi-c.lo<=1)){m.call+=m.fold*.7;m.fold*=.3;}
       }
