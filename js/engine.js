@@ -31,7 +31,7 @@ export function newBotsTable(){
   S.msg=[`买一手 +${BUY} 就开始发牌`];
   const mine=loadMyStats();if(mine)S.stats={local:mine};
 }
-// 单挑 (heads-up practice): you and turing, who plays the strategy it was trained to here (turing.js)
+// 单挑 (heads-up practice): you and Turing, who plays the strategy it was trained to here (turing.js)
 export function newHuTable(){
   setS(baseTable('bots'));S.hu=true;
   S.seats.push(freshHuman('local'));
@@ -129,7 +129,7 @@ export async function startHandInner(){
   const sbp=P[S.sbPos],bbp=P[S.bbPos];
   chipMove('sb',sbp,put(sbp,SB));sbp.last=`小盲 ${fmt(sbp.bet)}`;
   chipMove('bb',bbp,put(bbp,BB));bbp.last=`大盲 ${fmt(bbp.bet)}`;
-  if(S.hu){S.acts=[];S.hstart=P.map(p=>p.stack+p.total);}   // turing's view of the hand (turing.js)
+  if(S.hu){S.acts=[];S.hstart=P.map(p=>p.stack+p.total);}   // Turing's view of the hand (turing.js)
   S.currentBet=BB;S.minRaise=BB;S.fullRaiseId=0;S.raises=1;S.street='dealing';S.actor=S.bbPos;
   log(`第 ${S.hand} 手 · ${elig.length} 人 · 庄位 ${who(P[S.dealer])}`,'h');
   S.street='preflop';S.animUntil=Date.now()+dealTime(elig.length);

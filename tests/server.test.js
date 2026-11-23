@@ -311,7 +311,7 @@ test('a table saved before bots had ids comes back keyed by bot id', async () =>
   };
   upgradeBots(T);
   assert.equal(T.seats[1].id, 'ubot00000nailong');
-  assert.equal(T.seats[1].name, '🤖 turing');
+  assert.equal(T.seats[1].name, '🤖 Turing');
   assert.deepEqual(Object.keys(T.book).sort(), ['ubot00000nailong', 'ux']);
   assert.equal(T.stats.ubot00000nailong.h, 3);
   assert.equal(T.ledger[0].k, 'ubot00000nailong');

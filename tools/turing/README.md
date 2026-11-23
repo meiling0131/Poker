@@ -1,6 +1,6 @@
-# turing
+# Turing
 
-turing is the game's heads-up bot. Its strategy was trained offline by counterfactual regret minimisation on one GPU,
+Turing is the game's heads-up bot. Its strategy was trained offline by counterfactual regret minimisation on one GPU,
 and in the browser it plays that strategy from a WebAssembly module at the **单挑** (heads-up) practice table
 (`js/turing.js`, files in `js/turing/`). At the 7-handed tables it sits in 奶龙's old seat and plays the bots' common
 core (`js/bots.js`), because its trained strategy is for two players only.
@@ -17,7 +17,7 @@ pack.py     packs bp*.bin into js/turing/blueprints.bin
 ## The game it was trained on
 
 Heads-up no-limit hold'em, blinds ½ and 1 big blind, the same effective stack for both players. One blueprint per
-stack depth: 7, 12, 20, 35, 60 and 100 big blinds. At the table turing uses the depth nearest the hand's effective
+stack depth: 7, 12, 20, 35, 60 and 100 big blinds. At the table Turing uses the depth nearest the hand's effective
 stack.
 
 - **Before the flop** the small blind can fold, limp, raise to 2.5 BB or go all in; the big blind raises a limp to
