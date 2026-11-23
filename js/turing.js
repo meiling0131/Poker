@@ -1,10 +1,10 @@
-// turing: a heads-up bot trained offline by counterfactual regret minimisation on a GPU (tools/turing). It plays
+// Turing: a heads-up bot trained offline by counterfactual regret minimisation on a GPU (tools/turing). It plays
 // the 单挑 (heads-up) practice table in the browser as a WebAssembly module; at the 7-handed tables it plays the
 // bots' common core (bots.js), since its trained strategy is for two players only.
 //
 // turing/turing.wasm is the engine (Rust, built by tools/turing/build.sh); turing/blueprints.bin is its strategy at
-// six stack depths, 7 to 100 big blinds (gzip). The engine asks turingDecide for each of turing's actions at the
-// 单挑 table and tells turingHandOver how each hand ended, which feeds turing's model of how you play.
+// six stack depths, 7 to 100 big blinds (gzip). The engine asks turingDecide for each of Turing's actions at the
+// 单挑 table and tells turingHandOver how each hand ended, which feeds Turing's model of how you play.
 import {H,S} from './state.js';
 import {BB} from './settings.js';
 import {canRaise,maxRaiseTo,minRaiseTo,potTotal} from './table.js';
@@ -49,10 +49,10 @@ export function loadTuring(){
   })().catch(e=>{LOADING=null;throw e;});
   return LOADING;
 }
-// a new 单挑 table: turing forgets what it learned about the last opponent
+// a new 单挑 table: Turing forgets what it learned about the last opponent
 export function turingNewTable(){if(W)W.new_match();}
 
-// one call into the module with an Int32Array; a trap (a bug in the module) turns turing off for the session, and
+// one call into the module with an Int32Array; a trap (a bug in the module) turns Turing off for the session, and
 // the bots' core plays its seat from then on
 function call(name,v){
   try{
@@ -61,7 +61,7 @@ function call(name,v){
     const r=W[name](p,b.length);
     W.dealloc(p,b.length);
     return r;
-  }catch(e){console.warn('turing off:',e);W=null;return -1;}
+  }catch(e){console.warn('Turing off:',e);W=null;return -1;}
 }
 
 // the hand in the module's terms: for every action, (mine, street 0-3, type, that player's chips in the pot after)
@@ -75,7 +75,7 @@ function actsOf(i){
 const board5=b=>[0,1,2,3,4].map(k=>b[k]??-1);
 const startOf=k=>(S.hstart&&S.hstart[k])||0;
 
-// turing's action at the 单挑 table: {type, to}, or null when the module has no answer (the core plays it)
+// Turing's action at the 单挑 table: {type, to}, or null when the module has no answer (the core plays it)
 export function turingDecide(p,i){
   if(!W||!S||!S.hu)return null;
   const o=S.seats.findIndex((q,k)=>k!==i&&q.inHand);

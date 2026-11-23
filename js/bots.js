@@ -9,10 +9,10 @@
 // bets every street has something. The core returns a distribution over the legal actions; the
 // personality then bends those weights, each after a well-known player (Joe opens big and barrels, sc
 // limps and never raises without the nuts, Kmetsch slow-plays and check-raises the river, ST traps and
-// hero-calls, dwan barrels; turing plays the core as it is) but can only shift probability between
+// hero-calls, dwan barrels; Turing plays the core as it is) but can only shift probability between
 // options the core already allows at a reasonable price, so a bot keeps its character without giving its
 // chips away: the bluffs they add stay out of crowds and away from calling stations. Heads up at the 单挑
-// practice table turing does not come here: it plays the strategy it was trained to (turing.js).
+// practice table Turing does not come here: it plays the strategy it was trained to (turing.js).
 import {best7,rankOf,suitOf} from './cards.js';
 import {BOT_STYLE} from './config.js';
 import {BB} from './settings.js';

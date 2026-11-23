@@ -55,7 +55,7 @@ export const EN={
     'Pick a stake (1/2, 2/5 or 5/10) and sit down with six bots, each with its own style. Buy-ins, bets and every win and loss are kept on the server and count for the leaderboard.',
   '用练习筹码随便打，不记录，也不计入排行。':'Play with practice chips. Nothing is recorded or ranked.',
   '单挑模式':'Heads-up',
-  '用练习筹码和 turing 一对一。turing 的单挑策略是在 GPU 上用反事实遗憾最小化（CFR）训练出来的，还会根据你的打法调整。':'One on one with turing, using practice chips. turing\'s heads-up strategy was trained on a GPU by counterfactual regret minimisation (CFR), and it adjusts to how you play.',
+  '用练习筹码和 Turing 一对一。Turing 的单挑策略是在 GPU 上用反事实遗憾最小化（CFR）训练出来的，还会根据你的打法调整。':'One on one with Turing, using practice chips. Turing\'s heads-up strategy was trained on a GPU by counterfactual regret minimisation (CFR), and it adjusts to how you play.',
   '创建或加入房间（可以设密码），在「记录」里把邀请链接发给朋友，满 2 人开局。':
     'Create or join a room (with a password if you like) and send your friends the invite link from Records. A hand starts once two players are seated.',
   '今日、昨日、本周、本月和历史最佳，比的是余额加上桌上的筹码。':
@@ -77,7 +77,7 @@ export const EN={
   '余额不够盲注 {sb}/{bb} 的最低买入，在大厅换一个小一点的盲注吧。':"Your balance doesn't cover the minimum buy-in at {sb}/{bb}. Pick smaller blinds in the lobby.",
   '房间号要 3–8 位字母或数字。':'A room code is 3–8 letters or digits.','填一下房间号，或者新开一个房间':'Enter a room code, or create a new room',
   // joining, and what the server says
-  '连接失败，请稍后再试。':"Couldn't connect. Please try again later.",'turing 正在入座…':'turing is taking a seat…','turing 没能加载，请检查网络后再试。':"turing couldn't load. Check your connection and try again.",'联机连接失败，请稍后再试。':"Couldn't connect to the room. Please try again later.",
+  '连接失败，请稍后再试。':"Couldn't connect. Please try again later.",'Turing 正在入座…':'Turing is taking a seat…','Turing 没能加载，请检查网络后再试。':"Turing couldn't load. Check your connection and try again.",'联机连接失败，请稍后再试。':"Couldn't connect to the room. Please try again later.",
   '房间号 {code} 已经有人在用了，换一个吧。':'Room {code} is already taken. Pick another code.',
   '没有房间 {code}。检查一下房间号，或者自己创建一个。':'There is no room {code}. Check the code, or create the room yourself.',
   '这个座位已经在别的设备上用过了，进不去。':'This seat is already in use on another device.',
