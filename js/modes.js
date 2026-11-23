@@ -1,6 +1,7 @@
 // Switching between the menu, bots mode and an online room.
 import {cancelAction,setPRE} from './actions.js';
-import {maybeStart,newBotsTable} from './engine.js';
+import {maybeStart,newBotsTable,newHuTable} from './engine.js';
+import {loadTuring,turingNewTable} from './turing.js';
 import {hashPw,onServerClosed,onServerError,onServerMoney,serverCmd,serverLeave} from './net.js';
 import {dayIsOver,fetchPlayer,forgetIdentity} from './player.js';
 import {moneyDone} from './ui/hero-view.js';
@@ -23,6 +24,20 @@ export function enterBots(mode=PLAY_MODE){
   if(PLAY_MODE==='normal'&&M.db&&M.uid)return enterSolo();
   stopAll();loadStake();M.mode='bots';M.me='local';M.host=true;M.online=false;M.ready=true;store.set('poker.mode','bots');
   newBotsTable();commit();maybeStart();
+}
+// 单挑: practice chips against turing alone. Its engine (a WebAssembly module and its strategy, about 1.4 MB) comes
+// in the first time; the lobby says so meanwhile and stays put if it can't be fetched.
+let HU_LOADING=false;
+export async function enterHU(){
+  if(HU_LOADING)return;
+  HU_LOADING=true;setFLASH(tr('turing 正在入座…'));view.render();
+  try{await loadTuring();}
+  catch(e){console.warn('turing failed',e);HU_LOADING=false;setFLASH(tr('turing 没能加载，请检查网络后再试。'));view.render();return;}
+  HU_LOADING=false;
+  if(M.mode)return;                                   // went somewhere else while it loaded
+  setPLAY_MODE('practice');store.set('poker.playMode',PLAY_MODE);
+  stopAll();loadStake();M.mode='bots';M.me='local';M.host=true;M.online=false;M.ready=true;store.set('poker.mode','hu');
+  turingNewTable();newHuTable();commit();maybeStart();
 }
 // a regular game is a private table on the worker: this browser watches and sends actions
 async function enterSolo(){

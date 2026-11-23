@@ -10,7 +10,7 @@ export const EN={
   '进入游戏':'Play','练习模式':'Practice','好友模式':'Friends','设置':'Settings','关于':'About',
   // the header
   '牌桌':'Table','记录':'Records','暂未开放':'Not open yet','退出牌桌':'Leave table',
-  '房间 {code}':'Room {code}','正常 · 7 人':'Regular · 7 players','练习 · 7 人':'Practice · 7 players','盲注 {sb}/{bb}':'Blinds {sb}/{bb}','第 {n} 手':'Hand {n}',
+  '房间 {code}':'Room {code}','正常 · 7 人':'Regular · 7 players','练习 · 7 人':'Practice · 7 players','练习 · 单挑':'Practice · Heads-up','盲注 {sb}/{bb}':'Blinds {sb}/{bb}','第 {n} 手':'Hand {n}',
   // names
   '修改名字':'Change name','修改名字为 {name}？':'Change your name to {name}?','您只能修改一次名字':'You can change your name only once.',
   '留下名字，就能进入房间 {code}':'Leave a name to enter room {code}','您的名字':'Your name','以后再说':'Later',
@@ -54,6 +54,8 @@ export const EN={
   '选一个盲注（1/2、2/5、5/10），和六个风格各异的机器人同桌。买入、下注和每一次输赢都记在服务器上，计入排行榜。':
     'Pick a stake (1/2, 2/5 or 5/10) and sit down with six bots, each with its own style. Buy-ins, bets and every win and loss are kept on the server and count for the leaderboard.',
   '用练习筹码随便打，不记录，也不计入排行。':'Play with practice chips. Nothing is recorded or ranked.',
+  '单挑模式':'Heads-up',
+  '用练习筹码和 turing 一对一。turing 的单挑策略是在 GPU 上用反事实遗憾最小化（CFR）训练出来的，还会根据你的打法调整。':'One on one with turing, using practice chips. turing\'s heads-up strategy was trained on a GPU by counterfactual regret minimisation (CFR), and it adjusts to how you play.',
   '创建或加入房间（可以设密码），在「记录」里把邀请链接发给朋友，满 2 人开局。':
     'Create or join a room (with a password if you like) and send your friends the invite link from Records. A hand starts once two players are seated.',
   '今日、昨日、本周、本月和历史最佳，比的是余额加上桌上的筹码。':
@@ -75,7 +77,7 @@ export const EN={
   '余额不够盲注 {sb}/{bb} 的最低买入，在大厅换一个小一点的盲注吧。':"Your balance doesn't cover the minimum buy-in at {sb}/{bb}. Pick smaller blinds in the lobby.",
   '房间号要 3–8 位字母或数字。':'A room code is 3–8 letters or digits.','填一下房间号，或者新开一个房间':'Enter a room code, or create a new room',
   // joining, and what the server says
-  '连接失败，请稍后再试。':"Couldn't connect. Please try again later.",'联机连接失败，请稍后再试。':"Couldn't connect to the room. Please try again later.",
+  '连接失败，请稍后再试。':"Couldn't connect. Please try again later.",'turing 正在入座…':'turing is taking a seat…','turing 没能加载，请检查网络后再试。':"turing couldn't load. Check your connection and try again.",'联机连接失败，请稍后再试。':"Couldn't connect to the room. Please try again later.",
   '房间号 {code} 已经有人在用了，换一个吧。':'Room {code} is already taken. Pick another code.',
   '没有房间 {code}。检查一下房间号，或者自己创建一个。':'There is no room {code}. Check the code, or create the room yourself.',
   '这个座位已经在别的设备上用过了，进不去。':'This seat is already in use on another device.',
@@ -102,7 +104,7 @@ export const EN={
   '{name} 的资料':"{name}'s profile",'全下':'All in','底池':'Pot','小盲':'Small blind','大盲':'Big blind',
   '等待':'Waiting','发牌':'Dealing','翻牌前':'Preflop','翻牌':'Flop','转牌':'Turn','河牌':'River','结算':'Showdown',
   '松凶，出手大。':'Loose and aggressive; bets big.','偏紧，求稳。':'Tight; plays it safe.','凶，难以捉摸。':'Aggressive and hard to read.',
-  '土豪，爱玩。':'Big spender; loves to play.','稳健，深藏不露。':'Solid; keeps it hidden.','超松超凶。':'Very loose, very aggressive.',
+  '训练出来的单挑高手。':'Trained to play heads-up.','稳健，深藏不露。':'Solid; keeps it hidden.','超松超凶。':'Very loose, very aggressive.',
   '您仍在游戏中。要退出牌桌，您将直接弃牌。':"You're still in the hand. Leaving the table folds it.",
   '超时牌桌':'Overtime table','该牌桌将在 12:05AM 被强制结束。届时您将会被弃牌，但下注的筹码将被退回。':
     'This table will be closed at 12:05 AM. Your hand will be folded then, but your bets will be returned.',
@@ -160,10 +162,10 @@ export const EN={
   '谢谢老板':'Thanks, boss','承让承让':'Too kind','这就是实力':'Pure skill','晚饭有着落了':"Dinner's sorted",'运气也是实力':'Luck is skill too',
   '我的筹码…':'My chips…','重来重来':'Again, again','今天不宜打牌':'Not my day','我去充个值':'Topping up','这不科学':'This makes no sense',
   '你别得意':"Don't get cocky",'就这？':'That all?','下把见真章':'Next hand, for real',
-  '跟！钱不是问题':"Call! Money's no issue",'我就喜欢看牌':'I love seeing cards','来都来了，跟':'Might as well, call','小钱，跟':'Pocket change, call',
-  '你下多少我都跟':"I'll call anything",'看看再说':"Let's see",'先看牌':'Cards first','我说白了':'Let me be blunt',
-  '有钱就是任性':'Money talks','早说了我运气好':'Told you, lucky me','我就知道你在诈唬':'Knew you were bluffing','没事，我家有矿':"No worries, I'm loaded",
-  '再来两手！我有的是钱':'Two more! I have money','充值成功，继续':'Topped up, go on','买两手，接着奏乐接着舞':'Two buy-ins. Music on!',
+  '赔率够，跟':'The price is right. Call','防守到位':'Defending my range','过牌也是策略':'Checking is a strategy too',
+  '按均衡频率加注':'Raising at equilibrium frequency','这个尺度是算出来的':'This size is computed','不在我的范围里':'Not in my range',
+  '这手按策略弃掉':'The strategy folds this','全下，期望值为正':'All in. Positive EV','长期来看就是这样':"That's the long run",
+  '期望值兑现了':'EV realised','方差而已':'Just variance','样本还不够大':'Sample too small',
   '这牌不打':'Not playing this','下一把再来':'Next one','要么不玩，要么玩大的':'Go big or go home','全下，来吧':'All in, come on',
   '按计划来':'Right on plan','打的就是这种池子':'My kind of pot','跟，看你下一枪':"Call. Let's see your next shot",
   '加倍！':'Double it!','翻前就是要加倍':'Preflop, I double','牌好，下大注':'Good cards, big bet','不让你便宜看牌':'No cheap looks','把池子做大':'Building the pot',

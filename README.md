@@ -62,6 +62,7 @@ The original game had the engine, the six bots, the chip-true table, practice pl
   Each new day, everyone starts again at 1,000.
 - **English.** The whole game is in Chinese or English. The first time the page opens it asks which (选择语言 · Choose your language), and 设置 → 语言 (Settings → Language) changes it later. Each player sees the table in their own language, even in a friends room with players of both.
 - **关于 (about).** What the game is and how a day goes.
+- **turing and 单挑 (heads-up).** 奶龙's seat now belongs to **turing**, a bot trained offline for heads-up play: counterfactual regret minimisation (discounted CFR) on a GPU over a card abstraction of exact expected hand strength, with strategies for six stack depths from 7 to 100 big blinds ([tools/turing](tools/turing/README.md)). The lobby's **单挑模式** (heads-up) button opens a practice table with only you and turing. There it plays that strategy from a WebAssembly module in your browser and leans it on what it sees of you (folding too much, calling too much, betting too much). At the 7-handed tables it plays the bots' common core without a personality, since its trained strategy is for two players only. It kept 奶龙's id, so the history stays (migration `0006_turing.sql`).
 - **设置 (settings).** 游戏音效 turns all sounds on or off. 机器人速度 (bot speed) offers 较慢, 中等 (the default) and 较快. 牌桌 picks the first or the second floor.
 - **Developer tools.** `/d1` is a page for browsing the local database. `/audit` checks every balance against the ledger. Both only work on your own machine.
 - **Tests.** Tests for the server, the money, the database writes, the day's close, the leaderboard, the sounds and your betting buttons, and the bots' decisions in set spots: 107 in all.
@@ -100,7 +101,7 @@ These were dropped in the fork and are back after the merge:
 ## How to play
 
 1. Open **[verve.vpoker.workers.dev](https://verve.vpoker.workers.dev)** (or http://127.0.0.1:8787 when running it locally) and tap the name pill to leave a name. Your balance for the day is 1,000.
-2. Pick a stake and tap **进入游戏** (enter game). The bank panel opens: slide to the amount and tap **买入** (buy in). **练习模式** (practice) gives pretend chips that are never recorded.
+2. Pick a stake and tap **进入游戏** (enter game). The bank panel opens: slide to the amount and tap **买入** (buy in). **练习模式** (practice) gives pretend chips that are never recorded, and **单挑模式** (heads-up) plays turing one on one with them.
 3. To play friends, tap **好友模式**: pick a room from the list, or type a room code and tap **加入房间** (join) or **创建房间** (create). Send them the link from **记录**.
 4. On your turn, tap chips or use **Call** / **Raise** to pick an amount, then **Bet** to send it. **Fold** folds. Fold and All in ask once more.
 5. After a hand, tap **继续游戏** for the next one, or **退出牌桌** to leave. Leaving takes your chips back to your balance. A friends room deals the next hand by itself.
@@ -134,6 +135,7 @@ js/
   flops.js          exact flop strategies from an open-source solver (flop-table.js, written by tools/flops/batch.py)
   stats.js          per-player counts, and the games rows a hand writes
   talk.js           avatars, bot lines, emoji
+  turing.js         turing at the 单挑 table: its WebAssembly engine and strategy (turing/, built by tools/turing)
   i18n.js           the player's language: tr() for the page's text, tx() for the table's (results, log, bot lines)
   lang-en.js        the English of every Chinese text
   fx.js             sounds, confetti, keeping the screen awake
@@ -161,6 +163,7 @@ tests/              node:test tests; clock.js runs the server tests at noon East
 tools/              stamp.js (module versions), simulate.js, exploit.js and benchmark.js (bots), headless.js
   solver/           the GPU solver that trains the bots' postflop table (Python, PyTorch)
   flops/            exact flop solves with the open-source postflop-solver, condensed for the bots (Rust, Python)
+  turing/           turing, the heads-up bot: its trainer (CUDA, Python) and engine (Rust, compiled to WebAssembly)
 DATABASE.md         every table and rule of the database
 DEPLOY.md           deploying to Cloudflare
 ```

@@ -1,9 +1,10 @@
 // The dealer: dealing, betting rounds, run-outs, showdown and payouts. Practice runs in the browser.
 // A regular game and an online room both run here on the Verve server (M.host).
 import {botDecide} from './bots.js';
+import {isTuring,streetOf,turingDecide,turingHandOver} from './turing.js';
 import {best5,best7,cardCode,cardTxt,handName,randInt,shuffledDeck} from './cards.js';
 import {Z,addBought,cadd,giveFromPot} from './chips.js';
-import {ACT_MS,BETTING,BOT_STYLE,BUY,CARD_MS,FLOP_MS,NEXT_MS,ONLINE_MAX,STREET_CN,dealTime} from './config.js';
+import {ACT_MS,BETTING,BOT,BOT_PLAYERS,BOT_STYLE,BUY,CARD_MS,FLOP_MS,NEXT_MS,ONLINE_MAX,STREET_CN,dealTime} from './config.js';
 import {commit,syncDoc} from './online.js';
 import {BB,SB} from './settings.js';
 import {DECK,GEN,H,M,S,SEATDOCS,SPEED,TT,setDECK,setGEN,setH,setS,setTT} from './state.js';
@@ -27,6 +28,14 @@ export function newBotsTable(){
   setS(baseTable('bots'));
   S.seats.push(freshHuman('local'));
   for(let i=1;i<7;i++)S.seats.push(freshBot(i));
+  S.msg=[`买一手 +${BUY} 就开始发牌`];
+  const mine=loadMyStats();if(mine)S.stats={local:mine};
+}
+// 单挑 (heads-up practice): you and turing, who plays the strategy it was trained to here (turing.js)
+export function newHuTable(){
+  setS(baseTable('bots'));S.hu=true;
+  S.seats.push(freshHuman('local'));
+  S.seats.push(freshBot(BOT_PLAYERS.findIndex(b=>b.id===BOT.TURING)+1));
   S.msg=[`买一手 +${BUY} 就开始发牌`];
   const mine=loadMyStats();if(mine)S.stats={local:mine};
 }
@@ -94,7 +103,7 @@ export async function startHandInner(){
   applySeatChanges();
   const P=S.seats;
   P.forEach(p=>{Object.assign(p,handFields());applyMoney(p);
-    if(p.kind==='bot'&&p.stack===0){ // bots rebuy at once; 奶龙 buys two hands at a time
+    if(p.kind==='bot'&&p.stack===0){ // bots rebuy at once, style.rebuy hands at a time (one when not set)
       const n=BOT_STYLE[p.id]?.rebuy||1;addBought(p,BUY*n);
       ledger(p,'buy',BUY*n);chipMove('rebuy',p,BUY*n);if(n>1)botSay(p,'rebuy',1);}});
   const elig=P.map((p,i)=>i).filter(i=>P[i].stack>0);
@@ -120,6 +129,7 @@ export async function startHandInner(){
   const sbp=P[S.sbPos],bbp=P[S.bbPos];
   chipMove('sb',sbp,put(sbp,SB));sbp.last=`小盲 ${fmt(sbp.bet)}`;
   chipMove('bb',bbp,put(bbp,BB));bbp.last=`大盲 ${fmt(bbp.bet)}`;
+  if(S.hu){S.acts=[];S.hstart=P.map(p=>p.stack+p.total);}   // turing's view of the hand (turing.js)
   S.currentBet=BB;S.minRaise=BB;S.fullRaiseId=0;S.raises=1;S.street='dealing';S.actor=S.bbPos;
   log(`第 ${S.hand} 手 · ${elig.length} 人 · 庄位 ${who(P[S.dealer])}`,'h');
   S.street='preflop';S.animUntil=Date.now()+dealTime(elig.length);
@@ -232,7 +242,7 @@ function stealSeat(i){
 }
 export function doAction(p,type,to,picked){
   if(!['fold','check','call','raise'].includes(type))type='check';
-  const toCall=Math.max(0,S.currentBet-p.bet);
+  const toCall=Math.max(0,S.currentBet-p.bet),before=S.currentBet;
   if(type==='check'&&toCall>0)type='fold';
   if(type==='raise'&&!canRaise(p))type='call';
   if(type==='call'&&toCall===0)type='check';
@@ -263,6 +273,7 @@ export function doAction(p,type,to,picked){
     p.last=allInBet(p)?`全下 ${fmt(p.bet)}${p.bet>prev?`（${word}）`:''}`:w;   // all in, or every chip the others can call
   }
   p.acted=true;p.actedStreet=true;p.seenRaise=S.fullRaiseId;S.turn++;
+  if(S.hu&&S.acts)S.acts.push({k:S.seats.indexOf(p),s:streetOf(S.board),t:type==='raise'&&p.bet<=before?'call':type,tot:p.total});
   log(`${who(p)} ${p.last}`);
   botSay(p,p.allIn&&type!=='fold'?'allin':type,type==='fold'?.18:type==='check'?.12:type==='call'?.2:.45);
 }
@@ -380,6 +391,7 @@ export function showdown(){
 }
 export function finish(){
   S.street='done';S.actor=-1;S.deadline=0;clearTimeout(TT);clearTimeout(RT);if(S.runout)S.runout.stage='over';
+  if(S.hu)turingHandOver();
   chipMove('done',null,0);
   recordStats();
   S.seats.forEach(p=>{p.bet=0;applyMoney(p);});
@@ -390,7 +402,7 @@ export function finish(){
 }
 export function botTurn(i){
   if(!BETTING.includes(S.street)||S.actor!==i)return;
-  const p=S.seats[i];const d=botDecide(p,i);
+  const p=S.seats[i];const d=(S.hu&&isTuring(p)&&turingDecide(p,i))||botDecide(p,i);
   doAction(p,d.type,d.to);proceed();
 }
 export function setSTARTING(v){STARTING=v;}

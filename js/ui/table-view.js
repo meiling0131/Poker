@@ -181,7 +181,7 @@ export function seatHTML(i,pos,compact){
   const liveSeat=p.inHand&&S.street!=='idle';
   const marks=[
     liveSeat&&i===S.dealer?'<i class="dbtn">D</i>':'',
-    liveSeat&&i===S.sbPos?`<i class="blind sb" title="${tr('小盲')}">S</i>`:'',
+    liveSeat&&i===S.sbPos&&i!==S.dealer?`<i class="blind sb" title="${tr('小盲')}">S</i>`:'',   // heads up the button is the small blind: D says it
     liveSeat&&i===S.bbPos?`<i class="blind bb" title="${tr('大盲')}">B</i>`:'',
   ].join('');
   let act;

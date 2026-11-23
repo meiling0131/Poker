@@ -311,7 +311,7 @@ test('a table saved before bots had ids comes back keyed by bot id', async () =>
   };
   upgradeBots(T);
   assert.equal(T.seats[1].id, 'ubot00000nailong');
-  assert.equal(T.seats[1].name, '🤖 奶龙');
+  assert.equal(T.seats[1].name, '🤖 turing');
   assert.deepEqual(Object.keys(T.book).sort(), ['ubot00000nailong', 'ux']);
   assert.equal(T.stats.ubot00000nailong.h, 3);
   assert.equal(T.ledger[0].k, 'ubot00000nailong');
@@ -754,7 +754,7 @@ test('stakes: a 2/5 regular table takes 500 buy-ins, its bots rebuy 500, and a s
   deal(t);
   assert.equal(t.r.c.S.street, 'preflop');
   const bots = t.r.c.S.seats.filter(p => p.kind === 'bot');
-  assert.ok(bots.every(p => p.stack + p.total === (p.id === 'ubot00000nailong' ? 1000 : 500)), 'bots rebuy at this table\'s buy-in');
+  assert.ok(bots.every(p => p.stack + p.total === 500), 'bots rebuy at this table\'s buy-in');
   assert.ok([t.r.c.S.seats[t.r.c.S.sbPos].total, t.r.c.S.seats[t.r.c.S.bbPos].total].join() === '2,5', 'blinds are 2/5');
   await settle(t.r);
   assert.ok(t.db.rows("SELECT amount FROM transactions WHERE remarks = 'Bot buy-in.'").every(r => r.amount === 500 || r.amount === 1000));

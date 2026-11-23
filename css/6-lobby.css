@@ -129,6 +129,7 @@ button.greet.tag:hover{filter:brightness(1.1)}
 .bal span{font-size:14px;font-weight:600;color:var(--mute)}
 .bal .when{font-family:var(--num);font-weight:600}
 .side-modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.side-modes.three{grid-template-columns:repeat(3,1fr)}
 .stakes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .stake-tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px 14px;border-radius:16px;border:1px solid var(--sk-edge,var(--line));
   background:var(--sk-card,var(--panel));color:var(--text);font:inherit;cursor:pointer;opacity:.72;transition:opacity .15s,transform .15s}

@@ -25,8 +25,10 @@ export const DENOMS=[[25,'g'],[10,'b'],[5,'r'],[1,'w']];
 // type 'hellmuth' (sc, after Phil Hellmuth): tight and passive — limps and calls small raises to see the flop,
 //   lets go the moment his hand isn't good; with a big hand he check-calls or bets just a little (under 25BB)
 //   unless he has the nuts, and folds a big river bet from a player who rarely bets.
-// type 'keating' (奶龙, after Alan Keating): a rich amateur — plays almost every hand and raises a lot, calls
-//   down with a pair, hero-calls the river and now and then overbets it; rebuys two hands at a time (rebuy).
+// type 'turing' (turing): no personality on top of the core at the 7-handed tables; heads up at the 单挑 practice
+//   table it plays a strategy trained offline by counterfactual regret minimisation on a GPU (turing.js,
+//   tools/turing), leaning on what it has seen of how you play.
+// A style can also set rebuy: n, the buy-ins a bot takes at a time when it has no chips (one when not set).
 // type 'wangye' (Kmetsch, after 王烨 Wang Ye): solid before the flop; slow-plays a big hand (calls the flop and
 //   turn, then check-raises the river, all in when the stack is not much more than the pot) and after a few
 //   real hands runs the same line as a bluff, once or twice — heads up only, never into a calling station.
@@ -47,15 +49,15 @@ export const BOT_PLAYERS=[
     blurb:N_('偏紧，求稳。')},
   {id:'ubot00000laozhou',name:'🤖 ST',table:'老周',style:{loose:.70,aggr:.70,type:'st'},
     blurb:N_('凶，难以捉摸。')},
-  {id:'ubot00000nailong',name:'🤖 奶龙',table:'奶龙',style:{loose:.95,aggr:.80,type:'keating',rebuy:2},
-    blurb:N_('土豪，爱玩。')},
+  {id:'ubot00000nailong',name:'🤖 turing',table:'奶龙',style:{loose:.50,aggr:.60,type:'turing'},
+    blurb:N_('训练出来的单挑高手。')},
   {id:'ubot00000kmetsch',name:'🤖 Kmetsch',table:'Kmetsch',style:{loose:.35,aggr:.60,type:'wangye'},
     blurb:N_('稳健，深藏不露。')},
   {id:'ubot0000000afang',name:'🤖 dwan',table:'阿芳',style:{loose:.90,aggr:.90,type:'dwan'},
     blurb:N_('超松超凶。')},
 ];
-// ST and dwan were 老周 and 阿芳: a bot keeps its id (and so its history) when it is renamed
-export const BOT={JOE:'ubot000000000joe',SC:'ubot0000000000sc',ST:'ubot00000laozhou',NAILONG:'ubot00000nailong',KMETSCH:'ubot00000kmetsch',DWAN:'ubot0000000afang'};
+// ST, dwan and turing were 老周, 阿芳 and 奶龙: a bot keeps its id (and so its history) when it is renamed
+export const BOT={JOE:'ubot000000000joe',SC:'ubot0000000000sc',ST:'ubot00000laozhou',TURING:'ubot00000nailong',KMETSCH:'ubot00000kmetsch',DWAN:'ubot0000000afang'};
 export const BOT_STYLE=Object.fromEntries(BOT_PLAYERS.map(b=>[b.id,b.style]));
 export const BOT_BLURB=Object.fromEntries(BOT_PLAYERS.map(b=>[b.id,b.blurb]));
 export const BOT_NAMES=Object.fromEntries(BOT_PLAYERS.map(b=>[b.id,b.name]));

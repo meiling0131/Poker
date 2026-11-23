@@ -2,3 +2,8 @@ dist/
 node_modules/
 .wrangler/
 .dev.vars
+tools/turing/target/
+tools/turing/trainer/out/
+tools/turing/trainer/cuda/pcfr_hu3
+tools/turing/trainer/cuda/build.log
+tools/turing/trainer/cuda/data/

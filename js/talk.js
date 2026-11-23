@@ -5,7 +5,7 @@ import {later,mySeat} from './table.js';
 import {BOT} from './config.js';
 import {tr} from './i18n.js';
 
-export const BOT_AV={[BOT.JOE]:'🐯',[BOT.SC]:'🐰',[BOT.ST]:'🐺',[BOT.NAILONG]:'🐲',[BOT.KMETSCH]:'🐻',[BOT.DWAN]:'🦈'};
+export const BOT_AV={[BOT.JOE]:'🐯',[BOT.SC]:'🐰',[BOT.ST]:'🐺',[BOT.TURING]:'🧠',[BOT.KMETSCH]:'🐻',[BOT.DWAN]:'🦈'};
 export const HUMAN_AV=['🐼','🐨','🐸','🐵','🐧','🦁','🐷','🐮','🐔','🦄','🐙','🦉','🐶','🐹'];
 export function avatarOf(p){
   if(p.kind==='bot')return BOT_AV[p.id]||'🤖';
@@ -24,8 +24,8 @@ export const LINES={
 };
 // lines that only one bot says (fall back to LINES)
 export const PERSONA_LINES={
-  [BOT.NAILONG]:{call:['跟！钱不是问题','我就喜欢看牌','来都来了，跟','小钱，跟','你下多少我都跟'],check:['看看再说','先看牌'],raise:['我说白了'],
-    win:['有钱就是任性','早说了我运气好','我就知道你在诈唬'],bust:['没事，我家有矿'],rebuy:['再来两手！我有的是钱','充值成功，继续','买两手，接着奏乐接着舞']},
+  [BOT.TURING]:{call:['赔率够，跟','防守到位'],check:['过牌也是策略'],raise:['按均衡频率加注','这个尺度是算出来的'],
+    fold:['不在我的范围里','这手按策略弃掉'],allin:['全下，期望值为正'],win:['长期来看就是这样','期望值兑现了'],bust:['方差而已','样本还不够大']},
   [BOT.JOE]:{fold:['这牌不打','下一把再来'],allin:['要么不玩，要么玩大的','全下，来吧'],
     win:['按计划来','打的就是这种池子'],call:['跟，看你下一枪'],raise:['加倍！','翻前就是要加倍','牌好，下大注','不让你便宜看牌','把池子做大']},
   [BOT.SC]:{fold:['其实我能赢'],call:['看看','先看一张'],check:['看牌'],raise:['加一点点','小加一手'],
@@ -38,7 +38,7 @@ export const PERSONA_LINES={
     fold:['这把让你'],win:['durrrr','承让'],bust:['下一手再来']},
 };
 // a bot that always says its line for a given action
-export const PERSONA_ALWAYS={[BOT.NAILONG]:{raise:1},[BOT.SC]:{fold:1}};
+export const PERSONA_ALWAYS={[BOT.SC]:{fold:1}};
 export const EMOJIS=['😂','👍','😭','😡','🤔','🔥','🙏','🤡','💸','🐟'];
 export function say(p,t,ms=3600){p.say={t:String(t).slice(0,24),until:Date.now()+ms};}
 export function botSay(p,kind,prob){

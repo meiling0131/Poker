@@ -1,7 +1,7 @@
 // Entry point.
 import {act,actionLabels,money,vote} from './actions.js';
 import {startHand} from './engine.js';
-import {enterBots,enterOnline,toMenu} from './modes.js';
+import {enterBots,enterHU,enterOnline,toMenu} from './modes.js';
 import {joinTable,leaveTable,normRoom} from './online.js';
 import {PLAY_MODE,applySkin,loadStake} from './settings.js';
 import {dayIsOver,displayName,fetchBotNames,fetchPlayer,forgetIdentity} from './player.js';
@@ -41,6 +41,7 @@ export async function boot(){
   if(urlRoom){if(M.db)setNamePopup(true);render();return;}
   const last=store.get('poker.mode');
   if(last==='bots'&&(M.player||PLAY_MODE==='practice'))enterBots();
+  else if(last==='hu')enterHU();
   else if(last==='online'&&M.db&&M.player&&store.get('poker.room'))enterOnline(store.get('poker.room'),false);
   else render();
 }

@@ -3,7 +3,7 @@ import {BET_MENU,cancelAction,commitAllIn,commitRaise,confirmAction,money,openBe
 import {Z,pickChips} from '../chips.js';
 import {requestBotReset,startHand} from '../engine.js';
 import {SOUND,beep,setSOUND} from '../fx.js';
-import {enterBots,enterOnline,exitTable} from '../modes.js';
+import {enterBots,enterHU,enterOnline,exitTable} from '../modes.js';
 import {approveBuy,joinTable,kick,leaveTable,newRoomCode,normRoom,roomLink,unkick} from '../online.js';
 import {SHOW_HAND,SKIN,PRESET,PRESETS,applyPreset,readStakeForm,setSHOW_HAND,setSkin} from '../settings.js';
 import {LOBBY,M,PROFILE,PUSH,S,SPEED,VIEW,setFLASH,setPROFILE,setPUSH,setSPEED,setVIEW} from '../state.js';
@@ -139,6 +139,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.pstat!=null){setProfileView(t.dataset.pstat);renderTable();return;}
   if(t.dataset.stake!=null){if(t.disabled||!M.player||PRESETS[+t.dataset.stake].buy>shownBalance())return;applyPreset(+t.dataset.stake);renderMenu();return;}
   if(t.dataset.mode){if(t.disabled||(t.dataset.mode!=='practice'&&!M.player))return;if(PRESETS[PRESET].buy>shownBalance())return;if(readStakeForm())enterBots(t.dataset.mode);return;}
+  if(t.dataset.hu!=null){if(t.disabled||PRESETS[PRESET].buy>shownBalance())return;if(readStakeForm())enterHU();return;}
   // 好友模式: you play under your own name, so a room needs only its code (and a password if it has one)
   if(t.dataset.friends!=null){if(t.disabled||!M.player)return;setFLASH('');openFriends();return;}
   if(t.dataset.room){
