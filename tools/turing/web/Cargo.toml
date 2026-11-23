@@ -1,0 +1,11 @@
+[package]
+name = "turing-web"
+edition.workspace = true
+version.workspace = true
+description = "The heads-up bot as a WebAssembly module for the browser game (plain C ABI, no bindings crate)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+hucore = { path = "../engine" }

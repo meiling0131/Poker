@@ -4,6 +4,7 @@ const browser = Object.fromEntries([
   'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'crypto', 'btoa', 'atob', 'getSelection',
   'TextEncoder', 'TextDecoder', 'Uint8Array', 'Uint32Array', 'URLSearchParams', 'matchMedia', 'AudioContext',
   'URL', 'WebSocket', 'fetch', 'performance', 'requestAnimationFrame',
+  'WebAssembly', 'Blob', 'Response', 'DecompressionStream',
 ].map(n => [n, 'readonly']));
 const node = Object.fromEntries(['process', 'URL', 'structuredClone', 'Request', 'setImmediate'].map(n => [n, 'readonly']));
 const worker = Object.fromEntries(['WebSocketPair', 'Response', 'URL', 'console', 'setTimeout', 'clearTimeout', 'crypto', 'TextEncoder', 'Uint8Array'].map(n => [n, 'readonly']));

@@ -8,10 +8,11 @@
 // actions so far: an open-raiser is narrower than a limper, a 3-bettor narrower still, a player who
 // bets every street has something. The core returns a distribution over the legal actions; the
 // personality then bends those weights, each after a well-known player (Joe opens big and barrels, sc
-// limps and never raises without the nuts, 奶龙 plays every hand and calls down, Kmetsch slow-plays and
-// check-raises the river, ST traps and hero-calls, dwan barrels) but can only shift probability between
+// limps and never raises without the nuts, Kmetsch slow-plays and check-raises the river, ST traps and
+// hero-calls, dwan barrels; turing plays the core as it is) but can only shift probability between
 // options the core already allows at a reasonable price, so a bot keeps its character without giving its
-// chips away: the bluffs they add stay out of crowds and away from calling stations.
+// chips away: the bluffs they add stay out of crowds and away from calling stations. Heads up at the 单挑
+// practice table turing does not come here: it plays the strategy it was trained to (turing.js).
 import {best7,rankOf,suitOf} from './cards.js';
 import {BOT_STYLE} from './config.js';
 import {BB} from './settings.js';
@@ -246,7 +247,7 @@ const RFI_SHARE={};
 function openShare(c,pos){
   if(!(pos in RFI_SHARE))RFI_SHARE[pos]=RFI[pos]?shareOf(RFI[pos]):.2;
   const t=c.type,x=c.position;
-  const own=t==='xuan'&&x>=.6?.15+x*.35:t==='dwan'?Math.min(.7,.18+x*.38):t==='keating'?.45:0;
+  const own=t==='xuan'&&x>=.6?.15+x*.35:t==='dwan'?Math.min(.7,.18+x*.38):0;
   return Math.max(RFI_SHARE[pos],own);
 }
 const BB_ISO='TT+,AJs+,KQs,AQo+,99:.5,ATs:.5,KJs:.5,QJs:.3';     // the big blind raising limpers
@@ -536,20 +537,6 @@ function personality(m,c){
     });
     if(eq>.75&&!nuts)m.raise.forEach(r=>{r.w*=.5;});        // mostly check-call a big hand
     if(river&&toCall&&m.call>0&&c.bettorRead&&c.bettorRead.agg<.3&&toCall>=(pot-toCall)*.7&&eq<.75){m.fold+=m.call*.5;m.call*=.5;}   // the big laydown
-  }else if(type==='keating'){
-    // 奶龙 (after Alan Keating): plays almost every hand and loves to raise it; sticky after the flop, calls
-    // the river down with a pair and now and then overbets it with nothing. Big bets without a hand are
-    // still folded
-    const cheap=pre?toCall<=BB*6:toCall<=Math.min(pot*.4,(p.stack+p.bet)*.12)&&raises<2;
-    const close=pre?strength>.3:eq>odds-.08&&!(river&&c.made<1&&eq<.5)&&!(river&&c.made===1&&c.tex.scary>=2&&eq<.5);
-    if(m.fold>0&&cheap&&close){m.call+=m.fold*.6;m.fold*=.4;}
-    if(m.fold>0&&pre&&toCall<=BB&&strength>.15){m.call+=m.fold*.85;m.fold*=.15;}
-    if(pre&&canR){
-      if(S.currentBet<=BB&&strength>=topT(.45)&&!m.raise.length)bet(m,.6,0);                 // raises a wide range first in
-      else if(raises===2&&strength>=topT(.25)&&S.currentBet<BB*8)lightRaise(m,chance(.25),S.currentBet*3);   // and 3-bets light
-    }
-    if(m.fold>0&&river&&c.opp===1&&catcher(c)&&eq>odds-.1&&toCall>=(pot-toCall)*.5){m.call+=m.fold*.4;m.fold*=.6;}   // the hero call
-    if(!pre&&!toCall&&river&&canR&&eq<.25&&c.opp===1&&!c.station&&raiseTo(c,1.2)<=p.bet+(p.stack+p.bet)*.45)bet(m,.12,1.2);   // an overbet bluff
   }else if(type==='dwan'){
     // dwan (after Tom "durrrr" Dwan): plays many hands and 3-bets light, floats in position, keeps
     // barrelling, overbets the nuts and bluffs the river with a blocker; calls down lighter against

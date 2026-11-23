@@ -25,9 +25,9 @@ A bot has its own `players` row, `is_bot = 1`, and an empty `token_hash`. The id
 
 A bot's `players` row is permanent: it is never marked or deleted at night. It holds no money. Its `balance` column is unused, it gets no "Money for the day." row, and `/audit` skips it, because a bot plays only through its table copies (below), which buy their chips from the bank. The Worker adds any missing bot rows before the first `/player/get` or `/player/set` of each Eastern day, so running it again changes nothing.
 
-Each bot id is 16 characters, the same length as `poker.uid`: `ubot`, then zeros, then the pinyin of the table name. A name that is already Latin is lowercased. The stored name is 🤖 plus the table name, except for the two bots renamed later: 老周 is now 🤖 ST and 阿芳 is 🤖 dwan (migration `0005_bot_names.sql`). They kept their ids, so their history and stats are still theirs.
+Each bot id is 16 characters, the same length as `poker.uid`: `ubot`, then zeros, then the pinyin of the table name. A name that is already Latin is lowercased. The stored name is 🤖 plus the table name, except for the three bots renamed later: 老周 is now 🤖 ST and 阿芳 is 🤖 dwan (migration `0005_bot_names.sql`), and 奶龙 is 🤖 turing (`0006_turing.sql`). They kept their ids, so their history and stats are still theirs.
 
-Each table gets its own copy of every bot. A copy starts with nothing and buys one minimum buy-in of chips from `ubank` when it has none (奶龙 buys two), as often as it needs. Its chips are written under `<bot id>@<table>`, for example `ubot000000000joe@u3k9x0q2m7c1v8z5:2/5`. A player has one regular table per stake, named by their id and the blinds, so the same bot at that player's 1/2 table is another copy. The table's minimum buy-in is the stake's (200, 500 or 1,000), and so is the copy's. The copy's chips on that table are the chip rows it received minus the ones it sent. Player A beating the bots at A's table leaves the bots at B's table untouched: B's copies still start from their own first buy-in. The bot's own `players.balance` stays at 1,000; the copies have no cash.
+Each table gets its own copy of every bot. A copy starts with nothing and buys one minimum buy-in of chips from `ubank` when it has none, as often as it needs. Its chips are written under `<bot id>@<table>`, for example `ubot000000000joe@u3k9x0q2m7c1v8z5:2/5`. A player has one regular table per stake, named by their id and the blinds, so the same bot at that player's 1/2 table is another copy. The table's minimum buy-in is the stake's (200, 500 or 1,000), and so is the copy's. The copy's chips on that table are the chip rows it received minus the ones it sent. Player A beating the bots at A's table leaves the bots at B's table untouched: B's copies still start from their own first buy-in. The bot's own `players.balance` stays at 1,000; the copies have no cash.
 
 The game knows a bot only by this id: its seat, play style, chat lines, profile, buy-in records and stats all use it. The name shown at the table is `players.name`. The Worker reads it before it builds a table, and the browser reads it from `/bots`. Changing a bot's `name` in `players` changes it on the next table. Practice without the server uses the stored names above.
 
@@ -36,7 +36,7 @@ The game knows a bot only by this id: its seat, play style, chat lines, profile,
 | Joe | `ubot000000000joe` | 🤖 Joe |
 | sc | `ubot0000000000sc` | 🤖 sc |
 | 老周 | `ubot00000laozhou` | 🤖 ST |
-| 奶龙 | `ubot00000nailong` | 🤖 奶龙 |
+| 奶龙 | `ubot00000nailong` | 🤖 turing |
 | Kmetsch | `ubot00000kmetsch` | 🤖 Kmetsch |
 | 阿芳 | `ubot0000000afang` | 🤖 dwan |
 

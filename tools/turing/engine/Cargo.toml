@@ -1,0 +1,7 @@
+[package]
+name = "hucore"
+edition.workspace = true
+version.workspace = true
+description = "Heads-up no-limit hold'em core: cards, hand values, equity, abstraction, blueprint lookup"
+
+[dependencies]

@@ -67,7 +67,7 @@ test('no Chinese a player sees is left outside tr(), N_() or sub()', () => {
   const ALLOWED = {
     'js/online.js': [' 申请买一手（等房主同意）', '房主同意 ', ' 买一手', '房主拒绝了 ', ' 的买入', '房主请 ', ' 离开了房间', '房主允许 ', ' 重新加入'],
     'js/table.js': ['买一手', '退一手', '离桌带走', '未买入'],
-    'js/config.js': ['老周', '🤖 奶龙', '奶龙', '阿芳'],
+    'js/config.js': ['老周', '奶龙', '阿芳'],
     'js/i18n.js': ['中文', '（超时）'],
   };
   const stray = [];
@@ -127,7 +127,7 @@ test('the dealer\'s text comes out in English', () => {
     ['@@u1@@ 申请买一手（等房主同意）', '@@u1@@ asks to buy in (waiting for the host)'], ['房主同意 @@u1@@ 买一手', 'The host let @@u1@@ buy in'],
     ['房主拒绝了 @@u1@@ 的买入', "The host turned down @@u1@@'s buy-in"], ['房主请 @@u1@@ 离开了房间', 'The host removed @@u1@@ from the room'],
     ['房主允许 @@u1@@ 重新加入', 'The host let @@u1@@ back in'], ['超时牌桌已强制结束，下注已退回', 'The overtime hand was called off; every bet went back'],
-    ['我说白了', 'Let me be blunt'], ['😂', '😂'], ['🤖 Joe', '🤖 Joe'],
+    ['方差而已', 'Just variance'], ['😂', '😂'], ['🤖 Joe', '🤖 Joe'],
   ];
   for (const [zh, en] of cases) assert.equal(tx(zh), en, zh);
   // and the server's own text, as it is written there

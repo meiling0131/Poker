@@ -311,7 +311,7 @@ test('a table saved before bots had ids comes back keyed by bot id', async () =>
   };
   upgradeBots(T);
   assert.equal(T.seats[1].id, 'ubot00000nailong');
-  assert.equal(T.seats[1].name, '🤖 奶龙');
+  assert.equal(T.seats[1].name, '🤖 turing');
   assert.deepEqual(Object.keys(T.book).sort(), ['ubot00000nailong', 'ux']);
   assert.equal(T.stats.ubot00000nailong.h, 3);
   assert.equal(T.ledger[0].k, 'ubot00000nailong');
@@ -460,16 +460,23 @@ test('real money: a player who has folded can buy in and cash out at once, witho
   await t.money(400);
   deal(t);
   assert.ok(t.me().inHand && !t.me().folded);
-  assert.equal((await t.money(200)).pending, true, 'still playing: it waits');
-  for (let guard = 0; guard < 5000 && !t.me().folded; guard++) {
+  // the buy-in is asked for on a turn with at least two others still in, so the fold leaves the hand going on
+  // without us (with one other the fold ends it); before such a turn we fold and play the next hand
+  let asked = false;
+  for (let guard = 0; guard < 5000 && !(asked && t.me().folded); guard++) {
     const live = t.ws.last('table')?.S;
     if (live && BETTING.includes(live.street) && live.actor >= 0 && live.seats[live.actor].uid === uid) {
+      if (!asked && live.seats.filter(p => p.uid !== uid && p.inHand && !p.folded).length >= 2) {
+        assert.equal((await t.money(200)).pending, true, 'still playing: it waits');
+        asked = true;
+      }
       t.send({ t: 'seat', op: 'update', data: { act: { type: 'fold', to: 0, turn: live.turn, hand: live.hand } } });
       continue;
     }
     t.send({ t: 'cmd', name: 'next', args: [] });
     runNextTimer();
   }
+  assert.ok(asked, 'a turn with two others still in came up');
   await settle(t.r);
   assert.ok(t.me().folded);
   assert.ok(BETTING.includes(t.r.c.S.street), 'the hand is still going');
@@ -754,7 +761,7 @@ test('stakes: a 2/5 regular table takes 500 buy-ins, its bots rebuy 500, and a s
   deal(t);
   assert.equal(t.r.c.S.street, 'preflop');
   const bots = t.r.c.S.seats.filter(p => p.kind === 'bot');
-  assert.ok(bots.every(p => p.stack + p.total === (p.id === 'ubot00000nailong' ? 1000 : 500)), 'bots rebuy at this table\'s buy-in');
+  assert.ok(bots.every(p => p.stack + p.total === 500), 'bots rebuy at this table\'s buy-in');
   assert.ok([t.r.c.S.seats[t.r.c.S.sbPos].total, t.r.c.S.seats[t.r.c.S.bbPos].total].join() === '2,5', 'blinds are 2/5');
   await settle(t.r);
   assert.ok(t.db.rows("SELECT amount FROM transactions WHERE remarks = 'Bot buy-in.'").every(r => r.amount === 500 || r.amount === 1000));

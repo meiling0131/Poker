@@ -84,7 +84,7 @@ while (S().hand < HANDS && guard++ < 5e6) {
       if (onTable !== bought) { console.log('LEAK at hand', s.hand, 'on table', onTable, 'bought', bought, s.log.slice(0, 12).map(l => l.t)); process.exit(1); }
     }
     const tr = process.argv.find(a => a.startsWith('--trace='));
-    if (tr) { // print the hands where this bot lost a lot: node tools/simulate.js 300 fold 1 --trace=奶龙
+    if (tr) { // print the hands where this bot lost a lot: node tools/simulate.js 300 fold 1 --trace=dwan
       const who = tr.slice(8), b = s.seats.find(p => p.id === who || p.name === who || p.name === '🤖 ' + who);
       if (b && b.total - (b.won || 0) > 150) {
         const lines = []; for (const l of s.log) { lines.unshift(l.t); if (/^第 \d+ 手/.test(l.t)) break; }

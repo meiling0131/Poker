@@ -25,7 +25,7 @@ export function shownBalance(){return M.player&&Number.isInteger(M.player.balanc
 
 export function renderHeader(){
   const online=M.mode==='online';
-  $('pills').innerHTML=!M.mode?'':`<span class="pill">${online?tr('房间 {code}',{code:esc(M.room||'')}):(PLAY_MODE==='normal'?tr('正常 · 7 人'):tr('练习 · 7 人'))}</span><span class="pill">${tr('盲注 {sb}/{bb}',{sb:SB,bb:BB})}</span>${S&&S.hand?`<span class="pill">${tr('第 {n} 手',{n:S.hand})}</span>`:''}`;
+  $('pills').innerHTML=!M.mode?'':`<span class="pill">${online?tr('房间 {code}',{code:esc(M.room||'')}):(PLAY_MODE==='normal'?tr('正常 · 7 人'):S&&S.hu?tr('练习 · 单挑'):tr('练习 · 7 人'))}</span><span class="pill">${tr('盲注 {sb}/{bb}',{sb:SB,bb:BB})}</span>${S&&S.hand?`<span class="pill">${tr('第 {n} 手',{n:S.hand})}</span>`:''}`;
   $('nav').hidden=!M.mode;
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.view===VIEW));
   // 记录 at every table: stats, the ledger and the hand log; a friends room adds the invite link and the players
@@ -132,6 +132,7 @@ const ABOUT=[
   [N_('每天 1,000'),N_('每人每天有 1,000 余额，美东时间午夜重置；第二天重新留名，从 1,000 开始。')],
   [N_('进入游戏'),N_('选一个盲注（1/2、2/5、5/10），和六个风格各异的机器人同桌。买入、下注和每一次输赢都记在服务器上，计入排行榜。')],
   [N_('练习模式'),N_('用练习筹码随便打，不记录，也不计入排行。')],
+  [N_('单挑模式'),N_('用练习筹码和 turing 一对一。turing 的单挑策略是在 GPU 上用反事实遗憾最小化（CFR）训练出来的，还会根据你的打法调整。')],
   [N_('好友模式'),N_('创建或加入房间（可以设密码），在「记录」里把邀请链接发给朋友，满 2 人开局。')],
   [N_('排行榜'),N_('今日、昨日、本周、本月和历史最佳，比的是余额加上桌上的筹码。')],
   [N_('查看数据'),N_('在大厅点自己的名字，看今天的数据；在牌桌上点任意座位，看那位玩家的数据。')],
@@ -276,8 +277,9 @@ export function renderMenu(){
     <div class="stakes" role="group" aria-label="${tr('盲注')}">${tiles}</div>
     <p id="lobbyError" class="why" role="alert">${FLASH&&!NAME_POPUP?esc(FLASH):''}</p>
     <button type="button" class="go amber play" data-mode="normal"${named&&!closing?'':' disabled'}>${tr('进入游戏')}</button>
-    <div class="side-modes">
+    <div class="side-modes three">
       <button type="button" class="go teal play" data-mode="practice">${tr('练习模式')}</button>
+      <button type="button" class="go teal play" data-hu="1">${tr('单挑模式')}</button>
       <button type="button" class="go teal play" data-friends="1"${named&&!closing&&M.server?'':' disabled'}>${tr('好友模式')}</button>
     </div>
     <div class="side-modes">
